@@ -1,0 +1,100 @@
+import { onMessage } from 'webext-bridge/background';
+import { PermissionService } from '@core/services';
+import { DEFAULT_STORAGE } from '@core/constants';
+import type { ProtocolMap } from '@core/protocol';
+
+console.log('[Background] Service worker started');
+
+// Initialize storage on install
+chrome.runtime.onInstalled.addListener((details) => {
+  console.log('[Background] Extension installed:', details.reason);
+  
+  if (details.reason === 'install') {
+    chrome.storage.local.set(DEFAULT_STORAGE).then(() => {
+      console.log('[Background] Default storage initialized');
+    });
+  }
+});
+
+// Handle alarms for scheduled tasks
+chrome.alarms.onAlarm.addListener((alarm) => {
+  console.log('[Background] Alarm triggered:', alarm.name);
+  
+  if (alarm.name === 'limbo-review-reminder') {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icon128.png',
+      title: 'Bilibili Focus Mode',
+      message: 'Time to review your Limbo list!',
+    });
+  }
+});
+
+// Message handlers
+onMessage('check-permission', async (message) => {
+  const data = message.data as unknown as ProtocolMap['check-permission']['req'];
+  console.log('[Background] Checking permission for:', data.bvid);
+  
+  const storage = await chrome.storage.local.get() as typeof DEFAULT_STORAGE;
+  const service = new PermissionService(storage);
+  return service.check(data.bvid);
+});
+
+onMessage('add-to-limbo', async (message) => {
+  const data = message.data as unknown as ProtocolMap['add-to-limbo']['req'];
+  console.log('[Background] Adding to limbo:', data.metadata.bvid);
+  
+  const storage = await chrome.storage.local.get() as typeof DEFAULT_STORAGE;
+  const limboList = storage.limboList || [];
+  
+  // Check capacity
+  if (limboList.length >= (storage.config?.limboCapacity || 5)) {
+    return { success: false, limboCount: limboList.length };
+  }
+  
+  // Check if already exists
+  if (limboList.some((item) => item.bvid === data.metadata.bvid)) {
+    return { success: true, limboCount: limboList.length };
+  }
+  
+  const newItem = {
+    ...data.metadata,
+    sourceUrl: data.sourceUrl,
+  };
+  
+  await chrome.storage.local.set({
+    limboList: [...limboList, newItem],
+  });
+  
+  return { success: true, limboCount: limboList.length + 1 };
+});
+
+onMessage('update-debt', async (message) => {
+  const data = message.data as unknown as ProtocolMap['update-debt']['req'];
+  console.log('[Background] Updating debt:', data);
+  
+  const storage = await chrome.storage.local.get();
+  const debtAccount = (storage.debtAccount || { currentDebt: 0 }) as { currentDebt: number };
+  
+  let newDebt = debtAccount.currentDebt;
+  if (data.type === 'accrue') {
+    newDebt += data.minutes;
+  } else {
+    newDebt = Math.max(0, newDebt - data.minutes);
+  }
+  
+  await chrome.storage.local.set({
+    debtAccount: {
+      ...debtAccount,
+      currentDebt: newDebt,
+    },
+  });
+  
+  return { currentDebt: newDebt };
+});
+
+// Schedule daily reminder
+chrome.alarms.create('limbo-review-reminder', {
+  when: new Date().setHours(19, 30, 0, 0),
+  periodInMinutes: 24 * 60,
+});

@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Bilibili Focus Mode",
+  "version": "1.0.0",
+  "description": "Intentional time management extension for Bilibili",
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://*.bilibili.com/*"
+  ],
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.bilibili.com/video/*"],
+      "js": ["src/content/index.tsx"],
+      "run_at": "document_start"
+    }
+  ],
+  "options_page": "src/manager/index.html",
+  "action": {
+    "default_popup": "src/popup/index.html"
+  }
+}
