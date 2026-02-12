@@ -98,3 +98,22 @@ chrome.alarms.create('limbo-review-reminder', {
   when: new Date().setHours(19, 30, 0, 0),
   periodInMinutes: 24 * 60,
 });
+
+// Handle open options page request from content script
+chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+  if (request.action === 'openOptionsPage') {
+    console.log('[Background] Opening options page');
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('src/manager/index.html')
+    }, (tab) => {
+      if (chrome.runtime.lastError) {
+        console.error('[Background] Error opening options page:', chrome.runtime.lastError);
+        sendResponse({ success: false, error: chrome.runtime.lastError.message });
+      } else {
+        console.log('[Background] Options page opened in tab:', tab?.id);
+        sendResponse({ success: true, tabId: tab?.id });
+      }
+    });
+    return true; // Keep message channel open for async response
+  }
+});

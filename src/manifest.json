@@ -23,8 +23,17 @@
       "run_at": "document_start"
     }
   ],
-  "options_page": "src/manager/index.html",
+  "options_ui": {
+    "page": "src/manager/index.html",
+    "open_in_tab": true
+  },
   "action": {
     "default_popup": "src/popup/index.html"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/manager/index.html", "assets/*", "src/popup/index.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

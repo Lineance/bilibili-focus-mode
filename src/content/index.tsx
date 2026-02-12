@@ -80,18 +80,22 @@ function showBlockOverlay(metadata: VideoMetadata, reason: string): void {
     e.stopPropagation();
     console.log('[Bilibili Focus Mode] Opening manager page...');
     try {
-      chrome.runtime.openOptionsPage(() => {
-        if (chrome.runtime.lastError) {
-          console.error('[Bilibili Focus Mode] Error opening options page:', chrome.runtime.lastError);
-          // Fallback: try opening directly
-          window.open(chrome.runtime.getURL('src/manager/index.html'), '_blank');
-        } else {
-          console.log('[Bilibili Focus Mode] Options page opened successfully');
+      // Content script cannot use chrome.runtime.openOptionsPage
+      // Use chrome.tabs.create instead via background script or open directly
+      const optionsUrl = chrome.runtime.getURL('src/manager/index.html');
+      console.log('[Bilibili Focus Mode] Options URL:', optionsUrl);
+      
+      // Try to use background script to open tab
+      chrome.runtime.sendMessage({ action: 'openOptionsPage' }, (response) => {
+        if (chrome.runtime.lastError || !response?.success) {
+          console.log('[Bilibili Focus Mode] Background open failed, using direct open');
+          // Fallback: open in new tab
+          window.open(optionsUrl, '_blank');
         }
       });
     } catch (error) {
-      console.error('[Bilibili Focus Mode] Exception opening options page:', error);
-      // Fallback
+      console.error('[Bilibili Focus Mode] Exception:', error);
+      // Final fallback
       window.open(chrome.runtime.getURL('src/manager/index.html'), '_blank');
     }
   });
