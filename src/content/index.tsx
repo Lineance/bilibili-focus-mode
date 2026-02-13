@@ -11,15 +11,44 @@ function extractVideoMetadata(): VideoMetadata | null {
   if (!bvidMatch) return null;
 
   const bvid = bvidMatch[1];
-  const titleEl = document.querySelector('h1.video-title, .video-title');
-  const uploaderEl = document.querySelector('.up-name, .username');
-  const coverEl = document.querySelector('.video-cover img, .bilibili-player-video-cover img') as HTMLImageElement;
+  const titleEl = document.querySelector('h1.video-title, .video-title, h1.title');
+  const uploaderEl = document.querySelector('.up-name, .username, .up-info__name, a.up-name');
+  
+  // Try multiple selectors for cover image
+  let coverUrl = '';
+  const coverSelectors = [
+    'img[src*="hdslb.com"]',  // Bilibili CDN - most reliable
+    'img[src*="bilibili.com"]',
+    '.video-cover img',
+    '.bilibili-player-video-cover img',
+    '.bpx-player-video-cover img',
+    '.cover img',
+    'meta[property="og:image"]',
+  ];
+  
+  for (const selector of coverSelectors) {
+    const el = document.querySelector(selector);
+    if (el) {
+      if (selector.includes('meta')) {
+        coverUrl = (el as HTMLMetaElement).content || '';
+      } else {
+        coverUrl = (el as HTMLImageElement).src || '';
+      }
+      if (coverUrl) break;
+    }
+  }
+  
+  // Fallback: try to construct from bvid
+  if (!coverUrl && bvid) {
+    // Bilibili cover URL pattern (this is a guess, may not work)
+    coverUrl = `https://i0.hdslb.com/bfs/archive/${bvid}.jpg`;
+  }
 
   return {
     bvid,
     title: titleEl?.textContent?.trim().slice(0, 50) || 'Unknown',
     uploader: uploaderEl?.textContent?.trim() || 'Unknown',
-    coverUrl: coverEl?.src || '',
+    coverUrl,
     tag: 'ENTERTAINMENT', // Default, user must choose
     addedAt: Date.now(),
   };

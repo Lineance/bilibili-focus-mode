@@ -4,6 +4,29 @@ import type { LimboItem, VideoMetadata, CoolingItem, InstantItem, PermanentGroup
 import { ExpirationService } from '@core/services';
 import { DEFAULT_CONFIG } from '@core/constants';
 
+// Video cover component with fallback
+function VideoCover({ url, title }: { url: string; title: string }) {
+  const [error, setError] = useState(false);
+  
+  if (error || !url) {
+    return (
+      <div className="w-32 h-20 bg-gray-700 rounded flex items-center justify-center text-xs text-gray-400">
+        无封面
+      </div>
+    );
+  }
+  
+  return (
+    <img
+      src={url}
+      alt={title}
+      className="w-32 h-20 object-cover rounded"
+      onError={() => setError(true)}
+      crossOrigin="anonymous"
+    />
+  );
+}
+
 export function App() {
   const [activeTab, setActiveTab] = useState<'limbo' | 'cooling' | 'instant' | 'permanent' | 'ghost' | 'debt'>('limbo');
   const storage = useStorage();
@@ -148,11 +171,7 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
         <div className="grid gap-4">
           {items.map((item) => (
             <div key={item.bvid} className="bg-gray-800 p-4 rounded-lg flex gap-4">
-              <img
-                src={item.coverUrl}
-                alt={item.title}
-                className="w-32 h-20 object-cover rounded"
-              />
+              <VideoCover url={item.coverUrl} title={item.title} />
               <div className="flex-1">
                 <h3 className="font-medium mb-1">{item.title}</h3>
                 <p className="text-sm text-gray-400 mb-2">{item.uploader}</p>
