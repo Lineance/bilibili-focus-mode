@@ -257,7 +257,7 @@ async function showFuseInputDialog(metadata: VideoMetadata): Promise<void> {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10002;
+    z-index: 9999999;
   `;
   
   dialog.innerHTML = `
@@ -424,11 +424,11 @@ function showTagSelectionDialog(metadata: VideoMetadata): Promise<'LEARNING' | '
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.9);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10001;
+    z-index: 9999999;
   `;
   
   dialog.innerHTML = `
