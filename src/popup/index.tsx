@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 
-function Popup() {
+export function Popup() {
   return (
     <div className="w-64 p-4 bg-gray-900 text-white">
       <h1 className="text-lg font-bold mb-4">Bilibili Focus Mode</h1>
