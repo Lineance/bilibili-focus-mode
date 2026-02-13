@@ -278,23 +278,31 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
       alert(`已加入即时许可，有效期 ${DEFAULT_CONFIG.instantDurationHours} 小时`);
     } else {
       const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
-      let targetGroup = permanentGroups[0];
+      
+      // Find or create group based on tag
+      const groupName = item.tag === 'LEARNING' ? '学习' : '娱乐';
+      const groupId = item.tag === 'LEARNING' ? 'learning' : 'entertainment';
+      
+      let targetGroup = permanentGroups.find(g => g.id === groupId);
       if (!targetGroup) {
         targetGroup = {
-          id: 'default',
-          name: '默认分组',
+          id: groupId,
+          name: groupName,
           items: [],
-          debtPriority: 1,
+          debtPriority: item.tag === 'LEARNING' ? 1 : 2,
         };
         permanentGroups.push(targetGroup);
       }
+      
       if (!targetGroup.items.some((i) => i.bvid === item.bvid)) {
         targetGroup.items.push(metadata);
       }
+      
       await chrome.storage.local.set({
         limboList: newLimboList,
         permanentGroups,
       });
+      
       const tagText = item.tag === 'LEARNING' ? '学习' : '娱乐';
       alert(`已加入永久分组（${tagText}）`);
     }
@@ -631,7 +639,12 @@ function InstantList({ items }: { items: readonly InstantItem[] }) {
 
 function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const totalItems = groups.reduce((sum, group) => sum + group.items.length, 0);
+  
+  // Flatten all items from all groups and separate by tag
+  const allItems = groups.flatMap(group => group.items);
+  const learningItems = allItems.filter(item => item.tag === 'LEARNING');
+  const entertainmentItems = allItems.filter(item => item.tag === 'ENTERTAINMENT');
+  const totalItems = allItems.length;
 
   const toggleSelection = (bvid: string) => {
     const newSelected = new Set(selected);
@@ -644,52 +657,30 @@ function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }) {
   };
 
   const selectAll = () => {
-    const allBvids = groups.flatMap((group) => group.items.map((item) => item.bvid));
-    setSelected(new Set(allBvids));
+    setSelected(new Set(allItems.map((item) => item.bvid)));
   };
 
   const clearSelection = () => {
     setSelected(new Set());
   };
 
-  const handleDeleteItem = async (groupId: string, bvid: string) => {
+  const handleDeleteItem = async (bvid: string) => {
     if (!confirm('确定要删除这个视频吗？')) return;
     
     const storage = await chrome.storage.local.get();
     const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
     
-    const updatedGroups = permanentGroups.map((group) => {
-      if (group.id === groupId) {
-        return {
-          ...group,
-          items: group.items.filter((item) => item.bvid !== bvid),
-        };
-      }
-      return group;
-    });
+    // Remove item from whichever group it belongs to
+    const updatedGroups = permanentGroups.map((group) => ({
+      ...group,
+      items: group.items.filter((item) => item.bvid !== bvid),
+    }));
     
     await chrome.storage.local.set({ permanentGroups: updatedGroups });
     
     const newSelected = new Set(selected);
     newSelected.delete(bvid);
     setSelected(newSelected);
-  };
-
-  const handleDeleteGroup = async (groupId: string) => {
-    if (!confirm('确定要删除这个分组吗？分组内的视频将被移除。')) return;
-    
-    const storage = await chrome.storage.local.get();
-    const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
-    const updatedGroups = permanentGroups.filter((group) => group.id !== groupId);
-    await chrome.storage.local.set({ permanentGroups: updatedGroups });
-    
-    // Clear selection for items in deleted group
-    const group = permanentGroups.find((g) => g.id === groupId);
-    if (group) {
-      const newSelected = new Set(selected);
-      group.items.forEach((item) => newSelected.delete(item.bvid));
-      setSelected(newSelected);
-    }
   };
 
   const handleBatchDelete = async () => {
@@ -714,72 +705,78 @@ function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }) {
     setSelected(new Set());
   };
 
+  const renderItemCard = (item: VideoMetadata) => (
+    <div
+      key={item.bvid}
+      className={`flex gap-3 items-center bg-gray-700 p-3 rounded ${selected.has(item.bvid) ? 'ring-2 ring-blue-500' : ''}`}
+    >
+      <input
+        type="checkbox"
+        checked={selected.has(item.bvid)}
+        onChange={() => toggleSelection(item.bvid)}
+        className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+      />
+      <VideoCover url={item.coverUrl} title={item.title} small />
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-sm truncate">{item.title}</p>
+        <p className="text-xs text-gray-400">{item.uploader}</p>
+      </div>
+      <button
+        onClick={() => handleDeleteItem(item.bvid)}
+        className="px-2 py-1 bg-red-600 rounded text-xs hover:bg-red-700 flex-shrink-0"
+      >
+        删除
+      </button>
+    </div>
+  );
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">永久分组 ({groups.length} 组, {totalItems} 个视频)</h2>
-        {groups.length > 0 && (
+        <h2 className="text-xl font-semibold">永久分组 ({totalItems} 个视频)</h2>
+        {totalItems > 0 && (
           <button
             onClick={handleClearAll}
             className="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-700"
           >
-            清空所有分组
+            清空所有
           </button>
         )}
       </div>
       
-      {groups.length === 0 ? (
-        <p className="text-gray-500">没有永久分组</p>
+      {totalItems === 0 ? (
+        <p className="text-gray-500">没有永久分组视频</p>
       ) : (
-        <div className="space-y-6">
-          {groups.map((group) => (
-            <div key={group.id} className="bg-gray-800 p-4 rounded-lg">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-medium">{group.name} ({group.items.length})</h3>
-                <button
-                  onClick={() => handleDeleteGroup(group.id)}
-                  className="px-2 py-1 bg-red-600 rounded text-xs hover:bg-red-700"
-                >
-                  删除分组
-                </button>
-              </div>
-              <div className="grid gap-3">
-                {group.items.map((item) => (
-                  <div
-                    key={item.bvid}
-                    className={`flex gap-3 items-center bg-gray-700 p-3 rounded ${selected.has(item.bvid) ? 'ring-2 ring-blue-500' : ''}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selected.has(item.bvid)}
-                      onChange={() => toggleSelection(item.bvid)}
-                      className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                    />
-                    <VideoCover url={item.coverUrl} title={item.title} small />
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{item.title}</p>
-                      <p className="text-xs text-gray-400">{item.uploader}</p>
-                    </div>
-                    <span
-                      className={`px-2 py-1 rounded text-xs ${
-                        item.tag === 'LEARNING'
-                          ? 'bg-green-600'
-                          : 'bg-yellow-600'
-                      }`}
-                    >
-                      {item.tag === 'LEARNING' ? '学习' : '娱乐'}
-                    </span>
-                    <button
-                      onClick={() => handleDeleteItem(group.id, item.bvid)}
-                      className="px-2 py-1 bg-red-600 rounded text-xs hover:bg-red-700"
-                    >
-                      删除
-                    </button>
-                  </div>
-                ))}
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Learning Column */}
+          <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">📚</span>
+              <h3 className="text-lg font-medium text-green-400">学习 ({learningItems.length})</h3>
             </div>
-          ))}
+            <div className="grid gap-3">
+              {learningItems.length === 0 ? (
+                <p className="text-gray-500 text-sm">暂无学习类视频</p>
+              ) : (
+                learningItems.map(renderItemCard)
+              )}
+            </div>
+          </div>
+
+          {/* Entertainment Column */}
+          <div className="bg-gray-800 p-4 rounded-lg">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">🎮</span>
+              <h3 className="text-lg font-medium text-yellow-400">娱乐 ({entertainmentItems.length})</h3>
+            </div>
+            <div className="grid gap-3">
+              {entertainmentItems.length === 0 ? (
+                <p className="text-gray-500 text-sm">暂无娱乐类视频</p>
+              ) : (
+                entertainmentItems.map(renderItemCard)
+              )}
+            </div>
+          </div>
         </div>
       )}
 
