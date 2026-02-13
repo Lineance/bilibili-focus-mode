@@ -163,6 +163,21 @@ function BatchToolbar({
 
 function LimboReview({ items }: { items: readonly LimboItem[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  
+  // Check if currently in review window
+  const now = new Date();
+  const [windowStartHour, windowStartMinute] = DEFAULT_CONFIG.windowStart.split(':').map(Number);
+  const [windowEndHour, windowEndMinute] = DEFAULT_CONFIG.windowEnd.split(':').map(Number);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startMinutes = windowStartHour * 60 + windowStartMinute;
+  const endMinutes = windowEndHour * 60 + windowEndMinute;
+  
+  let isInReviewWindow: boolean;
+  if (endMinutes >= startMinutes) {
+    isInReviewWindow = currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+  } else {
+    isInReviewWindow = currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+  }
 
   const toggleSelection = (bvid: string) => {
     const newSelected = new Set(selected);
@@ -214,6 +229,12 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
   };
 
   const handleAction = async (item: LimboItem, action: 'permanent' | 'cooling' | 'instant') => {
+    // Check if in review window
+    if (!isInReviewWindow) {
+      alert('当前不在审批时间窗口，无法处理待审池视频\n请在 ' + DEFAULT_CONFIG.windowStart + ' - ' + DEFAULT_CONFIG.windowEnd + ' 期间进行审批');
+      return;
+    }
+    
     const storage = await chrome.storage.local.get();
     const limboList = (storage.limboList || []) as LimboItem[];
     const newLimboList = limboList.filter((i) => i.bvid !== item.bvid);
@@ -286,8 +307,28 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
 
   return (
     <div>
+      {/* Review Window Status Banner */}
+      <div className={`mb-4 p-3 rounded-lg ${isInReviewWindow ? 'bg-green-900/50 border border-green-600' : 'bg-yellow-900/50 border border-yellow-600'}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{isInReviewWindow ? '✅' : '⏰'}</span>
+            <span className={isInReviewWindow ? 'text-green-400 font-medium' : 'text-yellow-400 font-medium'}>
+              {isInReviewWindow 
+                ? `当前是审批时间 (${DEFAULT_CONFIG.windowStart} - ${DEFAULT_CONFIG.windowEnd})`
+                : `当前非审批时间 - 审批时间: ${DEFAULT_CONFIG.windowStart} - ${DEFAULT_CONFIG.windowEnd}`
+              }
+            </span>
+          </div>
+          {!isInReviewWindow && (
+            <span className="text-sm text-yellow-500">
+              请在审批时间处理待审池
+            </span>
+          )}
+        </div>
+      </div>
+
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">待审池 ({items.length}/5)</h2>
+        <h2 className="text-xl font-semibold">待审池 ({items.length})</h2>
         {items.length > 0 && (
           <button
             onClick={handleClearAll}
@@ -321,19 +362,37 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
                     </span>
                     <button
                       onClick={() => handleAction(item, 'permanent')}
-                      className="px-3 py-1 bg-purple-600 rounded text-sm hover:bg-purple-700"
+                      disabled={!isInReviewWindow}
+                      className={`px-3 py-1 rounded text-sm ${
+                        isInReviewWindow 
+                          ? 'bg-purple-600 hover:bg-purple-700' 
+                          : 'bg-gray-600 cursor-not-allowed opacity-50'
+                      }`}
+                      title={isInReviewWindow ? '' : '请在审批时间处理'}
                     >
                       永久
                     </button>
                     <button
                       onClick={() => handleAction(item, 'cooling')}
-                      className="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-700"
+                      disabled={!isInReviewWindow}
+                      className={`px-3 py-1 rounded text-sm ${
+                        isInReviewWindow 
+                          ? 'bg-blue-600 hover:bg-blue-700' 
+                          : 'bg-gray-600 cursor-not-allowed opacity-50'
+                      }`}
+                      title={isInReviewWindow ? '' : '请在审批时间处理'}
                     >
                       冷静期
                     </button>
                     <button
                       onClick={() => handleAction(item, 'instant')}
-                      className="px-3 py-1 bg-orange-600 rounded text-sm hover:bg-orange-700"
+                      disabled={!isInReviewWindow}
+                      className={`px-3 py-1 rounded text-sm ${
+                        isInReviewWindow 
+                          ? 'bg-orange-600 hover:bg-orange-700' 
+                          : 'bg-gray-600 cursor-not-allowed opacity-50'
+                      }`}
+                      title={isInReviewWindow ? '' : '请在审批时间处理'}
                     >
                       立即
                     </button>

@@ -5,6 +5,10 @@ import './purify.css';
 
 console.log('[Content] Script loaded');
 
+// Track current block state
+let isBlocking = false;
+let currentBvid: string | null = null;
+
 // Extract video metadata from page
 function extractVideoMetadata(): VideoMetadata | null {
   const bvidMatch = window.location.pathname.match(/\/video\/(BV\w+)/);
@@ -17,7 +21,7 @@ function extractVideoMetadata(): VideoMetadata | null {
   // Try multiple selectors for cover image
   let coverUrl = '';
   const coverSelectors = [
-    'img[src*="hdslb.com"]',  // Bilibili CDN - most reliable
+    'img[src*="hdslb.com"]',
     'img[src*="bilibili.com"]',
     '.video-cover img',
     '.bilibili-player-video-cover img',
@@ -38,9 +42,7 @@ function extractVideoMetadata(): VideoMetadata | null {
     }
   }
   
-  // Fallback: try to construct from bvid
   if (!coverUrl && bvid) {
-    // Bilibili cover URL pattern (this is a guess, may not work)
     coverUrl = `https://i0.hdslb.com/bfs/archive/${bvid}.jpg`;
   }
 
@@ -49,53 +51,175 @@ function extractVideoMetadata(): VideoMetadata | null {
     title: titleEl?.textContent?.trim().slice(0, 50) || 'Unknown',
     uploader: uploaderEl?.textContent?.trim() || 'Unknown',
     coverUrl,
-    tag: 'ENTERTAINMENT', // Default, user must choose
+    tag: 'ENTERTAINMENT',
     addedAt: Date.now(),
   };
 }
 
-// Check permission and show overlay if needed
+// Check permission and apply block if needed
 async function checkPermission(): Promise<void> {
   const metadata = extractVideoMetadata();
-  if (!metadata) return;
+  if (!metadata) {
+    removeBlock();
+    return;
+  }
+
+  currentBvid = metadata.bvid;
 
   try {
-    const result = await sendMessage('check-permission', { bvid: metadata.bvid } as ProtocolMap['check-permission']['req']) as PermissionResult;
+    const result = await sendMessage('check-permission', { bvid: metadata.bvid } as ProtocolMap['check-permission']['req']) as PermissionResult & {
+      inReviewWindow: boolean;
+      timeUntilWindow: number;
+    };
     
     if (!result.allowed) {
-      showBlockOverlay(metadata, result.reason);
+      // Video is not approved - show block overlay
+      // Check if it's outside review window (for messaging purposes)
+      showBlockOverlay(metadata, result.reason, {
+        inReviewWindow: result.inReviewWindow,
+        timeUntilWindow: result.timeUntilWindow
+      });
+    } else {
+      // Video is approved - remove block
+      removeBlock();
     }
   } catch (error) {
     console.error('[Content] Failed to check permission:', error);
   }
 }
 
+// Apply hard block - hide video player
+function applyHardBlock(): void {
+  if (isBlocking) return;
+  isBlocking = true;
+
+  // Hide video player elements
+  const playerSelectors = [
+    '.bilibili-player',
+    '.bpx-player-container',
+    '#bilibili-player',
+    '.player-container',
+  ];
+
+  playerSelectors.forEach(selector => {
+    const player = document.querySelector(selector);
+    if (player) {
+      (player as HTMLElement).style.display = 'none';
+    }
+  });
+
+  // Stop any playing video
+  const videos = document.querySelectorAll('video');
+  videos.forEach(video => {
+    video.pause();
+    video.currentTime = 0;
+  });
+}
+
+// Remove block - restore video player
+function removeBlock(): void {
+  if (!isBlocking) return;
+  isBlocking = false;
+
+  // Remove overlay
+  const overlay = document.querySelector('.bilibili-focus-mode-block-overlay');
+  if (overlay) overlay.remove();
+
+  // Show video player
+  const playerSelectors = [
+    '.bilibili-player',
+    '.bpx-player-container',
+    '#bilibili-player',
+    '.player-container',
+  ];
+
+  playerSelectors.forEach(selector => {
+    const player = document.querySelector(selector);
+    if (player) {
+      (player as HTMLElement).style.display = '';
+    }
+  });
+}
+
 // Show block overlay
-function showBlockOverlay(metadata: VideoMetadata, reason: string): void {
+function showBlockOverlay(
+  metadata: VideoMetadata, 
+  reason: string,
+  windowInfo: { inReviewWindow: boolean; timeUntilWindow: number }
+): void {
+  applyHardBlock();
+
   // Remove existing overlay
   const existing = document.querySelector('.bilibili-focus-mode-block-overlay');
   if (existing) existing.remove();
 
+  const isOutsideWindow = !windowInfo.inReviewWindow;
+  const timeText = formatTime(windowInfo.timeUntilWindow);
+
   const overlay = document.createElement('div');
   overlay.className = 'bilibili-focus-mode-block-overlay';
-  overlay.innerHTML = `
-    <div style="text-align: center; max-width: 500px; padding: 20px;">
-      <h2 style="margin-bottom: 16px; font-size: 24px;">🔒 视频已拦截</h2>
-      <p style="margin-bottom: 8px; font-size: 16px; opacity: 0.9;">${metadata.title}</p>
-      <p style="margin-bottom: 24px; font-size: 14px; opacity: 0.7;">UP主: ${metadata.uploader}</p>
-      <p style="margin-bottom: 24px; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;">
-        状态: ${getReasonText(reason)}
-      </p>
-      <div style="display: flex; gap: 12px; justify-content: center;">
-        <button id="bfm-add-limbo" style="padding: 10px 20px; background: #00aeec; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
-          加入待审池
-        </button>
-        <button id="bfm-open-manager" style="padding: 10px 20px; background: transparent; border: 1px solid white; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
-          打开管理页
-        </button>
+  
+  // Different UI based on whether we're in review window or not
+  if (isOutsideWindow) {
+    // Outside review window - can only use fuse or add to limbo
+    overlay.innerHTML = `
+      <div style="text-align: center; max-width: 500px; padding: 20px;">
+        <h2 style="margin-bottom: 16px; font-size: 24px;">🔒 视频未审批</h2>
+        <p style="margin-bottom: 8px; font-size: 16px; opacity: 0.9;">${metadata.title}</p>
+        <p style="margin-bottom: 24px; font-size: 14px; opacity: 0.7;">UP主: ${metadata.uploader}</p>
+        
+        <div style="margin-bottom: 24px; padding: 16px; background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; border-radius: 8px;">
+          <p style="margin-bottom: 8px; font-weight: bold; color: #f59e0b;">⏰ 当前不在审批时间</p>
+          <p style="font-size: 14px; opacity: 0.8;">距离下次审批时间: ${timeText}</p>
+          <p style="font-size: 12px; opacity: 0.6; margin-top: 8px;">
+            审批时间才能处理待审池视频<br>
+            现在可以选择：加入待审池 或 使用熔断码临时观看
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <button id="bfm-add-limbo" style="padding: 10px 20px; background: #00aeec; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
+            加入待审池
+          </button>
+          <button id="bfm-use-fuse" style="padding: 10px 20px; background: #f59e0b; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
+            使用熔断码
+          </button>
+          <button id="bfm-open-manager" style="padding: 10px 20px; background: transparent; border: 1px solid white; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
+            打开管理页
+          </button>
+        </div>
       </div>
-    </div>
-  `;
+    `;
+  } else {
+    // In review window - can add to limbo (will be processed later)
+    overlay.innerHTML = `
+      <div style="text-align: center; max-width: 500px; padding: 20px;">
+        <h2 style="margin-bottom: 16px; font-size: 24px;">🔒 视频未审批</h2>
+        <p style="margin-bottom: 8px; font-size: 16px; opacity: 0.9;">${metadata.title}</p>
+        <p style="margin-bottom: 24px; font-size: 14px; opacity: 0.7;">UP主: ${metadata.uploader}</p>
+        
+        <div style="margin-bottom: 24px; padding: 16px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+          <p style="margin-bottom: 8px; font-weight: bold;">${getReasonText(reason)}</p>
+          <p style="font-size: 12px; opacity: 0.6; margin-top: 8px;">
+            ✓ 当前是审批时间，可以前往管理页处理待审池<br>
+            或使用熔断码临时观看
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <button id="bfm-add-limbo" style="padding: 10px 20px; background: #00aeec; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
+            加入待审池
+          </button>
+          <button id="bfm-use-fuse" style="padding: 10px 20px; background: #f59e0b; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
+            使用熔断码
+          </button>
+          <button id="bfm-open-manager" style="padding: 10px 20px; background: transparent; border: 1px solid white; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
+            打开管理页
+          </button>
+        </div>
+      </div>
+    `;
+  }
 
   document.body.appendChild(overlay);
 
@@ -104,43 +228,138 @@ function showBlockOverlay(metadata: VideoMetadata, reason: string): void {
     addToLimbo(metadata);
   });
 
+  overlay.querySelector('#bfm-use-fuse')?.addEventListener('click', () => {
+    showFuseInputDialog(metadata);
+  });
+
   overlay.querySelector('#bfm-open-manager')?.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('[Bilibili Focus Mode] Opening manager page...');
-    
-    const optionsUrl = chrome.runtime.getURL('src/manager/index.html');
-    
-    // Check if extension context is valid
-    if (!chrome.runtime?.id) {
-      console.error('[Bilibili Focus Mode] Extension context invalidated');
-      alert('扩展已失效，请刷新页面或重新加载扩展');
-      return;
-    }
-    
-    try {
-      // Try to use background script to open tab
-      chrome.runtime.sendMessage({ action: 'openOptionsPage' }, (response) => {
-        if (chrome.runtime.lastError) {
-          console.log('[Bilibili Focus Mode] Background open failed:', chrome.runtime.lastError);
-          // Fallback: open in new tab directly
-          window.open(optionsUrl, '_blank');
-        } else if (!response?.success) {
-          console.log('[Bilibili Focus Mode] Background returned failure');
-          window.open(optionsUrl, '_blank');
-        }
-      });
-    } catch (error) {
-      console.error('[Bilibili Focus Mode] Exception:', error);
-      // Final fallback
-      window.open(optionsUrl, '_blank');
-    }
+    openManagerPage();
   });
+}
+
+// Show fuse code input dialog
+async function showFuseInputDialog(metadata: VideoMetadata): Promise<void> {
+  // Remove existing dialog
+  const existing = document.querySelector('.bfm-fuse-dialog');
+  if (existing) existing.remove();
+
+  const dialog = document.createElement('div');
+  dialog.className = 'bfm-fuse-dialog';
+  dialog.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10002;
+  `;
+  
+  dialog.innerHTML = `
+    <div style="background: #1a1a2e; padding: 24px; border-radius: 12px; max-width: 450px; width: 90%;">
+      <h3 style="margin: 0 0 16px 0; font-size: 18px; color: white;">输入熔断码</h3>
+      <p style="margin: 0 0 20px 0; color: #aaa; font-size: 14px;">
+        使用熔断码临时观看将产生额外债务<br>
+        <span style="color: #f59e0b;">提示: 熔断码可在管理页申请</span>
+      </p>
+      
+      <input 
+        type="text" 
+        id="bfm-fuse-input" 
+        placeholder="XXXX-XXXX-XXXX-XXXX"
+        style="width: 100%; padding: 12px; background: #2a2a3e; border: 1px solid #444; border-radius: 8px; color: white; font-size: 16px; font-family: monospace; margin-bottom: 16px; text-align: center;"
+      >
+      
+      <div id="bfm-fuse-error" style="color: #ef4444; font-size: 14px; margin-bottom: 16px; display: none;">
+        熔断码错误，请检查后重试
+      </div>
+      
+      <div style="display: flex; gap: 12px;">
+        <button id="bfm-fuse-cancel" style="flex: 1; padding: 12px; background: transparent; border: 1px solid #666; border-radius: 8px; color: #aaa; cursor: pointer; font-size: 14px;">
+          取消
+        </button>
+        <button id="bfm-fuse-submit" style="flex: 1; padding: 12px; background: #f59e0b; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
+          确认
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(dialog);
+
+  const input = dialog.querySelector('#bfm-fuse-input') as HTMLInputElement;
+  const errorDiv = dialog.querySelector('#bfm-fuse-error') as HTMLDivElement;
+  
+  input.focus();
+
+  return new Promise((resolve) => {
+    const closeDialog = () => {
+      dialog.remove();
+      resolve();
+    };
+
+    dialog.querySelector('#bfm-fuse-cancel')?.addEventListener('click', closeDialog);
+
+    dialog.querySelector('#bfm-fuse-submit')?.addEventListener('click', async () => {
+      const fuseCode = input.value.trim().toUpperCase();
+      if (!fuseCode) return;
+
+      try {
+        const result = await sendMessage('verify-fuse', { 
+          bvid: metadata.bvid, 
+          fuseCode 
+        } as ProtocolMap['verify-fuse']['req']) as { success: boolean; message: string };
+
+        if (result.success) {
+          dialog.remove();
+          removeBlock();
+          alert('熔断码验证成功！可以观看视频（已记录债务）');
+        } else {
+          errorDiv.style.display = 'block';
+          errorDiv.textContent = result.message || '熔断码错误';
+        }
+      } catch (error) {
+        console.error('[Content] Failed to verify fuse:', error);
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = '验证失败，请重试';
+      }
+    });
+
+    // Allow Enter key to submit
+    input?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        dialog.querySelector('#bfm-fuse-submit')?.dispatchEvent(new Event('click'));
+      }
+    });
+
+    // Close on backdrop click
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        closeDialog();
+      }
+    });
+  });
+}
+
+// Format milliseconds to readable time
+function formatTime(ms: number): string {
+  const hours = Math.floor(ms / (1000 * 60 * 60));
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (hours > 0) {
+    return `${hours}小时${minutes}分钟`;
+  }
+  return `${minutes}分钟`;
 }
 
 function getReasonText(reason: string): string {
   const reasons: Record<string, string> = {
-    'NO_PERMISSION': '未获得观看许可',
+    'NO_PERMISSION': '视频未审批，请先加入待审池',
     'COOLING_WAITING': '冷静期中，请等待',
     'EXPIRED': '许可已过期',
     'BANKRUPTCY': '破产锁定中',
@@ -149,18 +368,14 @@ function getReasonText(reason: string): string {
 }
 
 async function addToLimbo(metadata: VideoMetadata): Promise<void> {
-  // Check if extension context is valid
   if (!chrome.runtime?.id) {
     console.error('[Content] Extension context invalidated');
     alert('扩展已失效，请刷新页面或重新加载扩展');
     return;
   }
 
-  // Show tag selection dialog
   const tagSelection = await showTagSelectionDialog(metadata);
-  if (!tagSelection) {
-    return; // User cancelled
-  }
+  if (!tagSelection) return;
 
   try {
     const payload = {
@@ -175,40 +390,29 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
       sourceUrl: window.location.href,
     };
     
-    console.log('[Content] Sending add-to-limbo message:', payload);
-    
     const result = await sendMessage('add-to-limbo', payload as { [key: string]: string | number | boolean | null | { [key: string]: string | number | boolean | null } }) as { success: boolean; limboCount: number };
-    
-    console.log('[Content] Received response:', result);
 
     if (result.success) {
       const tagText = tagSelection === 'LEARNING' ? '学习' : '娱乐';
-      alert(`已加入待审池！标签：${tagText}\n请前往管理页审查`);
-      // Keep the block overlay - video should remain blocked until reviewed
-      // Update the overlay to show it's now in limbo
+      alert(`已加入待审池！标签：${tagText}\n请在审批时间前往管理页处理`);
+      
       const overlay = document.querySelector('.bilibili-focus-mode-block-overlay');
       if (overlay) {
         const statusText = overlay.querySelector('p:nth-of-type(3)');
         if (statusText) {
-          statusText.textContent = `状态: 已加入待审池（${tagText}），请前往管理页审查`;
+          statusText.textContent = `状态: 已加入待审池（${tagText}），等待审批时间处理`;
         }
       }
     } else {
-      alert('待审池已满，请先处理现有项目');
+      alert('添加失败，请重试');
     }
   } catch (error) {
     console.error('[Content] Failed to add to limbo:', error);
-    if (error instanceof Error && error.message.includes('Extension context invalidated')) {
-      alert('扩展已失效，请刷新页面或重新加载扩展');
-    } else {
-      alert('添加失败，请重试');
-    }
+    alert('添加失败，请重试');
   }
 }
 
-// Show tag selection dialog
 function showTagSelectionDialog(metadata: VideoMetadata): Promise<'LEARNING' | 'ENTERTAINMENT' | null> {
-  // Remove existing dialog
   const existing = document.querySelector('.bfm-tag-dialog');
   if (existing) existing.remove();
 
@@ -263,7 +467,6 @@ function showTagSelectionDialog(metadata: VideoMetadata): Promise<'LEARNING' | '
       resolve(null);
     });
 
-    // Close on backdrop click
     dialog.addEventListener('click', (e) => {
       if (e.target === dialog) {
         dialog.remove();
@@ -271,6 +474,33 @@ function showTagSelectionDialog(metadata: VideoMetadata): Promise<'LEARNING' | '
       }
     });
   });
+}
+
+function openManagerPage(): void {
+  console.log('[Bilibili Focus Mode] Opening manager page...');
+  
+  const optionsUrl = chrome.runtime.getURL('src/manager/index.html');
+  
+  if (!chrome.runtime?.id) {
+    console.error('[Bilibili Focus Mode] Extension context invalidated');
+    alert('扩展已失效，请刷新页面或重新加载扩展');
+    return;
+  }
+  
+  try {
+    chrome.runtime.sendMessage({ action: 'openOptionsPage' }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.log('[Bilibili Focus Mode] Background open failed:', chrome.runtime.lastError);
+        window.open(optionsUrl, '_blank');
+      } else if (!response?.success) {
+        console.log('[Bilibili Focus Mode] Background returned failure');
+        window.open(optionsUrl, '_blank');
+      }
+    });
+  } catch (error) {
+    console.error('[Bilibili Focus Mode] Exception:', error);
+    window.open(optionsUrl, '_blank');
+  }
 }
 
 // Watch for navigation changes (SPA)
@@ -289,3 +519,10 @@ if (document.readyState === 'loading') {
 } else {
   checkPermission();
 }
+
+// Periodically re-check permission (for time window changes)
+setInterval(() => {
+  if (currentBvid) {
+    checkPermission();
+  }
+}, 60000); // Check every minute
