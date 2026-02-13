@@ -14,16 +14,17 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "date-fns": "^4.1.0",
+    "idb-keyval": "^6.2.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zustand": "^5.0.3",
     "webext-bridge": "^6.0.1",
-    "idb-keyval": "^6.2.1",
-    "date-fns": "^4.1.0"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.28",
     "@eslint/js": "^9.20.0",
+    "@testing-library/react": "^16.3.2",
     "@types/chrome": "^0.0.304",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",

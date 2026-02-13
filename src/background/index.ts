@@ -45,15 +45,23 @@ onMessage('add-to-limbo', async (message) => {
   console.log('[Background] Adding to limbo:', data.metadata.bvid);
   
   const storage = await chrome.storage.local.get() as typeof DEFAULT_STORAGE;
+  console.log('[Background] Current storage:', { 
+    limboListLength: storage.limboList?.length || 0,
+    limboCapacity: storage.config?.limboCapacity 
+  });
+  
   const limboList = storage.limboList || [];
+  const capacity = storage.config?.limboCapacity ?? 5;
   
   // Check capacity
-  if (limboList.length >= (storage.config?.limboCapacity || 5)) {
+  if (limboList.length >= capacity) {
+    console.log('[Background] Limbo is full:', limboList.length, '>=', capacity);
     return { success: false, limboCount: limboList.length };
   }
   
   // Check if already exists
   if (limboList.some((item) => item.bvid === data.metadata.bvid)) {
+    console.log('[Background] Video already in limbo:', data.metadata.bvid);
     return { success: true, limboCount: limboList.length };
   }
   
@@ -62,11 +70,14 @@ onMessage('add-to-limbo', async (message) => {
     sourceUrl: data.sourceUrl,
   };
   
+  const newLimboList = [...limboList, newItem];
   await chrome.storage.local.set({
-    limboList: [...limboList, newItem],
+    limboList: newLimboList,
   });
   
-  return { success: true, limboCount: limboList.length + 1 };
+  console.log('[Background] Video added to limbo. New count:', newLimboList.length);
+  
+  return { success: true, limboCount: newLimboList.length };
 });
 
 onMessage('update-debt', async (message) => {

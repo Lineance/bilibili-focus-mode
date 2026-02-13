@@ -124,7 +124,12 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
       },
       sourceUrl: window.location.href,
     };
+    
+    console.log('[Content] Sending add-to-limbo message:', payload);
+    
     const result = await sendMessage('add-to-limbo', payload as { [key: string]: string | number | boolean | null | { [key: string]: string | number | boolean | null } }) as { success: boolean; limboCount: number };
+    
+    console.log('[Content] Received response:', result);
 
     if (result.success) {
       alert('已加入待审池！');

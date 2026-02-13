@@ -1,55 +1,36 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
+import type { ExtensionStorage } from '@core/types';
+import { DEFAULT_STORAGE } from '@core/constants';
 
-type StorageChangeCallback = () => void;
+export function useStorage(): ExtensionStorage {
+  const [storage, setStorage] = useState<ExtensionStorage>(DEFAULT_STORAGE);
 
-class ChromeStorageAdapter {
-  private listeners = new Map<string, Set<StorageChangeCallback>>();
-
-  constructor() {
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName === 'local') {
-        Object.keys(changes).forEach((key) => {
-          this.notify(key);
-        });
+  useEffect(() => {
+    // Load initial value
+    chrome.storage.local.get().then((result) => {
+      if (Object.keys(result).length > 0) {
+        setStorage(result as ExtensionStorage);
       }
     });
-  }
 
-  async get<T>(key: string): Promise<T | undefined> {
-    const result = await chrome.storage.local.get(key);
-    return result[key] as T;
-  }
+    // Listen for changes
+    const handleChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName === 'local') {
+        setStorage((prev) => ({
+          ...prev,
+          ...Object.fromEntries(
+            Object.entries(changes).map(([key, change]) => [key, change.newValue])
+          ),
+        }));
+      }
+    };
 
-  async set<T>(key: string, value: T): Promise<void> {
-    await chrome.storage.local.set({ [key]: value });
-  }
-
-  subscribe(key: string, callback: StorageChangeCallback): () => void {
-    if (!this.listeners.has(key)) {
-      this.listeners.set(key, new Set());
-    }
-    this.listeners.get(key)!.add(callback);
+    chrome.storage.onChanged.addListener(handleChange);
 
     return () => {
-      this.listeners.get(key)?.delete(callback);
+      chrome.storage.onChanged.removeListener(handleChange);
     };
-  }
+  }, []);
 
-  private notify(key: string): void {
-    this.listeners.get(key)?.forEach((callback) => callback());
-  }
-}
-
-export const storage = new ChromeStorageAdapter();
-
-export function useStorage<T>(key: string, defaultValue: T): T {
-  return useSyncExternalStore(
-    (callback) => storage.subscribe(key, callback),
-    () => {
-      // This is a synchronous snapshot, but storage is async
-      // We return defaultValue and let React re-render when data loads
-      return defaultValue;
-    },
-    () => defaultValue
-  );
+  return storage;
 }

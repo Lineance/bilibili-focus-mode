@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useStorage } from '@hooks/useStorage';
-import type { LimboItem, ExtensionStorage } from '@core/types';
-import { DEFAULT_STORAGE } from '@core/constants';
+import type { LimboItem } from '@core/types';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'limbo' | 'cooling' | 'instant' | 'permanent' | 'ghost' | 'debt'>('limbo');
-  const storage = useStorage<ExtensionStorage>('version', DEFAULT_STORAGE);
+  const storage = useStorage();
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
@@ -52,9 +51,26 @@ export function App() {
 }
 
 function LimboReview({ items }: { items: readonly LimboItem[] }) {
+  const handleClear = async () => {
+    if (confirm('确定要清空待审池吗？')) {
+      await chrome.storage.local.set({ limboList: [] });
+      alert('待审池已清空');
+    }
+  };
+
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-4">待审池 ({items.length}/5)</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">待审池 ({items.length}/5)</h2>
+        {items.length > 0 && (
+          <button 
+            onClick={handleClear}
+            className="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-700"
+          >
+            清空待审池
+          </button>
+        )}
+      </div>
       {items.length === 0 ? (
         <p className="text-gray-500">待审池为空，在B站播放页添加视频</p>
       ) : (
