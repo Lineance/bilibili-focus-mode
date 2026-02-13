@@ -79,24 +79,32 @@ function showBlockOverlay(metadata: VideoMetadata, reason: string): void {
     e.preventDefault();
     e.stopPropagation();
     console.log('[Bilibili Focus Mode] Opening manager page...');
+    
+    const optionsUrl = chrome.runtime.getURL('src/manager/index.html');
+    
+    // Check if extension context is valid
+    if (!chrome.runtime?.id) {
+      console.error('[Bilibili Focus Mode] Extension context invalidated');
+      alert('扩展已失效，请刷新页面或重新加载扩展');
+      return;
+    }
+    
     try {
-      // Content script cannot use chrome.runtime.openOptionsPage
-      // Use chrome.tabs.create instead via background script or open directly
-      const optionsUrl = chrome.runtime.getURL('src/manager/index.html');
-      console.log('[Bilibili Focus Mode] Options URL:', optionsUrl);
-      
       // Try to use background script to open tab
       chrome.runtime.sendMessage({ action: 'openOptionsPage' }, (response) => {
-        if (chrome.runtime.lastError || !response?.success) {
-          console.log('[Bilibili Focus Mode] Background open failed, using direct open');
-          // Fallback: open in new tab
+        if (chrome.runtime.lastError) {
+          console.log('[Bilibili Focus Mode] Background open failed:', chrome.runtime.lastError);
+          // Fallback: open in new tab directly
+          window.open(optionsUrl, '_blank');
+        } else if (!response?.success) {
+          console.log('[Bilibili Focus Mode] Background returned failure');
           window.open(optionsUrl, '_blank');
         }
       });
     } catch (error) {
       console.error('[Bilibili Focus Mode] Exception:', error);
       // Final fallback
-      window.open(chrome.runtime.getURL('src/manager/index.html'), '_blank');
+      window.open(optionsUrl, '_blank');
     }
   });
 }
@@ -112,6 +120,13 @@ function getReasonText(reason: string): string {
 }
 
 async function addToLimbo(metadata: VideoMetadata): Promise<void> {
+  // Check if extension context is valid
+  if (!chrome.runtime?.id) {
+    console.error('[Content] Extension context invalidated');
+    alert('扩展已失效，请刷新页面或重新加载扩展');
+    return;
+  }
+
   try {
     const payload = {
       metadata: {
@@ -132,14 +147,26 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
     console.log('[Content] Received response:', result);
 
     if (result.success) {
-      alert('已加入待审池！');
-      document.querySelector('.bilibili-focus-mode-block-overlay')?.remove();
+      alert('已加入待审池！请前往管理页审查');
+      // Keep the block overlay - video should remain blocked until reviewed
+      // Update the overlay to show it's now in limbo
+      const overlay = document.querySelector('.bilibili-focus-mode-block-overlay');
+      if (overlay) {
+        const statusText = overlay.querySelector('p:nth-of-type(3)');
+        if (statusText) {
+          statusText.textContent = '状态: 已加入待审池，请前往管理页审查';
+        }
+      }
     } else {
       alert('待审池已满，请先处理现有项目');
     }
   } catch (error) {
     console.error('[Content] Failed to add to limbo:', error);
-    alert('添加失败，请重试');
+    if (error instanceof Error && error.message.includes('Extension context invalidated')) {
+      alert('扩展已失效，请刷新页面或重新加载扩展');
+    } else {
+      alert('添加失败，请重试');
+    }
   }
 }
 
