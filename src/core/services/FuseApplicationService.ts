@@ -1,4 +1,4 @@
-import type { InstantItem, VideoMetadata, ExtensionConfig, BehaviorLog } from '@core/types';
+import type { InstantItem, VideoMetadata, ExtensionConfig, BehaviorLogState } from '@core/types';
 import { FuseService } from './FuseService';
 import { ExpirationService } from './ExpirationService';
 
@@ -29,7 +29,7 @@ export class FuseApplicationService {
    */
   async applyForFuse(
     metadata: VideoMetadata,
-    behaviorLog: BehaviorLog,
+    behaviorLog: BehaviorLogState,
     isBankruptcy: boolean,
     remainingBankruptcyMinutes: number = 0
   ): Promise<{ success: true; item: InstantItem } | { success: false; reason: string }> {
@@ -68,7 +68,7 @@ export class FuseApplicationService {
     const instantItem = this.expirationService.createInstantItem(metadata, fuseCode);
 
     // Update behavior log
-    const updatedBehaviorLog: BehaviorLog = {
+    const updatedBehaviorLog: BehaviorLogState = {
       ...behaviorLog,
       lastInstantApplication: Date.now(),
       instantApplicationsToday: behaviorLog.instantApplicationsToday + 1,
@@ -164,7 +164,7 @@ export class FuseApplicationService {
     return item?.fuseCode || null;
   }
 
-  private countRecentApplications(behaviorLog: BehaviorLog): number {
+  private countRecentApplications(behaviorLog: BehaviorLogState): number {
     const now = Date.now();
     const oneHourAgo = now - 60 * 60 * 1000;
     

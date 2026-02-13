@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { FuseApplicationService } from './FuseApplicationService';
-import type { ExtensionConfig, VideoMetadata, BehaviorLog } from '@core/types';
+import type { ExtensionConfig, VideoMetadata, BehaviorLogState } from '@core/types';
 import { DEFAULT_CONFIG } from '@core/constants';
 
 // Mock chrome.storage
@@ -34,7 +34,7 @@ describe('FuseApplicationService', () => {
   let service: FuseApplicationService;
   let config: ExtensionConfig;
   let mockVideo: VideoMetadata;
-  let mockBehaviorLog: BehaviorLog;
+  let mockBehaviorLog: BehaviorLogState;
 
   beforeEach(() => {
     // Clear mock storage

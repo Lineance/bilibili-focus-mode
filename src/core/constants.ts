@@ -2,7 +2,7 @@ import type {
   ExtensionConfig,
   ExtensionStorage,
   DebtAccount,
-  BehaviorLog,
+  BehaviorLogState,
   GlobalStats,
 } from '@core/types';
 
@@ -46,7 +46,7 @@ export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {
   bankruptcyEndTime: null,
 };
 
-export const DEFAULT_BEHAVIOR_LOG: BehaviorLog = {
+export const DEFAULT_BEHAVIOR_LOG: BehaviorLogState = {
   lastInstantApplication: 0,
   instantApplicationsToday: 0,
   lastWatchEnd: 0,

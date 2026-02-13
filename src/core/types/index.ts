@@ -46,11 +46,66 @@ export interface DebtAccount {
   bankruptcyEndTime: number | null;
 }
 
-export interface BehaviorLog {
+export interface BehaviorLogState {
   lastInstantApplication: number;
   instantApplicationsToday: number;
   lastWatchEnd: number;
   currentCooldownUntil: number | null;
+}
+
+export interface BehaviorLog {
+  id: string;
+  timestamp: number;
+  action: 
+    | 'video_view'
+    | 'video_start'
+    | 'video_end'
+    | 'video_pause'
+    | 'fuse_applied'
+    | 'fuse_verified'
+    | 'fuse_rejected'
+    | 'cooling_requested'
+    | 'cooling_granted'
+    | 'instant_requested'
+    | 'instant_granted'
+    | 'limbo_added'
+    | 'limbo_removed'
+    | 'limbo_promoted'
+    | 'ghost_created'
+    | 'ghost_resurrected'
+    | 'debt_incurred'
+    | 'debt_repaid'
+    | 'bankruptcy_declared'
+    | 'config_changed'
+    | 'group_created'
+    | 'group_deleted'
+    | 'item_moved';
+  details?: Record<string, unknown>;
+  bvid?: string;
+  groupId?: string;
+}
+
+export interface TimeRange {
+  start: number;
+  end: number;
+}
+
+export interface LogFilter {
+  startTime?: number;
+  endTime?: number;
+  actions?: BehaviorLog['action'][];
+  bvid?: string;
+  groupId?: string;
+  limit?: number;
+}
+
+export interface BehaviorStats {
+  totalViews: number;
+  totalWatchTimeMinutes: number;
+  videosByCategory: Record<string, number>;
+  actionsByType: Record<string, number>;
+  dailyBreakdown: Record<string, { views: number; watchTime: number }>;
+  peakHour: number;
 }
 
 export interface BankruptcyRecord {
@@ -106,7 +161,7 @@ export interface ExtensionStorage {
   instantList: InstantItem[];
   permanentGroups: PermanentGroup[];
   ghostList: GhostItem[];
-  behaviorLog: BehaviorLog;
+  behaviorLog: BehaviorLogState;
   globalStats: GlobalStats;
   debtAccount: DebtAccount;
   config: ExtensionConfig;
