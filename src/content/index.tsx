@@ -156,6 +156,12 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
     return;
   }
 
+  // Show tag selection dialog
+  const tagSelection = await showTagSelectionDialog(metadata);
+  if (!tagSelection) {
+    return; // User cancelled
+  }
+
   try {
     const payload = {
       metadata: {
@@ -163,7 +169,7 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
         title: metadata.title,
         uploader: metadata.uploader,
         coverUrl: metadata.coverUrl,
-        tag: metadata.tag,
+        tag: tagSelection,
         addedAt: metadata.addedAt,
       },
       sourceUrl: window.location.href,
@@ -176,14 +182,15 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
     console.log('[Content] Received response:', result);
 
     if (result.success) {
-      alert('已加入待审池！请前往管理页审查');
+      const tagText = tagSelection === 'LEARNING' ? '学习' : '娱乐';
+      alert(`已加入待审池！标签：${tagText}\n请前往管理页审查`);
       // Keep the block overlay - video should remain blocked until reviewed
       // Update the overlay to show it's now in limbo
       const overlay = document.querySelector('.bilibili-focus-mode-block-overlay');
       if (overlay) {
         const statusText = overlay.querySelector('p:nth-of-type(3)');
         if (statusText) {
-          statusText.textContent = '状态: 已加入待审池，请前往管理页审查';
+          statusText.textContent = `状态: 已加入待审池（${tagText}），请前往管理页审查`;
         }
       }
     } else {
@@ -197,6 +204,73 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
       alert('添加失败，请重试');
     }
   }
+}
+
+// Show tag selection dialog
+function showTagSelectionDialog(metadata: VideoMetadata): Promise<'LEARNING' | 'ENTERTAINMENT' | null> {
+  // Remove existing dialog
+  const existing = document.querySelector('.bfm-tag-dialog');
+  if (existing) existing.remove();
+
+  const dialog = document.createElement('div');
+  dialog.className = 'bfm-tag-dialog';
+  dialog.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+  `;
+  
+  dialog.innerHTML = `
+    <div style="background: #1a1a2e; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%;">
+      <h3 style="margin: 0 0 16px 0; font-size: 18px; color: white;">选择视频类型</h3>
+      <p style="margin: 0 0 20px 0; color: #aaa; font-size: 14px;">${metadata.title}</p>
+      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+        <button id="bfm-tag-learning" style="flex: 1; padding: 12px; background: #10b981; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
+          📚 学习
+        </button>
+        <button id="bfm-tag-entertainment" style="flex: 1; padding: 12px; background: #f59e0b; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
+          🎮 娱乐
+        </button>
+      </div>
+      <button id="bfm-tag-cancel" style="width: 100%; padding: 10px; background: transparent; border: 1px solid #666; border-radius: 8px; color: #aaa; cursor: pointer; font-size: 14px;">
+        取消
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(dialog);
+
+  return new Promise<'LEARNING' | 'ENTERTAINMENT' | null>((resolve) => {
+    dialog.querySelector('#bfm-tag-learning')?.addEventListener('click', () => {
+      dialog.remove();
+      resolve('LEARNING');
+    });
+
+    dialog.querySelector('#bfm-tag-entertainment')?.addEventListener('click', () => {
+      dialog.remove();
+      resolve('ENTERTAINMENT');
+    });
+
+    dialog.querySelector('#bfm-tag-cancel')?.addEventListener('click', () => {
+      dialog.remove();
+      resolve(null);
+    });
+
+    // Close on backdrop click
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        dialog.remove();
+        resolve(null);
+      }
+    });
+  });
 }
 
 // Watch for navigation changes (SPA)

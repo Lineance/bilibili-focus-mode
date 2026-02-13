@@ -213,7 +213,7 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
     setSelected(new Set());
   };
 
-  const handleAction = async (item: LimboItem, action: 'learning' | 'entertainment' | 'cooling') => {
+  const handleAction = async (item: LimboItem, action: 'permanent' | 'cooling' | 'instant') => {
     const storage = await chrome.storage.local.get();
     const limboList = (storage.limboList || []) as LimboItem[];
     const newLimboList = limboList.filter((i) => i.bvid !== item.bvid);
@@ -223,7 +223,7 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
       title: item.title,
       uploader: item.uploader,
       coverUrl: item.coverUrl,
-      tag: action === 'learning' ? 'LEARNING' : 'ENTERTAINMENT',
+      tag: item.tag, // Keep the original tag selected when adding to limbo
       addedAt: Date.now(),
     };
 
@@ -241,6 +241,20 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
         coolingList: [...coolingList, coolingItem],
       });
       alert(`已加入冷静期，将在 ${DEFAULT_CONFIG.coolingCooldownHours} 小时后可用`);
+    } else if (action === 'instant') {
+      const expirationService = new ExpirationService(
+        DEFAULT_CONFIG.coolingCooldownHours,
+        DEFAULT_CONFIG.coolingAvailableHours,
+        DEFAULT_CONFIG.instantDurationHours,
+        DEFAULT_CONFIG.ghostLifespanDays
+      );
+      const instantItem = expirationService.createInstantItem(metadata, ''); // Empty fuse code for now
+      const instantList = (storage.instantList || []) as InstantItem[];
+      await chrome.storage.local.set({
+        limboList: newLimboList,
+        instantList: [...instantList, instantItem],
+      });
+      alert(`已加入即时许可，有效期 ${DEFAULT_CONFIG.instantDurationHours} 小时`);
     } else {
       const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
       let targetGroup = permanentGroups[0];
@@ -260,7 +274,8 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
         limboList: newLimboList,
         permanentGroups,
       });
-      alert(`已加入永久分组${action === 'learning' ? '（学习类）' : '（娱乐类）'}`);
+      const tagText = item.tag === 'LEARNING' ? '学习' : '娱乐';
+      alert(`已加入永久分组（${tagText}）`);
     }
 
     // Remove from selection
@@ -300,24 +315,27 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
                 <div className="flex-1">
                   <h3 className="font-medium mb-1">{item.title}</h3>
                   <p className="text-sm text-gray-400 mb-2">{item.uploader}</p>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    <span className={`px-2 py-1 rounded text-xs ${item.tag === 'LEARNING' ? 'bg-green-600' : 'bg-yellow-600'}`}>
+                      {item.tag === 'LEARNING' ? '📚 学习' : '🎮 娱乐'}
+                    </span>
                     <button
-                      onClick={() => handleAction(item, 'learning')}
-                      className="px-3 py-1 bg-green-600 rounded text-sm hover:bg-green-700"
+                      onClick={() => handleAction(item, 'permanent')}
+                      className="px-3 py-1 bg-purple-600 rounded text-sm hover:bg-purple-700"
                     >
-                      学习
-                    </button>
-                    <button
-                      onClick={() => handleAction(item, 'entertainment')}
-                      className="px-3 py-1 bg-yellow-600 rounded text-sm hover:bg-yellow-700"
-                    >
-                      娱乐
+                      永久
                     </button>
                     <button
                       onClick={() => handleAction(item, 'cooling')}
                       className="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-700"
                     >
                       冷静期
+                    </button>
+                    <button
+                      onClick={() => handleAction(item, 'instant')}
+                      className="px-3 py-1 bg-orange-600 rounded text-sm hover:bg-orange-700"
+                    >
+                      立即
                     </button>
                     <button
                       onClick={() => handleDelete(item.bvid)}
