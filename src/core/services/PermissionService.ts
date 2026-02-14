@@ -25,15 +25,30 @@ export class PermissionService {
    * Check if video can be watched
    * Returns permission result and review window status
    */
-  check(bvid: string): PermissionResult & {
+  check(bvid: string, uploaderName?: string): PermissionResult & {
     inReviewWindow: boolean;
     timeUntilWindow: number;
+    uploaderAllowed?: boolean;
   } {
     try {
       // Check time window status
       const windowStatus = this.timeWindowService.checkTimeWindow();
       const inReviewWindow = windowStatus.isInWindow;
       const timeUntilWindow = windowStatus.timeUntilWindow;
+
+      // Check if uploader is in allowlist
+      if (uploaderName && this.storage.allowedUploaders) {
+        const allowedUploader = this.storage.allowedUploaders.find(u => u.name === uploaderName);
+        if (allowedUploader) {
+          return { 
+            allowed: true, 
+            reason: 'PERMANENT',
+            inReviewWindow,
+            timeUntilWindow,
+            uploaderAllowed: true
+          };
+        }
+      }
 
       // Check Permanent Groups - always allowed once approved
       const inPermanent = this.storage.permanentGroups.some(group =>

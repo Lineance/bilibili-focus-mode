@@ -33,11 +33,11 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 // Message handlers
 onMessage('check-permission', async (message) => {
   const data = message.data as unknown as ProtocolMap['check-permission']['req'];
-  console.log('[Background] Checking permission for:', data.bvid);
+  console.log('[Background] Checking permission for:', data.bvid, 'uploader:', data.uploaderName);
   
   const storage = await chrome.storage.local.get() as typeof DEFAULT_STORAGE;
   const service = new PermissionService(storage);
-  return service.check(data.bvid);
+  return service.check(data.bvid, data.uploaderName);
 });
 
 onMessage('add-to-limbo', async (message) => {

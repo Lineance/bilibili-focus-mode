@@ -72,4 +72,5 @@ export const DEFAULT_STORAGE: ExtensionStorage = {
   globalStats: DEFAULT_GLOBAL_STATS,
   debtAccount: DEFAULT_DEBT_ACCOUNT,
   config: DEFAULT_CONFIG,
+  allowedUploaders: [],
 };

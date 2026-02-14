@@ -108,6 +108,13 @@ export interface BehaviorStats {
   peakHour: number;
 }
 
+export interface AllowedUploader {
+  id: string;
+  name: string;
+  addedAt: number;
+  tag: VideoTag;
+}
+
 export interface BankruptcyRecord {
   timestamp: number;
   debtAtBankruptcy: number;
@@ -165,6 +172,7 @@ export interface ExtensionStorage {
   globalStats: GlobalStats;
   debtAccount: DebtAccount;
   config: ExtensionConfig;
+  allowedUploaders: AllowedUploader[];
 }
 
 export type PermissionResult =

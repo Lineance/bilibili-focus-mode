@@ -67,10 +67,21 @@ async function checkPermission(): Promise<void> {
   currentBvid = metadata.bvid;
 
   try {
-    const result = await sendMessage('check-permission', { bvid: metadata.bvid } as ProtocolMap['check-permission']['req']) as PermissionResult & {
+    const result = await sendMessage('check-permission', { 
+      bvid: metadata.bvid,
+      uploaderName: metadata.uploader 
+    } as ProtocolMap['check-permission']['req']) as PermissionResult & {
       inReviewWindow: boolean;
       timeUntilWindow: number;
+      uploaderAllowed?: boolean;
     };
+    
+    // Check if uploader is in allowlist
+    if (result.uploaderAllowed) {
+      console.log('[Content] Uploader is in allowlist, allowing video');
+      removeBlock();
+      return;
+    }
     
     if (!result.allowed) {
       // Video is not approved - show block overlay

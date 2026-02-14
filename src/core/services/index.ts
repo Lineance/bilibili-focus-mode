@@ -10,3 +10,4 @@ export * from './BehaviorLoggingService';
 export * from './VisualDecayService';
 export * from './FuseApplicationService';
 export * from './DebtTracker';
+export * from './UploaderAllowlistService';
