@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useStorage } from '@hooks/useStorage';
-import type { LimboItem, VideoMetadata, CoolingItem, InstantItem, PermanentGroup, GhostItem } from '@core/types';
-import { ExpirationService } from '@core/services';
+import type { LimboItem, VideoMetadata, CoolingItem, InstantItem, PermanentGroup, GhostItem, ExtensionConfig } from '@core/types';
+import { ExpirationService, ConfigService } from '@core/services';
 import { DEFAULT_CONFIG } from '@core/constants';
 
 // Video cover component with fallback
@@ -29,7 +29,7 @@ function VideoCover({ url, title, small = false }: { url: string; title: string;
 }
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<'limbo' | 'cooling' | 'instant' | 'permanent' | 'ghost' | 'debt'>('limbo');
+  const [activeTab, setActiveTab] = useState<'limbo' | 'cooling' | 'instant' | 'permanent' | 'ghost' | 'debt' | 'config'>('limbo');
   const storage = useStorage();
 
   return (
@@ -39,7 +39,7 @@ export function App() {
         <p className="text-gray-400">意图性娱乐时间管理工具</p>
       </header>
 
-      <nav className="flex gap-4 mb-6 border-b border-gray-700 pb-4">
+      <nav className="flex gap-4 mb-6 border-b border-gray-700 pb-4 flex-wrap">
         {[
           { id: 'limbo', label: '待审池', count: storage.limboList?.length || 0 },
           { id: 'cooling', label: '冷静期', count: storage.coolingList?.length || 0 },
@@ -47,6 +47,7 @@ export function App() {
           { id: 'permanent', label: '永久分组', count: storage.permanentGroups?.length || 0 },
           { id: 'ghost', label: '幽灵档案', count: storage.ghostList?.length || 0 },
           { id: 'debt', label: '债务', count: null },
+          { id: 'config', label: '配置', count: null },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -74,6 +75,7 @@ export function App() {
         {activeTab === 'permanent' && <PermanentGroups groups={storage.permanentGroups || []} />}
         {activeTab === 'ghost' && <GhostList items={storage.ghostList || []} />}
         {activeTab === 'debt' && <DebtDashboard account={storage.debtAccount} />}
+        {activeTab === 'config' && <ConfigPanel />}
       </main>
     </div>
   );
@@ -911,6 +913,307 @@ function DebtDashboard({ account }: { account?: { currentDebt: number } }) {
             ? '债务较高，建议观看学习类视频偿还'
             : '债务状况良好'}
         </p>
+      </div>
+    </div>
+  );
+}
+
+// Configuration Panel Component
+function ConfigPanel() {
+  const [config, setConfig] = useState<ExtensionConfig>(DEFAULT_CONFIG);
+  const [saved, setSaved] = useState(false);
+  const configService = new ConfigService();
+
+  // Load config on mount
+  useState(() => {
+    const loadConfig = async () => {
+      const loaded = await configService.loadConfig();
+      setConfig(loaded);
+    };
+    loadConfig();
+  });
+
+  const handleSave = async () => {
+    const result = await configService.saveConfig(config);
+    if (result.success) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } else {
+      alert('保存失败: ' + result.errors?.map(e => e.message).join(', '));
+    }
+  };
+
+  const handleReset = async () => {
+    if (confirm('确定要重置为默认配置吗？')) {
+      await configService.resetToDefaults();
+      const defaultConfig = await configService.loadConfig();
+      setConfig(defaultConfig);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
+  };
+
+  const descriptions = configService.getConfigDescriptions();
+
+  const updateConfig = (field: keyof ExtensionConfig, value: unknown) => {
+    setConfig(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">配置</h2>
+        <div className="flex gap-2">
+          {saved && (
+            <span className="px-3 py-1 bg-green-600 rounded text-sm">
+              ✓ 已保存
+            </span>
+          )}
+          <button
+            onClick={handleReset}
+            className="px-3 py-1 bg-gray-600 rounded text-sm hover:bg-gray-700"
+          >
+            重置默认
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-700"
+          >
+            保存配置
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-4">
+        {/* Time Window Settings */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h3 className="text-lg font-medium mb-3">⏰ 时间窗口</h3>
+          <div className="space-y-3">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={config.timeWindowEnabled}
+                onChange={(e) => updateConfig('timeWindowEnabled', e.target.checked)}
+                className="w-4 h-4 rounded"
+              />
+              <span>{descriptions.timeWindowEnabled.label}</span>
+            </label>
+            
+            {config.timeWindowEnabled && (
+              <div className="grid grid-cols-2 gap-4 ml-6">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">
+                    {descriptions.windowStart.label}
+                  </label>
+                  <input
+                    type="time"
+                    value={config.windowStart}
+                    onChange={(e) => updateConfig('windowStart', e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-700 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">
+                    {descriptions.windowEnd.label}
+                  </label>
+                  <input
+                    type="time"
+                    value={config.windowEnd}
+                    onChange={(e) => updateConfig('windowEnd', e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-700 rounded"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Cooling Settings */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h3 className="text-lg font-medium mb-3">❄️ 冷静期</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.coolingCooldownHours.label}
+              </label>
+              <input
+                type="number"
+                value={config.coolingCooldownHours}
+                onChange={(e) => updateConfig('coolingCooldownHours', parseInt(e.target.value))}
+                min={1}
+                max={168}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+              <p className="text-xs text-gray-500 mt-1">{descriptions.coolingCooldownHours.description}</p>
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.coolingAvailableHours.label}
+              </label>
+              <input
+                type="number"
+                value={config.coolingAvailableHours}
+                onChange={(e) => updateConfig('coolingAvailableHours', parseInt(e.target.value))}
+                min={1}
+                max={168}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+              <p className="text-xs text-gray-500 mt-1">{descriptions.coolingAvailableHours.description}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Instant Settings */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h3 className="text-lg font-medium mb-3">⚡ 即时许可</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.instantDurationHours.label}
+              </label>
+              <input
+                type="number"
+                value={config.instantDurationHours}
+                onChange={(e) => updateConfig('instantDurationHours', parseInt(e.target.value))}
+                min={1}
+                max={24}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
+            <div className="flex items-center">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={config.instantBreakFuse}
+                  onChange={(e) => updateConfig('instantBreakFuse', e.target.checked)}
+                  className="w-4 h-4 rounded"
+                />
+                <span className="text-sm">{descriptions.instantBreakFuse.label}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Fuse Settings */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h3 className="text-lg font-medium mb-3">🔐 熔断码</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.baseFuseLength.label}
+              </label>
+              <input
+                type="number"
+                value={config.baseFuseLength}
+                onChange={(e) => updateConfig('baseFuseLength', parseInt(e.target.value))}
+                min={4}
+                max={16}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.maxFuseLength.label}
+              </label>
+              <input
+                type="number"
+                value={config.maxFuseLength}
+                onChange={(e) => updateConfig('maxFuseLength', parseInt(e.target.value))}
+                min={config.baseFuseLength}
+                max={128}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 mt-3">
+            <input
+              type="checkbox"
+              checked={config.dynamicFuseEnabled}
+              onChange={(e) => updateConfig('dynamicFuseEnabled', e.target.checked)}
+              className="w-4 h-4 rounded"
+            />
+            <span className="text-sm">{descriptions.dynamicFuseEnabled.label}</span>
+          </label>
+        </div>
+
+        {/* Debt Settings */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h3 className="text-lg font-medium mb-3">💰 债务系统</h3>
+          <div className="space-y-3">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={config.debtEnabled}
+                onChange={(e) => updateConfig('debtEnabled', e.target.checked)}
+                className="w-4 h-4 rounded"
+              />
+              <span>{descriptions.debtEnabled.label}</span>
+            </label>
+            
+            {config.debtEnabled && (
+              <div className="grid grid-cols-2 gap-4 ml-6">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">
+                    {descriptions.entertainmentRatio.label}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={config.entertainmentRatio}
+                    onChange={(e) => updateConfig('entertainmentRatio', parseFloat(e.target.value))}
+                    min={0.5}
+                    max={5}
+                    className="w-full px-3 py-2 bg-gray-700 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">
+                    {descriptions.maxDebtMinutes.label}
+                  </label>
+                  <input
+                    type="number"
+                    value={config.maxDebtMinutes}
+                    onChange={(e) => updateConfig('maxDebtMinutes', parseInt(e.target.value))}
+                    min={10}
+                    max={300}
+                    className="w-full px-3 py-2 bg-gray-700 rounded"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Ghost Settings */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h3 className="text-lg font-medium mb-3">👻 幽灵档案</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.ghostLifespanDays.label}
+              </label>
+              <input
+                type="number"
+                value={config.ghostLifespanDays}
+                onChange={(e) => updateConfig('ghostLifespanDays', parseInt(e.target.value))}
+                min={1}
+                max={30}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
+            <div className="flex items-center">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={config.ghostDoublePenalty}
+                  onChange={(e) => updateConfig('ghostDoublePenalty', e.target.checked)}
+                  className="w-4 h-4 rounded"
+                />
+                <span className="text-sm">{descriptions.ghostDoublePenalty.label}</span>
+              </label>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
