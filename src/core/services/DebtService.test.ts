@@ -10,8 +10,6 @@ describe('DebtService', () => {
     service = new DebtService(2.0, -1.0, 60);
     account = {
       currentDebt: 0,
-      totalAccrued: 0,
-      totalRepaid: 0,
       bankruptcyCount: 0,
       bankruptcyEndTime: null,
       totalEntertainmentMinutes: 0,
@@ -36,8 +34,8 @@ describe('DebtService', () => {
       const result = service.updateDebt(account, 10, 'ENTERTAINMENT');
 
       expect(result.currentDebt).toBe(20);
-      expect(result.totalAccrued).toBe(20);
-      expect(result.totalRepaid).toBe(0);
+      expect(result.totalEntertainmentMinutes).toBe(10);
+      expect(result.totalLearningMinutes).toBe(0);
     });
 
     it('should repay debt for learning', () => {
@@ -45,15 +43,15 @@ describe('DebtService', () => {
       const result = service.updateDebt(account, 10, 'LEARNING');
 
       expect(result.currentDebt).toBe(20);
-      expect(result.totalAccrued).toBe(0);
-      expect(result.totalRepaid).toBe(10);
+      expect(result.totalEntertainmentMinutes).toBe(0);
+      expect(result.totalLearningMinutes).toBe(10);
     });
 
     it('should not allow negative debt', () => {
       const result = service.updateDebt(account, 10, 'LEARNING');
 
       expect(result.currentDebt).toBe(0);
-      expect(result.totalRepaid).toBe(0); // No repayment when starting from 0
+      expect(result.totalLearningMinutes).toBe(10);
     });
 
     it('should handle partial repayment', () => {
@@ -61,7 +59,24 @@ describe('DebtService', () => {
       const result = service.updateDebt(account, 10, 'LEARNING');
 
       expect(result.currentDebt).toBe(0);
-      expect(result.totalRepaid).toBe(5);
+      expect(result.totalLearningMinutes).toBe(10);
+    });
+
+    it('should accumulate watch time correctly', () => {
+      // First watch entertainment
+      let result = service.updateDebt(account, 10, 'ENTERTAINMENT');
+      expect(result.totalEntertainmentMinutes).toBe(10);
+      expect(result.totalLearningMinutes).toBe(0);
+
+      // Then watch learning
+      result = service.updateDebt(result, 5, 'LEARNING');
+      expect(result.totalEntertainmentMinutes).toBe(10);
+      expect(result.totalLearningMinutes).toBe(5);
+
+      // Watch more entertainment
+      result = service.updateDebt(result, 15, 'ENTERTAINMENT');
+      expect(result.totalEntertainmentMinutes).toBe(25);
+      expect(result.totalLearningMinutes).toBe(5);
     });
   });
 

@@ -40,8 +40,6 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
 
 export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {
   currentDebt: 0,
-  totalAccrued: 0,
-  totalRepaid: 0,
   bankruptcyCount: 0,
   bankruptcyEndTime: null,
   totalEntertainmentMinutes: 0,

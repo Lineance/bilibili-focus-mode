@@ -120,8 +120,6 @@ describe('Manager App', () => {
   it('should show debt dashboard', () => {
     mockStorage.debtAccount = {
       currentDebt: 30,
-      totalAccrued: 50,
-      totalRepaid: 20,
       bankruptcyCount: 0,
       bankruptcyEndTime: null,
       totalEntertainmentMinutes: 15,
@@ -143,8 +141,6 @@ describe('Manager App', () => {
   it('should show bankruptcy warning', () => {
     mockStorage.debtAccount = {
       currentDebt: 60,
-      totalAccrued: 80,
-      totalRepaid: 20,
       bankruptcyCount: 1,
       bankruptcyEndTime: null,
       totalEntertainmentMinutes: 30,

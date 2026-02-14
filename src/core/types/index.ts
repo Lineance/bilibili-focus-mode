@@ -40,11 +40,9 @@ export interface GhostItem extends VideoMetadata {
 
 export interface DebtAccount {
   currentDebt: number;
-  totalAccrued: number;
-  totalRepaid: number;
   bankruptcyCount: number;
   bankruptcyEndTime: number | null;
-  // Watch time statistics
+  // Watch time statistics (used to calculate debt)
   totalEntertainmentMinutes: number;
   totalLearningMinutes: number;
 }

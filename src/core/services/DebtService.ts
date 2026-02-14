@@ -20,20 +20,16 @@ export class DebtService {
     const rawNewDebt = account.currentDebt + change;
     const newDebt = Math.max(0, rawNewDebt);
     
-    // Calculate actual repayment (can't repay more than existing debt)
-    const actualRepaid = tag === 'LEARNING' 
-      ? Math.min(account.currentDebt, Math.abs(change))
-      : 0;
-    
     return {
       ...account,
       currentDebt: newDebt,
-      totalAccrued: tag === 'ENTERTAINMENT' 
-        ? account.totalAccrued + change 
-        : account.totalAccrued,
-      totalRepaid: tag === 'LEARNING' 
-        ? account.totalRepaid + actualRepaid
-        : account.totalRepaid,
+      // Accumulate watch time based on tag
+      totalEntertainmentMinutes: tag === 'ENTERTAINMENT'
+        ? account.totalEntertainmentMinutes + minutes
+        : account.totalEntertainmentMinutes,
+      totalLearningMinutes: tag === 'LEARNING'
+        ? account.totalLearningMinutes + minutes
+        : account.totalLearningMinutes,
     };
   }
 
