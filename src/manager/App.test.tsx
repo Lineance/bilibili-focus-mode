@@ -124,15 +124,20 @@ describe('Manager App', () => {
       totalRepaid: 20,
       bankruptcyCount: 0,
       bankruptcyEndTime: null,
+      totalEntertainmentMinutes: 15,
+      totalLearningMinutes: 10,
     };
 
     render(<App />);
     
     fireEvent.click(screen.getByText('债务'));
     
-    expect(screen.getByText('30.0 分钟')).toBeTruthy();
-    // 30 minutes shows "债务状况良好" (not > 30 threshold)
+    // Check for debt dashboard title and status
+    expect(screen.getByText('债务仪表盘')).toBeTruthy();
     expect(screen.getByText('债务状况良好')).toBeTruthy();
+    // Check for watch time statistics
+    expect(screen.getByText('娱乐时长')).toBeTruthy();
+    expect(screen.getByText('学习时长')).toBeTruthy();
   });
 
   it('should show bankruptcy warning', () => {
@@ -142,6 +147,8 @@ describe('Manager App', () => {
       totalRepaid: 20,
       bankruptcyCount: 1,
       bankruptcyEndTime: null,
+      totalEntertainmentMinutes: 30,
+      totalLearningMinutes: 5,
     };
 
     render(<App />);

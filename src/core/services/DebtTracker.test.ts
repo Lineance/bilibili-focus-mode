@@ -69,7 +69,8 @@ describe('DebtTracker', () => {
       
       expect(onDebtUpdate).toHaveBeenCalled();
       const lastCall = onDebtUpdate.mock.calls[onDebtUpdate.mock.calls.length - 1][0];
-      expect(lastCall.currentDebt).toBeGreaterThan(0);
+      expect(lastCall.debtChange).toBeGreaterThan(0);
+      expect(lastCall.newDebt).toBeGreaterThan(0);
     });
 
     it('should repay debt for learning videos', () => {
@@ -80,7 +81,8 @@ describe('DebtTracker', () => {
       
       expect(onDebtUpdate).toHaveBeenCalled();
       const lastCall = onDebtUpdate.mock.calls[onDebtUpdate.mock.calls.length - 1][0];
-      expect(lastCall.currentDebt).toBeLessThan(10);
+      expect(lastCall.debtChange).toBeLessThan(0);
+      expect(lastCall.newDebt).toBeLessThan(10);
     });
 
     it('should not allow negative debt', () => {
@@ -90,7 +92,7 @@ describe('DebtTracker', () => {
       vi.advanceTimersByTime(60000);
       
       const lastCall = onDebtUpdate.mock.calls[onDebtUpdate.mock.calls.length - 1][0];
-      expect(lastCall.currentDebt).toBe(0);
+      expect(lastCall.newDebt).toBe(0);
     });
 
     it('should trigger bankruptcy when debt exceeds threshold', () => {
@@ -110,8 +112,10 @@ describe('DebtTracker', () => {
       vi.advanceTimersByTime(60000);
       
       const lastCall = onDebtUpdate.mock.calls[onDebtUpdate.mock.calls.length - 1][0];
-      // 1 minute * 2.0 ratio = 2 minutes debt
-      expect(lastCall.currentDebt).toBeCloseTo(2, 1);
+      // 1 minute * 2.0 ratio = 2 minutes debt change
+      expect(lastCall.debtChange).toBeCloseTo(2, 1);
+      expect(lastCall.entertainmentMinutes).toBeCloseTo(1, 1);
+      expect(lastCall.learningMinutes).toBe(0);
     });
 
     it('should use learning ratio correctly', () => {
@@ -120,8 +124,33 @@ describe('DebtTracker', () => {
       vi.advanceTimersByTime(60000);
       
       const lastCall = onDebtUpdate.mock.calls[onDebtUpdate.mock.calls.length - 1][0];
-      // 10 - (1 minute * 1.0 ratio) = 9 minutes
-      expect(lastCall.currentDebt).toBeCloseTo(9, 1);
+      // 1 minute * -1.0 ratio = -1 minute debt change
+      expect(lastCall.debtChange).toBeCloseTo(-1, 1);
+      expect(lastCall.newDebt).toBeCloseTo(9, 1);
+      expect(lastCall.learningMinutes).toBeCloseTo(1, 1);
+      expect(lastCall.entertainmentMinutes).toBe(0);
+    });
+  });
+
+  describe('watch time tracking', () => {
+    it('should track entertainment watch time', () => {
+      tracker.startWatching('BV1xx', 'ENTERTAINMENT', 0);
+      
+      vi.advanceTimersByTime(60000);
+      
+      const lastCall = onDebtUpdate.mock.calls[onDebtUpdate.mock.calls.length - 1][0];
+      expect(lastCall.entertainmentMinutes).toBeGreaterThan(0);
+      expect(lastCall.learningMinutes).toBe(0);
+    });
+
+    it('should track learning watch time', () => {
+      tracker.startWatching('BV1xx', 'LEARNING', 0);
+      
+      vi.advanceTimersByTime(60000);
+      
+      const lastCall = onDebtUpdate.mock.calls[onDebtUpdate.mock.calls.length - 1][0];
+      expect(lastCall.learningMinutes).toBeGreaterThan(0);
+      expect(lastCall.entertainmentMinutes).toBe(0);
     });
   });
 

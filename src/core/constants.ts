@@ -44,6 +44,8 @@ export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {
   totalRepaid: 0,
   bankruptcyCount: 0,
   bankruptcyEndTime: null,
+  totalEntertainmentMinutes: 0,
+  totalLearningMinutes: 0,
 };
 
 export const DEFAULT_BEHAVIOR_LOG: BehaviorLogState = {

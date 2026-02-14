@@ -1,4 +1,11 @@
-import type { DebtAccount, VideoTag } from '@core/types';
+import type { VideoTag } from '@core/types';
+
+export interface DebtDelta {
+  debtChange: number;
+  newDebt: number;
+  entertainmentMinutes: number;
+  learningMinutes: number;
+}
 
 export interface WatchSession {
   bvid: string;
@@ -11,7 +18,7 @@ export interface WatchSession {
 export class DebtTracker {
   private currentSession: WatchSession | null = null;
   private checkInterval: number | null = null;
-  private readonly onDebtUpdate: (account: DebtAccount) => void;
+  private readonly onDebtUpdate: (delta: DebtDelta) => void;
   private readonly onBankruptcy: () => void;
   private readonly entertainmentRatio: number;
   private readonly learningRepayRatio: number;
@@ -21,10 +28,11 @@ export class DebtTracker {
     entertainmentRatio: number,
     learningRepayRatio: number,
     maxDebtMinutes: number,
-    onDebtUpdate: (account: DebtAccount) => void,
+    onDebtUpdate: (delta: DebtDelta) => void,
     onBankruptcy: () => void
   ) {
     this.entertainmentRatio = entertainmentRatio;
+    // learningRepayRatio should be negative (e.g., -1.0)
     this.learningRepayRatio = learningRepayRatio;
     this.maxDebtMinutes = maxDebtMinutes;
     this.onDebtUpdate = onDebtUpdate;
@@ -75,17 +83,23 @@ export class DebtTracker {
 
     const minutes = this.calculateDebt(this.currentSession);
     const debtChange = this.calculateDebtChange(minutes, this.currentSession.tag);
+
+    // Calculate new debt (cannot go below 0)
     const newDebt = Math.max(0, currentDebt + debtChange);
 
-    const account: DebtAccount = {
-      currentDebt: newDebt,
-      totalAccrued: this.currentSession.tag === 'ENTERTAINMENT' ? debtChange : 0,
-      totalRepaid: this.currentSession.tag === 'LEARNING' ? Math.abs(Math.min(0, debtChange)) : 0,
-      bankruptcyCount: 0,
-      bankruptcyEndTime: null,
+    // Calculate watch time delta based on tag
+    const entertainmentMinutes = this.currentSession.tag === 'ENTERTAINMENT' ? minutes : 0;
+    const learningMinutes = this.currentSession.tag === 'LEARNING' ? minutes : 0;
+
+    // Return delta values - caller is responsible for accumulating
+    const delta: DebtDelta = {
+      debtChange,
+      newDebt,
+      entertainmentMinutes,
+      learningMinutes,
     };
 
-    this.onDebtUpdate(account);
+    this.onDebtUpdate(delta);
 
     // Check bankruptcy
     if (newDebt >= this.maxDebtMinutes) {
@@ -106,8 +120,10 @@ export class DebtTracker {
 
   private calculateDebtChange(minutes: number, tag: VideoTag): number {
     if (tag === 'ENTERTAINMENT') {
+      // Entertainment increases debt (positive)
       return minutes * this.entertainmentRatio;
     } else {
+      // Learning decreases debt (negative ratio)
       return minutes * this.learningRepayRatio;
     }
   }
@@ -130,7 +146,7 @@ export function useDebtTracker(
   entertainmentRatio: number,
   learningRepayRatio: number,
   maxDebtMinutes: number,
-  onDebtUpdate: (account: DebtAccount) => void,
+  onDebtUpdate: (delta: DebtDelta) => void,
   onBankruptcy: () => void
 ) {
   return new DebtTracker(

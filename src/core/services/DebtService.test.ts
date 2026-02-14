@@ -14,6 +14,8 @@ describe('DebtService', () => {
       totalRepaid: 0,
       bankruptcyCount: 0,
       bankruptcyEndTime: null,
+      totalEntertainmentMinutes: 0,
+      totalLearningMinutes: 0,
     };
   });
 

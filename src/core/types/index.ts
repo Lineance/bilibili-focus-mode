@@ -44,6 +44,9 @@ export interface DebtAccount {
   totalRepaid: number;
   bankruptcyCount: number;
   bankruptcyEndTime: number | null;
+  // Watch time statistics
+  totalEntertainmentMinutes: number;
+  totalLearningMinutes: number;
 }
 
 export interface BehaviorLogState {
