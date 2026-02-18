@@ -1694,6 +1694,90 @@ function ConfigPanel() {
             <span className="text-sm">{descriptions.collectionDetectionEnabled.label}</span>
           </label>
         </div>
+
+        {/* Style Simplification Settings */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h3 className="text-lg font-medium mb-3">🎨 样式简化</h3>
+          <div className="space-y-3">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={config.videoPlayerSimplification.enabled}
+                onChange={(e) => updateConfig('videoPlayerSimplification', {
+                  ...config.videoPlayerSimplification,
+                  enabled: e.target.checked
+                })}
+                className="w-4 h-4 rounded"
+              />
+              <span>启用视频播放页样式简化</span>
+            </label>
+
+            {config.videoPlayerSimplification.enabled && (
+              <div className="ml-6 space-y-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={config.videoPlayerSimplification.hideComments}
+                    onChange={(e) => updateConfig('videoPlayerSimplification', {
+                      ...config.videoPlayerSimplification,
+                      hideComments: e.target.checked
+                    })}
+                    className="w-4 h-4 rounded"
+                  />
+                  <span className="text-sm">隐藏评论区</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={config.videoPlayerSimplification.hideRecommendations}
+                    onChange={(e) => updateConfig('videoPlayerSimplification', {
+                      ...config.videoPlayerSimplification,
+                      hideRecommendations: e.target.checked
+                    })}
+                    className="w-4 h-4 rounded"
+                  />
+                  <span className="text-sm">隐藏推荐视频</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={config.videoPlayerSimplification.hideDanmaku}
+                    onChange={(e) => updateConfig('videoPlayerSimplification', {
+                      ...config.videoPlayerSimplification,
+                      hideDanmaku: e.target.checked
+                    })}
+                    className="w-4 h-4 rounded"
+                  />
+                  <span className="text-sm">隐藏弹幕</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={config.videoPlayerSimplification.hideSidebar}
+                    onChange={(e) => updateConfig('videoPlayerSimplification', {
+                      ...config.videoPlayerSimplification,
+                      hideSidebar: e.target.checked
+                    })}
+                    className="w-4 h-4 rounded"
+                  />
+                  <span className="text-sm">隐藏侧边栏</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={config.videoPlayerSimplification.minimalPlayer}
+                    onChange={(e) => updateConfig('videoPlayerSimplification', {
+                      ...config.videoPlayerSimplification,
+                      minimalPlayer: e.target.checked
+                    })}
+                    className="w-4 h-4 rounded"
+                  />
+                  <span className="text-sm">极简播放器模式（保留控制栏）</span>
+                </label>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

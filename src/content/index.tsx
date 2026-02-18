@@ -1,9 +1,13 @@
 import type { ProtocolMap } from '@core/protocol';
 import type { VideoMetadata, VideoTag } from '@core/types';
+import { StyleSimplificationService } from '@core/services';
 import { sendMessage } from 'webext-bridge/content-script';
 import './purify.css';
 
 console.log('[Content] Script loaded');
+
+// Initialize style simplification service
+const styleService = new StyleSimplificationService();
 
 // Track current block state
 let isBlocking = false;
@@ -100,6 +104,19 @@ async function checkPermission(): Promise<void> {
 
     latestConfig = result.config || latestConfig || DEFAULT_CONTENT_CONFIG;
     latestVideoTag = result.videoTag || 'ENTERTAINMENT';
+    
+    // Apply style simplification if enabled
+    if (styleService.isVideoPlayerPage()) {
+      try {
+        const fullConfig = await sendMessage('get-full-config', {}) as { config: { videoPlayerSimplification?: { enabled: boolean; hideComments: boolean; hideRecommendations: boolean; hideDanmaku: boolean; hideSidebar: boolean; minimalPlayer: boolean; } } };
+        if (fullConfig.config?.videoPlayerSimplification?.enabled) {
+          styleService.applyVideoPlayerSimplification(fullConfig.config.videoPlayerSimplification);
+        }
+      } catch (error) {
+        console.log('[Content] Failed to load style simplification config:', error);
+      }
+    }
+    
     setupVideoTracking();
 
     // Check if uploader is in allowlist

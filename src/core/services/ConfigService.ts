@@ -172,7 +172,7 @@ export class ConfigService {
   /**
    * Get configuration description for UI
    */
-  getConfigDescriptions(): Record<keyof ExtensionConfig, { label: string; description: string; type: 'boolean' | 'number' | 'string' | 'time' }> {
+  getConfigDescriptions(): Record<string, { label: string; description: string; type: 'boolean' | 'number' | 'string' | 'time' }> {
     return {
       timeWindowEnabled: {
         label: '启用时间窗口',
@@ -317,6 +317,11 @@ export class ConfigService {
       collectionDetectionEnabled: {
         label: '启用合集检测',
         description: '自动检测并处理合集视频',
+        type: 'boolean',
+      },
+      videoPlayerSimplification: {
+        label: '视频播放页样式简化',
+        description: '简化视频播放页布局，减少干扰元素',
         type: 'boolean',
       },
     };

@@ -310,6 +310,12 @@ onMessage('watch-ended', async (message) => {
   return { success: true, cooldownUntil };
 });
 
+onMessage('get-full-config', async () => {
+  const storage = await chrome.storage.local.get();
+  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  return { config };
+});
+
 chrome.storage.local.get('config').then((storage) => {
   const limboReviewTime = storage.config?.limboReviewTime || DEFAULT_STORAGE.config.limboReviewTime;
   const limboAutoPurgeHours = storage.config?.limboAutoPurgeHours ?? DEFAULT_STORAGE.config.limboAutoPurgeHours;

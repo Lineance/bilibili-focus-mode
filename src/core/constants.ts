@@ -36,6 +36,15 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   dailyCoolingQuota: 0,
   dailyInstantQuota: 0,
   collectionDetectionEnabled: true,
+  // Video player style simplification
+  videoPlayerSimplification: {
+    enabled: false,
+    hideComments: true,
+    hideRecommendations: true,
+    hideDanmaku: true,
+    hideSidebar: true,
+    minimalPlayer: false,
+  },
 };
 
 export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {

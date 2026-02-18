@@ -162,6 +162,15 @@ export interface ExtensionConfig {
   dailyCoolingQuota: number;
   dailyInstantQuota: number;
   collectionDetectionEnabled: boolean;
+  // Video player style simplification
+  videoPlayerSimplification: {
+    enabled: boolean;
+    hideComments: boolean;
+    hideRecommendations: boolean;
+    hideDanmaku: boolean;
+    hideSidebar: boolean;
+    minimalPlayer: boolean;
+  };
 }
 
 export interface ExtensionStorage {

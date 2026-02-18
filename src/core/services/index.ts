@@ -11,3 +11,4 @@ export * from './VisualDecayService';
 export * from './FuseApplicationService';
 export * from './DebtTracker';
 export * from './UploaderAllowlistService';
+export * from './StyleSimplificationService';

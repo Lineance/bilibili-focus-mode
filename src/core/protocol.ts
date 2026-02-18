@@ -49,4 +49,8 @@ export interface ProtocolMap {
     req: { bvid: string; endedAt: number };
     res: { success: boolean; cooldownUntil: number | null };
   };
+  'get-full-config': {
+    req: {};
+    res: { config: ExtensionConfig };
+  };
 }
