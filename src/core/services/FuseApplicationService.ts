@@ -1,6 +1,6 @@
-import type { InstantItem, VideoMetadata, ExtensionConfig, BehaviorLogState } from '@core/types';
-import { FuseService } from './FuseService';
+import type { BehaviorLogState, ExtensionConfig, InstantItem, VideoMetadata } from '@core/types';
 import { ExpirationService } from './ExpirationService';
+import { FuseService } from './FuseService';
 
 export interface FuseApplication {
   bvid: string;
@@ -13,8 +13,10 @@ export interface FuseApplication {
 export class FuseApplicationService {
   private fuseService: FuseService;
   private expirationService: ExpirationService;
+  private config: ExtensionConfig;
 
   constructor(config: ExtensionConfig) {
+    this.config = config;
     this.fuseService = new FuseService(config);
     this.expirationService = new ExpirationService(
       config.coolingCooldownHours,
@@ -33,6 +35,29 @@ export class FuseApplicationService {
     isBankruptcy: boolean,
     remainingBankruptcyMinutes: number = 0
   ): Promise<{ success: true; item: InstantItem } | { success: false; reason: string }> {
+    const normalizedBehaviorLog = this.resetQuotaIfNeeded({
+      ...behaviorLog,
+      lastQuotaResetDate: behaviorLog.lastQuotaResetDate || this.getTodayKey(),
+      coolingApplicationsToday: behaviorLog.coolingApplicationsToday || 0,
+    });
+
+    if (
+      this.config.dailyInstantQuota > 0
+      && normalizedBehaviorLog.instantApplicationsToday >= this.config.dailyInstantQuota
+    ) {
+      return {
+        success: false,
+        reason: '已达到今日即时配额',
+      };
+    }
+
+    if (normalizedBehaviorLog.currentCooldownUntil && Date.now() < normalizedBehaviorLog.currentCooldownUntil) {
+      return {
+        success: false,
+        reason: '冷静期未结束，暂时无法申请',
+      };
+    }
+
     // Check if already has an active instant item
     const storage = await chrome.storage.local.get();
     const existingInstant = (storage.instantList || []).find(
@@ -69,9 +94,9 @@ export class FuseApplicationService {
 
     // Update behavior log
     const updatedBehaviorLog: BehaviorLogState = {
-      ...behaviorLog,
+      ...normalizedBehaviorLog,
       lastInstantApplication: Date.now(),
-      instantApplicationsToday: behaviorLog.instantApplicationsToday + 1,
+      instantApplicationsToday: normalizedBehaviorLog.instantApplicationsToday + 1,
     };
 
     // Save to storage
@@ -95,7 +120,7 @@ export class FuseApplicationService {
   async verifyFuse(bvid: string, inputCode: string): Promise<{ success: boolean; message: string }> {
     const storage = await chrome.storage.local.get();
     const instantList = (storage.instantList || []) as InstantItem[];
-    
+
     const instantItem = instantList.find((item) => item.bvid === bvid);
 
     if (!instantItem) {
@@ -167,12 +192,30 @@ export class FuseApplicationService {
   private countRecentApplications(behaviorLog: BehaviorLogState): number {
     const now = Date.now();
     const oneHourAgo = now - 60 * 60 * 1000;
-    
+
     // If last application was within 1 hour, count it
     if (behaviorLog.lastInstantApplication > oneHourAgo) {
       return behaviorLog.instantApplicationsToday;
     }
-    
+
     return 0;
+  }
+
+  private getTodayKey(): string {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  private resetQuotaIfNeeded(behaviorLog: BehaviorLogState): BehaviorLogState {
+    const today = this.getTodayKey();
+    if (behaviorLog.lastQuotaResetDate === today) {
+      return behaviorLog;
+    }
+
+    return {
+      ...behaviorLog,
+      lastQuotaResetDate: today,
+      instantApplicationsToday: 0,
+      coolingApplicationsToday: 0,
+    };
   }
 }

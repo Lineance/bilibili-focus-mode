@@ -1,5 +1,5 @@
-import type { PermissionResult, ExtensionStorage } from '@core/types';
 import { DEFAULT_STORAGE } from '@core/constants';
+import type { ExtensionStorage, PermissionResult, VideoTag } from '@core/types';
 import { TimeWindowService } from './TimeWindowService';
 
 export class PermissionError extends Error {
@@ -29,8 +29,10 @@ export class PermissionService {
     inReviewWindow: boolean;
     timeUntilWindow: number;
     uploaderAllowed?: boolean;
+    videoTag?: VideoTag;
   } {
     try {
+      const resolvedTag = this.getVideoTag(bvid) || 'ENTERTAINMENT';
       // Check time window status
       const windowStatus = this.timeWindowService.checkTimeWindow();
       const inReviewWindow = windowStatus.isInWindow;
@@ -40,12 +42,13 @@ export class PermissionService {
       if (uploaderName && this.storage.allowedUploaders) {
         const allowedUploader = this.storage.allowedUploaders.find(u => u.name === uploaderName);
         if (allowedUploader) {
-          return { 
-            allowed: true, 
+          return {
+            allowed: true,
             reason: 'PERMANENT',
             inReviewWindow,
             timeUntilWindow,
-            uploaderAllowed: true
+            uploaderAllowed: true,
+            videoTag: allowedUploader.tag
           };
         }
       }
@@ -55,11 +58,12 @@ export class PermissionService {
         group.items.some(item => item.bvid === bvid)
       );
       if (inPermanent) {
-        return { 
-          allowed: true, 
+        return {
+          allowed: true,
           reason: 'PERMANENT',
           inReviewWindow,
-          timeUntilWindow
+          timeUntilWindow,
+          videoTag: resolvedTag
         };
       }
 
@@ -68,11 +72,12 @@ export class PermissionService {
       if (instantItem) {
         const now = Date.now();
         if (now < instantItem.expiresAt) {
-          return { 
-            allowed: true, 
+          return {
+            allowed: true,
             reason: 'INSTANT',
             inReviewWindow,
-            timeUntilWindow
+            timeUntilWindow,
+            videoTag: instantItem.tag
           };
         }
       }
@@ -82,53 +87,77 @@ export class PermissionService {
       if (coolingItem) {
         const now = Date.now();
         if (now < coolingItem.availableAt) {
-          return { 
-            allowed: false, 
+          return {
+            allowed: false,
             reason: 'COOLING_WAITING',
             inReviewWindow,
-            timeUntilWindow
+            timeUntilWindow,
+            videoTag: coolingItem.tag
           };
         } else if (now < coolingItem.expiresAt) {
-          return { 
-            allowed: true, 
+          return {
+            allowed: true,
             reason: 'COOLING_AVAILABLE',
             inReviewWindow,
-            timeUntilWindow
+            timeUntilWindow,
+            videoTag: coolingItem.tag
           };
         } else {
-          return { 
-            allowed: false, 
+          return {
+            allowed: false,
             reason: 'EXPIRED',
             inReviewWindow,
-            timeUntilWindow
+            timeUntilWindow,
+            videoTag: coolingItem.tag
           };
         }
       }
 
       // Check Bankruptcy
-      if (this.storage.debtAccount.bankruptcyEndTime) {
+      if (this.storage.config.debtEnabled && this.storage.debtAccount.bankruptcyEndTime) {
         const now = Date.now();
         if (now < this.storage.debtAccount.bankruptcyEndTime) {
-          return { 
-            allowed: false, 
+          return {
+            allowed: false,
             reason: 'BANKRUPTCY',
             inReviewWindow,
-            timeUntilWindow
+            timeUntilWindow,
+            videoTag: resolvedTag
           };
         }
       }
 
       // No permission - video is in limbo or not processed
-      return { 
-        allowed: false, 
+      return {
+        allowed: false,
         reason: 'NO_PERMISSION',
         inReviewWindow,
-        timeUntilWindow
+        timeUntilWindow,
+        videoTag: resolvedTag
       };
     } catch (error) {
       console.error('[PermissionService]', error);
       throw new PermissionError('Failed to check permission', 'CHECK_FAILED');
     }
+  }
+
+  private getVideoTag(bvid: string): VideoTag | undefined {
+    const fromPermanent = this.storage.permanentGroups
+      .flatMap(group => group.items)
+      .find(item => item.bvid === bvid)?.tag;
+    if (fromPermanent) return fromPermanent;
+
+    const fromInstant = this.storage.instantList.find(item => item.bvid === bvid)?.tag;
+    if (fromInstant) return fromInstant;
+
+    const fromCooling = this.storage.coolingList.find(item => item.bvid === bvid)?.tag;
+    if (fromCooling) return fromCooling;
+
+    const fromLimbo = this.storage.limboList.find(item => item.bvid === bvid)?.tag;
+    if (fromLimbo) return fromLimbo;
+
+    const fromGhost = this.storage.ghostList.find(item => item.bvid === bvid)?.tag;
+    return fromGhost;
   }
 
   /**

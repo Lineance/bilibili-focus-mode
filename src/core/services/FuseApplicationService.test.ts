@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { FuseApplicationService } from './FuseApplicationService';
-import type { ExtensionConfig, VideoMetadata, BehaviorLogState } from '@core/types';
 import { DEFAULT_CONFIG } from '@core/constants';
+import type { BehaviorLogState, ExtensionConfig, VideoMetadata } from '@core/types';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { FuseApplicationService } from './FuseApplicationService';
 
 // Mock chrome.storage
 const mockStorage: Record<string, unknown> = {};
@@ -56,6 +56,8 @@ describe('FuseApplicationService', () => {
     mockBehaviorLog = {
       lastInstantApplication: 0,
       instantApplicationsToday: 0,
+      coolingApplicationsToday: 0,
+      lastQuotaResetDate: new Date().toISOString().slice(0, 10),
       lastWatchEnd: 0,
       currentCooldownUntil: null,
     };

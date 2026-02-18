@@ -1,8 +1,8 @@
 import type {
+  BehaviorLogState,
+  DebtAccount,
   ExtensionConfig,
   ExtensionStorage,
-  DebtAccount,
-  BehaviorLogState,
   GlobalStats,
 } from '@core/types';
 
@@ -49,6 +49,8 @@ export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {
 export const DEFAULT_BEHAVIOR_LOG: BehaviorLogState = {
   lastInstantApplication: 0,
   instantApplicationsToday: 0,
+  coolingApplicationsToday: 0,
+  lastQuotaResetDate: new Date().toISOString().slice(0, 10),
   lastWatchEnd: 0,
   currentCooldownUntil: null,
 };

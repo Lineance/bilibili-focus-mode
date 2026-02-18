@@ -1,6 +1,6 @@
-import { sendMessage } from 'webext-bridge/content-script';
-import type { VideoMetadata, PermissionResult } from '@core/types';
 import type { ProtocolMap } from '@core/protocol';
+import type { VideoMetadata, VideoTag } from '@core/types';
+import { sendMessage } from 'webext-bridge/content-script';
 import './purify.css';
 
 console.log('[Content] Script loaded');
@@ -8,16 +8,41 @@ console.log('[Content] Script loaded');
 // Track current block state
 let isBlocking = false;
 let currentBvid: string | null = null;
+let latestConfig: ProtocolMap['check-permission']['res']['config'] | null = null;
+let latestVideoTag: VideoTag = 'ENTERTAINMENT';
+let trackedVideo: HTMLVideoElement | null = null;
+let watchIntervalId: number | null = null;
+let lastWatchTick = 0;
+
+const DEFAULT_CONTENT_CONFIG: NonNullable<ProtocolMap['check-permission']['res']['config']> = {
+  debtEnabled: true,
+  entertainmentRatio: 2.0,
+  learningRepayRatio: -1.0,
+  maxDebtMinutes: 60,
+  bankruptcyLockHours: 24,
+  postWatchCooldownMinutes: 5,
+  instantBreakFuse: true,
+  collectionDetectionEnabled: true,
+};
 
 // Extract video metadata from page
-function extractVideoMetadata(): VideoMetadata | null {
+function extractVideoMetadata(collectionDetectionEnabled: boolean): VideoMetadata | null {
   const bvidMatch = window.location.pathname.match(/\/video\/(BV\w+)/);
   if (!bvidMatch) return null;
 
   const bvid = bvidMatch[1];
   const titleEl = document.querySelector('h1.video-title, .video-title, h1.title');
   const uploaderEl = document.querySelector('.up-name, .username, .up-info__name, a.up-name');
-  
+
+  let titleText = titleEl?.textContent?.trim().slice(0, 50) || 'Unknown';
+
+  if (collectionDetectionEnabled) {
+    const collectionTitleEl = document.querySelector('.video-collection-title, .collection-title, .multi-page-title');
+    if (collectionTitleEl?.textContent) {
+      titleText = collectionTitleEl.textContent.trim().slice(0, 50);
+    }
+  }
+
   // Try multiple selectors for cover image
   let coverUrl = '';
   const coverSelectors = [
@@ -29,7 +54,7 @@ function extractVideoMetadata(): VideoMetadata | null {
     '.cover img',
     'meta[property="og:image"]',
   ];
-  
+
   for (const selector of coverSelectors) {
     const el = document.querySelector(selector);
     if (el) {
@@ -41,14 +66,14 @@ function extractVideoMetadata(): VideoMetadata | null {
       if (coverUrl) break;
     }
   }
-  
+
   if (!coverUrl && bvid) {
     coverUrl = `https://i0.hdslb.com/bfs/archive/${bvid}.jpg`;
   }
 
   return {
     bvid,
-    title: titleEl?.textContent?.trim().slice(0, 50) || 'Unknown',
+    title: titleText,
     uploader: uploaderEl?.textContent?.trim() || 'Unknown',
     coverUrl,
     tag: 'ENTERTAINMENT',
@@ -58,7 +83,8 @@ function extractVideoMetadata(): VideoMetadata | null {
 
 // Check permission and apply block if needed
 async function checkPermission(): Promise<void> {
-  const metadata = extractVideoMetadata();
+  const configForExtraction = latestConfig || DEFAULT_CONTENT_CONFIG;
+  const metadata = extractVideoMetadata(configForExtraction.collectionDetectionEnabled);
   if (!metadata) {
     removeBlock();
     return;
@@ -67,28 +93,33 @@ async function checkPermission(): Promise<void> {
   currentBvid = metadata.bvid;
 
   try {
-    const result = await sendMessage('check-permission', { 
+    const result = await sendMessage('check-permission', {
       bvid: metadata.bvid,
-      uploaderName: metadata.uploader 
-    } as ProtocolMap['check-permission']['req']) as PermissionResult & {
-      inReviewWindow: boolean;
-      timeUntilWindow: number;
-      uploaderAllowed?: boolean;
-    };
-    
+      uploaderName: metadata.uploader
+    } as ProtocolMap['check-permission']['req']) as ProtocolMap['check-permission']['res'];
+
+    latestConfig = result.config || latestConfig || DEFAULT_CONTENT_CONFIG;
+    latestVideoTag = result.videoTag || 'ENTERTAINMENT';
+    setupVideoTracking();
+
     // Check if uploader is in allowlist
     if (result.uploaderAllowed) {
       console.log('[Content] Uploader is in allowlist, allowing video');
       removeBlock();
       return;
     }
-    
+
     if (!result.allowed) {
       // Video is not approved - show block overlay
       // Check if it's outside review window (for messaging purposes)
+      const allowFuseOutsideWindow = Boolean(latestConfig?.instantBreakFuse);
+      const inReviewWindow = Boolean(result.inReviewWindow);
       showBlockOverlay(metadata, result.reason, {
-        inReviewWindow: result.inReviewWindow,
-        timeUntilWindow: result.timeUntilWindow
+        inReviewWindow,
+        timeUntilWindow: result.timeUntilWindow || 0,
+      }, {
+        allowFuse: inReviewWindow || allowFuseOutsideWindow,
+        isBankruptcy: result.reason === 'BANKRUPTCY',
       });
     } else {
       // Video is approved - remove block
@@ -154,9 +185,10 @@ function removeBlock(): void {
 
 // Show block overlay
 function showBlockOverlay(
-  metadata: VideoMetadata, 
+  metadata: VideoMetadata,
   reason: string,
-  windowInfo: { inReviewWindow: boolean; timeUntilWindow: number }
+  windowInfo: { inReviewWindow: boolean; timeUntilWindow: number },
+  fuseInfo: { allowFuse: boolean; isBankruptcy: boolean }
 ): void {
   applyHardBlock();
 
@@ -169,7 +201,7 @@ function showBlockOverlay(
 
   const overlay = document.createElement('div');
   overlay.className = 'bilibili-focus-mode-block-overlay';
-  
+
   // Different UI based on whether we're in review window or not
   if (isOutsideWindow) {
     // Outside review window - can only use fuse or add to limbo
@@ -192,9 +224,10 @@ function showBlockOverlay(
           <button id="bfm-add-limbo" style="padding: 10px 20px; background: #00aeec; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
             加入待审池
           </button>
-          <button id="bfm-use-fuse" style="padding: 10px 20px; background: #f59e0b; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
-            使用熔断码
-          </button>
+          ${fuseInfo.allowFuse
+        ? '<button id="bfm-use-fuse" style="padding: 10px 20px; background: #f59e0b; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">使用熔断码</button>'
+        : '<span style="padding: 10px 20px; border: 1px solid #666; border-radius: 6px; color: #777; font-size: 14px;">熔断码已禁用</span>'
+      }
           <button id="bfm-open-manager" style="padding: 10px 20px; background: transparent; border: 1px solid white; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
             打开管理页
           </button>
@@ -240,7 +273,7 @@ function showBlockOverlay(
   });
 
   overlay.querySelector('#bfm-use-fuse')?.addEventListener('click', () => {
-    showFuseInputDialog(metadata);
+    showFuseInputDialog(metadata, fuseInfo.isBankruptcy);
   });
 
   overlay.querySelector('#bfm-open-manager')?.addEventListener('click', (e) => {
@@ -251,7 +284,7 @@ function showBlockOverlay(
 }
 
 // Show fuse code input dialog
-async function showFuseInputDialog(metadata: VideoMetadata): Promise<void> {
+async function showFuseInputDialog(metadata: VideoMetadata, isBankruptcy: boolean): Promise<void> {
   // Remove existing dialog
   const existing = document.querySelector('.bfm-fuse-dialog');
   if (existing) existing.remove();
@@ -270,7 +303,7 @@ async function showFuseInputDialog(metadata: VideoMetadata): Promise<void> {
     justify-content: center;
     z-index: 9999999;
   `;
-  
+
   dialog.innerHTML = `
     <div style="background: #1a1a2e; padding: 24px; border-radius: 12px; max-width: 450px; width: 90%;">
       <h3 style="margin: 0 0 16px 0; font-size: 18px; color: white;">输入熔断码</h3>
@@ -290,6 +323,11 @@ async function showFuseInputDialog(metadata: VideoMetadata): Promise<void> {
         熔断码错误，请检查后重试
       </div>
       
+      <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+        <button id="bfm-fuse-apply" style="flex: 1; padding: 10px; background: #2563eb; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
+          申请熔断码
+        </button>
+      </div>
       <div style="display: flex; gap: 12px;">
         <button id="bfm-fuse-cancel" style="flex: 1; padding: 12px; background: transparent; border: 1px solid #666; border-radius: 8px; color: #aaa; cursor: pointer; font-size: 14px;">
           取消
@@ -305,7 +343,7 @@ async function showFuseInputDialog(metadata: VideoMetadata): Promise<void> {
 
   const input = dialog.querySelector('#bfm-fuse-input') as HTMLInputElement;
   const errorDiv = dialog.querySelector('#bfm-fuse-error') as HTMLDivElement;
-  
+
   input.focus();
 
   return new Promise((resolve) => {
@@ -316,14 +354,45 @@ async function showFuseInputDialog(metadata: VideoMetadata): Promise<void> {
 
     dialog.querySelector('#bfm-fuse-cancel')?.addEventListener('click', closeDialog);
 
+    dialog.querySelector('#bfm-fuse-apply')?.addEventListener('click', async () => {
+      try {
+        const response = await sendMessage('apply-fuse', {
+          metadata: {
+            bvid: metadata.bvid,
+            title: metadata.title,
+            uploader: metadata.uploader,
+            coverUrl: metadata.coverUrl,
+            tag: metadata.tag,
+            addedAt: metadata.addedAt,
+          },
+          isBankruptcy,
+        } as ProtocolMap['apply-fuse']['req']) as ProtocolMap['apply-fuse']['res'];
+
+        if (!response.success || !response.fuseCode) {
+          errorDiv.style.display = 'block';
+          errorDiv.textContent = response.message || '申请失败';
+          return;
+        }
+
+        input.value = response.fuseCode;
+        errorDiv.style.display = 'block';
+        errorDiv.style.color = '#10b981';
+        errorDiv.textContent = '熔断码已生成，请确认使用';
+      } catch (error) {
+        console.error('[Content] Failed to apply fuse:', error);
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = '申请失败，请重试';
+      }
+    });
+
     dialog.querySelector('#bfm-fuse-submit')?.addEventListener('click', async () => {
       const fuseCode = input.value.trim().toUpperCase();
       if (!fuseCode) return;
 
       try {
-        const result = await sendMessage('verify-fuse', { 
-          bvid: metadata.bvid, 
-          fuseCode 
+        const result = await sendMessage('verify-fuse', {
+          bvid: metadata.bvid,
+          fuseCode
         } as ProtocolMap['verify-fuse']['req']) as { success: boolean; message: string };
 
         if (result.success) {
@@ -332,11 +401,13 @@ async function showFuseInputDialog(metadata: VideoMetadata): Promise<void> {
           alert('熔断码验证成功！可以观看视频（已记录债务）');
         } else {
           errorDiv.style.display = 'block';
+          errorDiv.style.color = '#ef4444';
           errorDiv.textContent = result.message || '熔断码错误';
         }
       } catch (error) {
         console.error('[Content] Failed to verify fuse:', error);
         errorDiv.style.display = 'block';
+        errorDiv.style.color = '#ef4444';
         errorDiv.textContent = '验证失败，请重试';
       }
     });
@@ -361,7 +432,7 @@ async function showFuseInputDialog(metadata: VideoMetadata): Promise<void> {
 function formatTime(ms: number): string {
   const hours = Math.floor(ms / (1000 * 60 * 60));
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-  
+
   if (hours > 0) {
     return `${hours}小时${minutes}分钟`;
   }
@@ -400,13 +471,13 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
       },
       sourceUrl: window.location.href,
     };
-    
+
     const result = await sendMessage('add-to-limbo', payload as { [key: string]: string | number | boolean | null | { [key: string]: string | number | boolean | null } }) as { success: boolean; limboCount: number };
 
     if (result.success) {
       const tagText = tagSelection === 'LEARNING' ? '学习' : '娱乐';
       alert(`已加入待审池！标签：${tagText}\n请在审批时间前往管理页处理`);
-      
+
       const overlay = document.querySelector('.bilibili-focus-mode-block-overlay');
       if (overlay) {
         const statusText = overlay.querySelector('p:nth-of-type(3)');
@@ -441,7 +512,7 @@ function showTagSelectionDialog(metadata: VideoMetadata): Promise<'LEARNING' | '
     justify-content: center;
     z-index: 9999999;
   `;
-  
+
   dialog.innerHTML = `
     <div style="background: #1a1a2e; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%;">
       <h3 style="margin: 0 0 16px 0; font-size: 18px; color: white;">选择视频类型</h3>
@@ -489,15 +560,15 @@ function showTagSelectionDialog(metadata: VideoMetadata): Promise<'LEARNING' | '
 
 function openManagerPage(): void {
   console.log('[Bilibili Focus Mode] Opening manager page...');
-  
+
   const optionsUrl = chrome.runtime.getURL('src/manager/index.html');
-  
+
   if (!chrome.runtime?.id) {
     console.error('[Bilibili Focus Mode] Extension context invalidated');
     alert('扩展已失效，请刷新页面或重新加载扩展');
     return;
   }
-  
+
   try {
     chrome.runtime.sendMessage({ action: 'openOptionsPage' }, (response) => {
       if (chrome.runtime.lastError) {
@@ -537,3 +608,71 @@ setInterval(() => {
     checkPermission();
   }
 }, 60000); // Check every minute
+
+function setupVideoTracking(): void {
+  const video = document.querySelector('video');
+  if (!video || video === trackedVideo) return;
+
+  if (trackedVideo) {
+    trackedVideo.removeEventListener('play', handlePlay);
+    trackedVideo.removeEventListener('pause', handlePause);
+    trackedVideo.removeEventListener('ended', handleEnded);
+  }
+
+  trackedVideo = video;
+  trackedVideo.addEventListener('play', handlePlay);
+  trackedVideo.addEventListener('pause', handlePause);
+  trackedVideo.addEventListener('ended', handleEnded);
+}
+
+function handlePlay(): void {
+  if (!latestConfig?.debtEnabled) return;
+  startWatchTimer();
+}
+
+function handlePause(): void {
+  stopWatchTimer(true);
+}
+
+function handleEnded(): void {
+  stopWatchTimer(true);
+  if (!currentBvid) return;
+  sendMessage('watch-ended', {
+    bvid: currentBvid,
+    endedAt: Date.now(),
+  } as ProtocolMap['watch-ended']['req']).catch((error) => {
+    console.error('[Content] Failed to report watch end:', error);
+  });
+}
+
+function startWatchTimer(): void {
+  if (watchIntervalId) return;
+  lastWatchTick = Date.now();
+  watchIntervalId = window.setInterval(() => {
+    sendDebtDelta();
+  }, 60000);
+}
+
+function stopWatchTimer(sendFinal: boolean): void {
+  if (!watchIntervalId) return;
+  clearInterval(watchIntervalId);
+  watchIntervalId = null;
+  if (sendFinal) {
+    sendDebtDelta();
+  }
+}
+
+function sendDebtDelta(): void {
+  if (!latestConfig?.debtEnabled) return;
+  const now = Date.now();
+  const minutes = (now - lastWatchTick) / 60000;
+  if (minutes <= 0) return;
+  lastWatchTick = now;
+
+  sendMessage('update-debt', {
+    minutes,
+    tag: latestVideoTag,
+  } as ProtocolMap['update-debt']['req']).catch((error) => {
+    console.error('[Content] Failed to update debt:', error);
+  });
+}

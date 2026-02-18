@@ -1,4 +1,4 @@
-import type { VideoMetadata, PermissionResult } from '@core/types';
+import type { ExtensionConfig, PermissionResult, VideoMetadata, VideoTag } from '@core/types';
 
 export interface ProtocolMap {
   'check-permission': {
@@ -7,6 +7,18 @@ export interface ProtocolMap {
       inReviewWindow?: boolean;
       timeUntilWindow?: number;
       uploaderAllowed?: boolean;
+      videoTag?: VideoTag;
+      config?: Pick<
+        ExtensionConfig,
+        | 'debtEnabled'
+        | 'entertainmentRatio'
+        | 'learningRepayRatio'
+        | 'maxDebtMinutes'
+        | 'bankruptcyLockHours'
+        | 'postWatchCooldownMinutes'
+        | 'instantBreakFuse'
+        | 'collectionDetectionEnabled'
+      >;
     };
   };
   'add-to-limbo': {
@@ -14,8 +26,8 @@ export interface ProtocolMap {
     res: { success: boolean; limboCount: number };
   };
   'update-debt': {
-    req: { minutes: number; type: 'accrue' | 'repay' };
-    res: { currentDebt: number };
+    req: { minutes: number; tag: VideoTag };
+    res: { currentDebt: number; bankruptcyEndTime: number | null };
   };
   'get-storage': {
     req: { key: string };
@@ -28,5 +40,13 @@ export interface ProtocolMap {
   'verify-fuse': {
     req: { bvid: string; fuseCode: string };
     res: { success: boolean; message: string };
+  };
+  'apply-fuse': {
+    req: { metadata: { bvid: string; title: string; uploader: string; coverUrl: string; tag: VideoTag; addedAt: number }; isBankruptcy: boolean; remainingBankruptcyMinutes?: number };
+    res: { success: boolean; message: string; fuseCode?: string; expiresAt?: number };
+  };
+  'watch-ended': {
+    req: { bvid: string; endedAt: number };
+    res: { success: boolean; cooldownUntil: number | null };
   };
 }

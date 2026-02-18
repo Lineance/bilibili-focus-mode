@@ -1,14 +1,14 @@
-import { useState } from 'react';
+import { DEFAULT_CONFIG, DEFAULT_BEHAVIOR_LOG } from '@core/constants';
+import { ConfigService, ExpirationService, GhostResurrectionService } from '@core/services';
+import type { CoolingItem, ExtensionConfig, GhostItem, InstantItem, LimboItem, PermanentGroup, VideoMetadata } from '@core/types';
 import { useStorage } from '@hooks/useStorage';
-import type { LimboItem, VideoMetadata, CoolingItem, InstantItem, PermanentGroup, GhostItem, ExtensionConfig } from '@core/types';
-import { ExpirationService, ConfigService } from '@core/services';
-import { DEFAULT_CONFIG } from '@core/constants';
+import { useEffect, useState } from 'react';
 
 // Video cover component with fallback
 function VideoCover({ url, title, small = false }: { url: string; title: string; small?: boolean }) {
   const [error, setError] = useState(false);
   const sizeClass = small ? 'w-20 h-12' : 'w-32 h-20';
-  
+
   if (error || !url) {
     return (
       <div className={`${sizeClass} bg-gray-700 rounded flex items-center justify-center text-xs text-gray-400`}>
@@ -16,7 +16,7 @@ function VideoCover({ url, title, small = false }: { url: string; title: string;
       </div>
     );
   }
-  
+
   return (
     <img
       src={url}
@@ -53,11 +53,10 @@ export function App() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as typeof activeTab)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              activeTab === tab.id
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-            }`}
+            className={`px-4 py-2 rounded-lg transition-colors ${activeTab === tab.id
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+              }`}
           >
             {tab.label}
             {tab.count !== null && (
@@ -70,12 +69,12 @@ export function App() {
       </nav>
 
       <main>
-        {activeTab === 'limbo' && <LimboReview items={storage.limboList || []} />}
+        {activeTab === 'limbo' && <LimboReview items={storage.limboList || []} config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'cooling' && <CoolingList items={storage.coolingList || []} />}
         {activeTab === 'instant' && <InstantList items={storage.instantList || []} />}
         {activeTab === 'permanent' && <PermanentGroups groups={storage.permanentGroups || []} />}
-        {activeTab === 'ghost' && <GhostList items={storage.ghostList || []} />}
-        {activeTab === 'debt' && <DebtDashboard account={storage.debtAccount} />}
+        {activeTab === 'ghost' && <GhostList items={storage.ghostList || []} config={storage.config || DEFAULT_CONFIG} />}
+        {activeTab === 'debt' && <DebtDashboard account={storage.debtAccount} config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'uploaders' && <UploaderAllowlist uploaders={storage.allowedUploaders || []} />}
         {activeTab === 'config' && <ConfigPanel />}
       </main>
@@ -165,23 +164,43 @@ function BatchToolbar({
   );
 }
 
-function LimboReview({ items }: { items: readonly LimboItem[] }) {
+function LimboReview({ items, config }: { items: readonly LimboItem[]; config: ExtensionConfig }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  
+
   // Check if currently in review window
   const now = new Date();
-  const [windowStartHour, windowStartMinute] = DEFAULT_CONFIG.windowStart.split(':').map(Number);
-  const [windowEndHour, windowEndMinute] = DEFAULT_CONFIG.windowEnd.split(':').map(Number);
+  const [windowStartHour, windowStartMinute] = config.windowStart.split(':').map(Number);
+  const [windowEndHour, windowEndMinute] = config.windowEnd.split(':').map(Number);
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const startMinutes = windowStartHour * 60 + windowStartMinute;
   const endMinutes = windowEndHour * 60 + windowEndMinute;
-  
+
   let isInReviewWindow: boolean;
-  if (endMinutes >= startMinutes) {
+  if (!config.timeWindowEnabled) {
+    isInReviewWindow = true;
+  } else if (endMinutes >= startMinutes) {
     isInReviewWindow = currentMinutes >= startMinutes && currentMinutes <= endMinutes;
   } else {
     isInReviewWindow = currentMinutes >= startMinutes || currentMinutes <= endMinutes;
   }
+
+  const getTodayKey = () => new Date().toISOString().slice(0, 10);
+
+  const normalizeBehaviorLog = (raw: unknown) => ({
+    ...DEFAULT_BEHAVIOR_LOG,
+    ...(raw as typeof DEFAULT_BEHAVIOR_LOG | undefined),
+  });
+
+  const resetQuotaIfNeeded = (behaviorLog: typeof DEFAULT_BEHAVIOR_LOG) => {
+    const today = getTodayKey();
+    if (behaviorLog.lastQuotaResetDate === today) return behaviorLog;
+    return {
+      ...behaviorLog,
+      lastQuotaResetDate: today,
+      instantApplicationsToday: 0,
+      coolingApplicationsToday: 0,
+    };
+  };
 
   const toggleSelection = (bvid: string) => {
     const newSelected = new Set(selected);
@@ -203,12 +222,12 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
 
   const handleDelete = async (bvid: string) => {
     if (!confirm('确定要删除这个视频吗？')) return;
-    
+
     const storage = await chrome.storage.local.get();
     const limboList = (storage.limboList || []) as LimboItem[];
     const newLimboList = limboList.filter((item) => item.bvid !== bvid);
     await chrome.storage.local.set({ limboList: newLimboList });
-    
+
     // Remove from selection if selected
     const newSelected = new Set(selected);
     newSelected.delete(bvid);
@@ -235,11 +254,12 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
   const handleAction = async (item: LimboItem, action: 'permanent' | 'cooling' | 'instant') => {
     // Check if in review window
     if (!isInReviewWindow) {
-      alert('当前不在审批时间窗口，无法处理待审池视频\n请在 ' + DEFAULT_CONFIG.windowStart + ' - ' + DEFAULT_CONFIG.windowEnd + ' 期间进行审批');
+      alert('当前不在审批时间窗口，无法处理待审池视频\n请在 ' + config.windowStart + ' - ' + config.windowEnd + ' 期间进行审批');
       return;
     }
-    
+
     const storage = await chrome.storage.local.get();
+    const behaviorLog = resetQuotaIfNeeded(normalizeBehaviorLog(storage.behaviorLog));
     const limboList = (storage.limboList || []) as LimboItem[];
     const newLimboList = limboList.filter((i) => i.bvid !== item.bvid);
 
@@ -253,42 +273,73 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
     };
 
     if (action === 'cooling') {
+      if (config.dailyCoolingQuota > 0 && behaviorLog.coolingApplicationsToday >= config.dailyCoolingQuota) {
+        alert('已达到今日冷却配额，请明天再试');
+        return;
+      }
+
       const expirationService = new ExpirationService(
-        DEFAULT_CONFIG.coolingCooldownHours,
-        DEFAULT_CONFIG.coolingAvailableHours,
-        DEFAULT_CONFIG.instantDurationHours,
-        DEFAULT_CONFIG.ghostLifespanDays
+        config.coolingCooldownHours,
+        config.coolingAvailableHours,
+        config.instantDurationHours,
+        config.ghostLifespanDays
       );
       const coolingItem = expirationService.createCoolingItem(metadata);
       const coolingList = (storage.coolingList || []) as CoolingItem[];
+      const updatedBehaviorLog = {
+        ...behaviorLog,
+        coolingApplicationsToday: behaviorLog.coolingApplicationsToday + 1,
+      };
       await chrome.storage.local.set({
         limboList: newLimboList,
         coolingList: [...coolingList, coolingItem],
+        behaviorLog: updatedBehaviorLog,
       });
-      alert(`已加入冷静期，将在 ${DEFAULT_CONFIG.coolingCooldownHours} 小时后可用`);
+      alert(`已加入冷静期，将在 ${config.coolingCooldownHours} 小时后可用`);
     } else if (action === 'instant') {
+      if (config.dailyInstantQuota > 0 && behaviorLog.instantApplicationsToday >= config.dailyInstantQuota) {
+        alert('已达到今日即时配额，请明天再试');
+        return;
+      }
+
       const expirationService = new ExpirationService(
-        DEFAULT_CONFIG.coolingCooldownHours,
-        DEFAULT_CONFIG.coolingAvailableHours,
-        DEFAULT_CONFIG.instantDurationHours,
-        DEFAULT_CONFIG.ghostLifespanDays
+        config.coolingCooldownHours,
+        config.coolingAvailableHours,
+        config.instantDurationHours,
+        config.ghostLifespanDays
       );
       const instantItem = expirationService.createInstantItem(metadata, ''); // Empty fuse code for now
       const instantList = (storage.instantList || []) as InstantItem[];
+      const updatedBehaviorLog = {
+        ...behaviorLog,
+        instantApplicationsToday: behaviorLog.instantApplicationsToday + 1,
+        lastInstantApplication: Date.now(),
+      };
       await chrome.storage.local.set({
         limboList: newLimboList,
         instantList: [...instantList, instantItem],
+        behaviorLog: updatedBehaviorLog,
       });
-      alert(`已加入即时许可，有效期 ${DEFAULT_CONFIG.instantDurationHours} 小时`);
+      alert(`已加入即时许可，有效期 ${config.instantDurationHours} 小时`);
     } else {
       const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
-      
+
+      const totalPermanentItems = permanentGroups.reduce((sum, group) => sum + group.items.length, 0);
+      if (totalPermanentItems >= config.totalPermanentLimit) {
+        alert('已达到永久分组总限制');
+        return;
+      }
+
       // Find or create group based on tag
       const groupName = item.tag === 'LEARNING' ? '学习' : '娱乐';
       const groupId = item.tag === 'LEARNING' ? 'learning' : 'entertainment';
-      
+
       let targetGroup = permanentGroups.find(g => g.id === groupId);
       if (!targetGroup) {
+        if (permanentGroups.length >= config.maxGroups) {
+          alert('已达到最大分组数');
+          return;
+        }
         targetGroup = {
           id: groupId,
           name: groupName,
@@ -297,16 +348,21 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
         };
         permanentGroups.push(targetGroup);
       }
-      
+
+      if (targetGroup.items.length >= config.maxItemsPerGroup) {
+        alert('该分组已达到最大项目数');
+        return;
+      }
+
       if (!targetGroup.items.some((i) => i.bvid === item.bvid)) {
         targetGroup.items.push(metadata);
       }
-      
+
       await chrome.storage.local.set({
         limboList: newLimboList,
         permanentGroups,
       });
-      
+
       const tagText = item.tag === 'LEARNING' ? '学习' : '娱乐';
       alert(`已加入永久分组（${tagText}）`);
     }
@@ -325,13 +381,14 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
           <div className="flex items-center gap-2">
             <span className="text-lg">{isInReviewWindow ? '✅' : '⏰'}</span>
             <span className={isInReviewWindow ? 'text-green-400 font-medium' : 'text-yellow-400 font-medium'}>
-              {isInReviewWindow 
-                ? `当前是审批时间 (${DEFAULT_CONFIG.windowStart} - ${DEFAULT_CONFIG.windowEnd})`
-                : `当前非审批时间 - 审批时间: ${DEFAULT_CONFIG.windowStart} - ${DEFAULT_CONFIG.windowEnd}`
-              }
+              {!config.timeWindowEnabled
+                ? '时间窗口已关闭，随时可审批'
+                : isInReviewWindow
+                  ? `当前是审批时间 (${config.windowStart} - ${config.windowEnd})`
+                  : `当前非审批时间 - 审批时间: ${config.windowStart} - ${config.windowEnd}`}
             </span>
           </div>
-          {!isInReviewWindow && (
+          {!config.timeWindowEnabled || isInReviewWindow ? null : (
             <span className="text-sm text-yellow-500">
               请在审批时间处理待审池
             </span>
@@ -350,7 +407,7 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
           </button>
         )}
       </div>
-      
+
       {items.length === 0 ? (
         <p className="text-gray-500">待审池为空，在B站播放页添加视频</p>
       ) : (
@@ -375,11 +432,10 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
                     <button
                       onClick={() => handleAction(item, 'permanent')}
                       disabled={!isInReviewWindow}
-                      className={`px-3 py-1 rounded text-sm ${
-                        isInReviewWindow 
-                          ? 'bg-purple-600 hover:bg-purple-700' 
-                          : 'bg-gray-600 cursor-not-allowed opacity-50'
-                      }`}
+                      className={`px-3 py-1 rounded text-sm ${isInReviewWindow
+                        ? 'bg-purple-600 hover:bg-purple-700'
+                        : 'bg-gray-600 cursor-not-allowed opacity-50'
+                        }`}
                       title={isInReviewWindow ? '' : '请在审批时间处理'}
                     >
                       永久
@@ -387,11 +443,10 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
                     <button
                       onClick={() => handleAction(item, 'cooling')}
                       disabled={!isInReviewWindow}
-                      className={`px-3 py-1 rounded text-sm ${
-                        isInReviewWindow 
-                          ? 'bg-blue-600 hover:bg-blue-700' 
-                          : 'bg-gray-600 cursor-not-allowed opacity-50'
-                      }`}
+                      className={`px-3 py-1 rounded text-sm ${isInReviewWindow
+                        ? 'bg-blue-600 hover:bg-blue-700'
+                        : 'bg-gray-600 cursor-not-allowed opacity-50'
+                        }`}
                       title={isInReviewWindow ? '' : '请在审批时间处理'}
                     >
                       冷静期
@@ -399,11 +454,10 @@ function LimboReview({ items }: { items: readonly LimboItem[] }) {
                     <button
                       onClick={() => handleAction(item, 'instant')}
                       disabled={!isInReviewWindow}
-                      className={`px-3 py-1 rounded text-sm ${
-                        isInReviewWindow 
-                          ? 'bg-orange-600 hover:bg-orange-700' 
-                          : 'bg-gray-600 cursor-not-allowed opacity-50'
-                      }`}
+                      className={`px-3 py-1 rounded text-sm ${isInReviewWindow
+                        ? 'bg-orange-600 hover:bg-orange-700'
+                        : 'bg-gray-600 cursor-not-allowed opacity-50'
+                        }`}
                       title={isInReviewWindow ? '' : '请在审批时间处理'}
                     >
                       立即
@@ -457,12 +511,12 @@ function CoolingList({ items }: { items: readonly CoolingItem[] }) {
 
   const handleDelete = async (bvid: string) => {
     if (!confirm('确定要删除这个视频吗？')) return;
-    
+
     const storage = await chrome.storage.local.get();
     const coolingList = (storage.coolingList || []) as CoolingItem[];
     const newCoolingList = coolingList.filter((item) => item.bvid !== bvid);
     await chrome.storage.local.set({ coolingList: newCoolingList });
-    
+
     const newSelected = new Set(selected);
     newSelected.delete(bvid);
     setSelected(newSelected);
@@ -498,7 +552,7 @@ function CoolingList({ items }: { items: readonly CoolingItem[] }) {
           </button>
         )}
       </div>
-      
+
       {items.length === 0 ? (
         <p className="text-gray-500">没有处于冷静期的视频</p>
       ) : (
@@ -506,7 +560,7 @@ function CoolingList({ items }: { items: readonly CoolingItem[] }) {
           {items.map((item) => {
             const isAvailable = now >= item.availableAt;
             const isExpired = now >= item.expiresAt;
-            
+
             return (
               <ItemCard
                 key={item.bvid}
@@ -519,8 +573,8 @@ function CoolingList({ items }: { items: readonly CoolingItem[] }) {
                   {isExpired
                     ? '已过期'
                     : isAvailable
-                    ? '可观看'
-                    : `还需等待 ${Math.ceil((item.availableAt - now) / 3600000)} 小时`}
+                      ? '可观看'
+                      : `还需等待 ${Math.ceil((item.availableAt - now) / 3600000)} 小时`}
                 </p>
               </ItemCard>
             );
@@ -563,12 +617,12 @@ function InstantList({ items }: { items: readonly InstantItem[] }) {
 
   const handleDelete = async (bvid: string) => {
     if (!confirm('确定要删除这个视频吗？')) return;
-    
+
     const storage = await chrome.storage.local.get();
     const instantList = (storage.instantList || []) as InstantItem[];
     const newInstantList = instantList.filter((item) => item.bvid !== bvid);
     await chrome.storage.local.set({ instantList: newInstantList });
-    
+
     const newSelected = new Set(selected);
     newSelected.delete(bvid);
     setSelected(newSelected);
@@ -604,7 +658,7 @@ function InstantList({ items }: { items: readonly InstantItem[] }) {
           </button>
         )}
       </div>
-      
+
       {items.length === 0 ? (
         <p className="text-gray-500">没有即时许可</p>
       ) : (
@@ -612,7 +666,7 @@ function InstantList({ items }: { items: readonly InstantItem[] }) {
           {items.map((item) => {
             const isExpired = now >= item.expiresAt;
             const hoursLeft = Math.ceil((item.expiresAt - now) / 3600000);
-            
+
             return (
               <ItemCard
                 key={item.bvid}
@@ -643,7 +697,7 @@ function InstantList({ items }: { items: readonly InstantItem[] }) {
 
 function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  
+
   // Flatten all items from all groups and separate by tag
   const allItems = groups.flatMap(group => group.items);
   const learningItems = allItems.filter(item => item.tag === 'LEARNING');
@@ -670,18 +724,18 @@ function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }) {
 
   const handleDeleteItem = async (bvid: string) => {
     if (!confirm('确定要删除这个视频吗？')) return;
-    
+
     const storage = await chrome.storage.local.get();
     const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
-    
+
     // Remove item from whichever group it belongs to
     const updatedGroups = permanentGroups.map((group) => ({
       ...group,
       items: group.items.filter((item) => item.bvid !== bvid),
     }));
-    
+
     await chrome.storage.local.set({ permanentGroups: updatedGroups });
-    
+
     const newSelected = new Set(selected);
     newSelected.delete(bvid);
     setSelected(newSelected);
@@ -693,12 +747,12 @@ function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }) {
 
     const storage = await chrome.storage.local.get();
     const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
-    
+
     const updatedGroups = permanentGroups.map((group) => ({
       ...group,
       items: group.items.filter((item) => !selected.has(item.bvid)),
     }));
-    
+
     await chrome.storage.local.set({ permanentGroups: updatedGroups });
     setSelected(new Set());
   };
@@ -747,7 +801,7 @@ function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }) {
           </button>
         )}
       </div>
-      
+
       {totalItems === 0 ? (
         <p className="text-gray-500">没有永久分组视频</p>
       ) : (
@@ -795,7 +849,7 @@ function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }) {
   );
 }
 
-function GhostList({ items }: { items: readonly GhostItem[] }) {
+function GhostList({ items, config }: { items: readonly GhostItem[]; config: ExtensionConfig }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const toggleSelection = (bvid: string) => {
@@ -818,12 +872,12 @@ function GhostList({ items }: { items: readonly GhostItem[] }) {
 
   const handleDelete = async (bvid: string) => {
     if (!confirm('确定要彻底删除这个视频吗？（无法恢复）')) return;
-    
+
     const storage = await chrome.storage.local.get();
     const ghostList = (storage.ghostList || []) as GhostItem[];
     const newGhostList = ghostList.filter((item) => item.bvid !== bvid);
     await chrome.storage.local.set({ ghostList: newGhostList });
-    
+
     const newSelected = new Set(selected);
     newSelected.delete(bvid);
     setSelected(newSelected);
@@ -846,6 +900,23 @@ function GhostList({ items }: { items: readonly GhostItem[] }) {
     setSelected(new Set());
   };
 
+  const handleResurrect = async (item: GhostItem) => {
+    const repentanceReason = prompt('请输入忏悔理由（至少 10 字）');
+    if (!repentanceReason) return;
+
+    const fuseCodeInput = prompt('请输入招魂熔断码');
+    if (!fuseCodeInput) return;
+
+    const service = new GhostResurrectionService(config);
+    const result = await service.resurrect(item, fuseCodeInput, repentanceReason);
+    if (!result.success) {
+      alert(result.message);
+      return;
+    }
+
+    alert(result.message);
+  };
+
   const now = Date.now();
 
   return (
@@ -861,14 +932,14 @@ function GhostList({ items }: { items: readonly GhostItem[] }) {
           </button>
         )}
       </div>
-      
+
       {items.length === 0 ? (
         <p className="text-gray-500">没有幽灵档案</p>
       ) : (
         <div className="grid gap-4">
           {items.map((item) => {
             const daysLeft = Math.ceil((item.canResurrectUntil - now) / (24 * 3600000));
-            
+
             return (
               <ItemCard
                 key={item.bvid}
@@ -880,6 +951,14 @@ function GhostList({ items }: { items: readonly GhostItem[] }) {
                 <p className="text-sm mt-2 text-gray-400">
                   {daysLeft > 0 ? `还可招魂 ${daysLeft} 天` : '已彻底消失'}
                 </p>
+                {daysLeft > 0 && (
+                  <button
+                    onClick={() => handleResurrect(item)}
+                    className="mt-2 px-3 py-1 bg-purple-600 rounded text-sm hover:bg-purple-700"
+                  >
+                    招魂
+                  </button>
+                )}
               </ItemCard>
             );
           })}
@@ -897,20 +976,27 @@ function GhostList({ items }: { items: readonly GhostItem[] }) {
   );
 }
 
-function DebtDashboard({ account }: { account?: { currentDebt: number; totalEntertainmentMinutes?: number; totalLearningMinutes?: number } }) {
+function DebtDashboard({
+  account,
+  config,
+}: {
+  account?: { currentDebt: number; totalEntertainmentMinutes?: number; totalLearningMinutes?: number };
+  config: ExtensionConfig;
+}) {
   const debt = account?.currentDebt || 0;
   const entertainmentMinutes = account?.totalEntertainmentMinutes || 0;
   const learningMinutes = account?.totalLearningMinutes || 0;
-  const isBankrupt = debt >= 60;
+  const isBankrupt = debt >= config.maxDebtMinutes;
 
   // Calculate net debt composition
-  const entertainmentDebt = entertainmentMinutes * 2; // Assuming 2.0 ratio
-  const learningRepaid = learningMinutes * 1; // Assuming 1.0 ratio
+  const entertainmentDebt = entertainmentMinutes * config.entertainmentRatio;
+  const learningRepaid = learningMinutes * config.learningRepayRatio;
+  const learningRepaidAbs = Math.abs(learningRepaid);
 
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">债务仪表盘</h2>
-      
+
       {/* Main Debt Display */}
       <div className={`p-6 rounded-lg mb-4 ${isBankrupt ? 'bg-red-900/50' : 'bg-gray-800'}`}>
         <div className="text-4xl font-bold mb-2">
@@ -918,10 +1004,10 @@ function DebtDashboard({ account }: { account?: { currentDebt: number; totalEnte
         </div>
         <p className="text-gray-400">
           {isBankrupt
-            ? '⚠️ 已破产！24小时内禁止新申请'
-            : debt > 30
-            ? '债务较高，建议观看学习类视频偿还'
-            : '债务状况良好'}
+            ? `⚠️ 已破产！${config.bankruptcyLockHours}小时内禁止新申请`
+            : debt > config.maxDebtMinutes * 0.5
+              ? '债务较高，建议观看学习类视频偿还'
+              : '债务状况良好'}
         </p>
       </div>
 
@@ -951,7 +1037,7 @@ function DebtDashboard({ account }: { account?: { currentDebt: number; totalEnte
             {learningMinutes.toFixed(1)} 分钟
           </div>
           <p className="text-sm text-green-500/70 mt-1">
-            偿还债务: -{learningRepaid.toFixed(1)} 分钟
+            偿还债务: -{learningRepaidAbs.toFixed(1)} 分钟
           </p>
         </div>
       </div>
@@ -966,7 +1052,7 @@ function DebtDashboard({ account }: { account?: { currentDebt: number; totalEnte
           </div>
           <div className="flex justify-between">
             <span className="text-green-500">学习偿还:</span>
-            <span className="text-green-400">-{learningRepaid.toFixed(1)} 分钟</span>
+            <span className="text-green-400">-{learningRepaidAbs.toFixed(1)} 分钟</span>
           </div>
           <div className="border-t border-gray-700 pt-1 mt-1 flex justify-between font-medium">
             <span className="text-white">净债务:</span>
@@ -987,10 +1073,10 @@ function UploaderAllowlist({ uploaders }: { uploaders: { id: string; name: strin
 
   const handleAdd = async () => {
     if (!newUploaderName.trim()) return;
-    
+
     const storage = await chrome.storage.local.get();
     const currentUploaders = storage.allowedUploaders || [];
-    
+
     // Check if already exists
     if (currentUploaders.some((u: { name: string }) => u.name === newUploaderName.trim())) {
       alert('该UP主已在白名单中');
@@ -1014,10 +1100,10 @@ function UploaderAllowlist({ uploaders }: { uploaders: { id: string; name: strin
 
   const handleDelete = async (id: string) => {
     if (!confirm('确定要移除这个UP主吗？')) return;
-    
+
     const storage = await chrome.storage.local.get();
     const currentUploaders = storage.allowedUploaders || [];
-    
+
     await chrome.storage.local.set({
       allowedUploaders: currentUploaders.filter((u: { id: string }) => u.id !== id),
     });
@@ -1085,11 +1171,10 @@ function UploaderAllowlist({ uploaders }: { uploaders: { id: string; name: strin
                 <div>
                   <p className="font-medium">{uploader.name}</p>
                   <span
-                    className={`px-2 py-0.5 rounded text-xs ${
-                      uploader.tag === 'LEARNING'
-                        ? 'bg-green-600'
-                        : 'bg-yellow-600'
-                    }`}
+                    className={`px-2 py-0.5 rounded text-xs ${uploader.tag === 'LEARNING'
+                      ? 'bg-green-600'
+                      : 'bg-yellow-600'
+                      }`}
                   >
                     {uploader.tag === 'LEARNING' ? '学习' : '娱乐'}
                   </span>
@@ -1116,13 +1201,13 @@ function ConfigPanel() {
   const configService = new ConfigService();
 
   // Load config on mount
-  useState(() => {
+  useEffect(() => {
     const loadConfig = async () => {
       const loaded = await configService.loadConfig();
       setConfig(loaded);
     };
     loadConfig();
-  });
+  }, []);
 
   const handleSave = async () => {
     const result = await configService.saveConfig(config);
@@ -1189,7 +1274,7 @@ function ConfigPanel() {
               />
               <span>{descriptions.timeWindowEnabled.label}</span>
             </label>
-            
+
             {config.timeWindowEnabled && (
               <div className="grid grid-cols-2 gap-4 ml-6">
                 <div>
@@ -1216,6 +1301,82 @@ function ConfigPanel() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Limbo Settings */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h3 className="text-lg font-medium mb-3">🗃️ 待审池</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.limboCapacity.label}
+              </label>
+              <input
+                type="number"
+                value={config.limboCapacity}
+                onChange={(e) => updateConfig('limboCapacity', parseInt(e.target.value))}
+                min={1}
+                max={20}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.limboReviewTime.label}
+              </label>
+              <input
+                type="time"
+                value={config.limboReviewTime}
+                onChange={(e) => updateConfig('limboReviewTime', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.limboAutoPurgeHours.label}
+              </label>
+              <input
+                type="number"
+                value={config.limboAutoPurgeHours}
+                onChange={(e) => updateConfig('limboAutoPurgeHours', parseInt(e.target.value))}
+                min={0}
+                max={168}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+              <p className="text-xs text-gray-500 mt-1">0 表示关闭自动清理</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Instant Settings */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h3 className="text-lg font-medium mb-3">⚡ 即时许可</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.instantDurationHours.label}
+              </label>
+              <input
+                type="number"
+                value={config.instantDurationHours}
+                onChange={(e) => updateConfig('instantDurationHours', parseInt(e.target.value))}
+                min={1}
+                max={24}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
+            <div className="flex items-center">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={config.instantBreakFuse}
+                  onChange={(e) => updateConfig('instantBreakFuse', e.target.checked)}
+                  className="w-4 h-4 rounded"
+                />
+                <span className="text-sm">{descriptions.instantBreakFuse.label}</span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -1254,37 +1415,6 @@ function ConfigPanel() {
           </div>
         </div>
 
-        {/* Instant Settings */}
-        <div className="bg-gray-800 p-4 rounded-lg">
-          <h3 className="text-lg font-medium mb-3">⚡ 即时许可</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">
-                {descriptions.instantDurationHours.label}
-              </label>
-              <input
-                type="number"
-                value={config.instantDurationHours}
-                onChange={(e) => updateConfig('instantDurationHours', parseInt(e.target.value))}
-                min={1}
-                max={24}
-                className="w-full px-3 py-2 bg-gray-700 rounded"
-              />
-            </div>
-            <div className="flex items-center">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={config.instantBreakFuse}
-                  onChange={(e) => updateConfig('instantBreakFuse', e.target.checked)}
-                  className="w-4 h-4 rounded"
-                />
-                <span className="text-sm">{descriptions.instantBreakFuse.label}</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
         {/* Fuse Settings */}
         <div className="bg-gray-800 p-4 rounded-lg">
           <h3 className="text-lg font-medium mb-3">🔐 熔断码</h3>
@@ -1315,6 +1445,19 @@ function ConfigPanel() {
                 className="w-full px-3 py-2 bg-gray-700 rounded"
               />
             </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.bankruptcyOverrideMaxFuse.label}
+              </label>
+              <input
+                type="number"
+                value={config.bankruptcyOverrideMaxFuse}
+                onChange={(e) => updateConfig('bankruptcyOverrideMaxFuse', parseInt(e.target.value))}
+                min={config.baseFuseLength}
+                max={128}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
           </div>
           <label className="flex items-center gap-2 mt-3">
             <input
@@ -1325,6 +1468,52 @@ function ConfigPanel() {
             />
             <span className="text-sm">{descriptions.dynamicFuseEnabled.label}</span>
           </label>
+        </div>
+
+        {/* Permanent Group Limits */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h3 className="text-lg font-medium mb-3">📌 永久分组</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.maxGroups.label}
+              </label>
+              <input
+                type="number"
+                value={config.maxGroups}
+                onChange={(e) => updateConfig('maxGroups', parseInt(e.target.value))}
+                min={1}
+                max={10}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.maxItemsPerGroup.label}
+              </label>
+              <input
+                type="number"
+                value={config.maxItemsPerGroup}
+                onChange={(e) => updateConfig('maxItemsPerGroup', parseInt(e.target.value))}
+                min={1}
+                max={50}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.totalPermanentLimit.label}
+              </label>
+              <input
+                type="number"
+                value={config.totalPermanentLimit}
+                onChange={(e) => updateConfig('totalPermanentLimit', parseInt(e.target.value))}
+                min={1}
+                max={200}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Debt Settings */}
@@ -1340,7 +1529,7 @@ function ConfigPanel() {
               />
               <span>{descriptions.debtEnabled.label}</span>
             </label>
-            
+
             {config.debtEnabled && (
               <div className="grid grid-cols-2 gap-4 ml-6">
                 <div>
@@ -1359,6 +1548,20 @@ function ConfigPanel() {
                 </div>
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">
+                    {descriptions.learningRepayRatio.label}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={config.learningRepayRatio}
+                    onChange={(e) => updateConfig('learningRepayRatio', parseFloat(e.target.value))}
+                    min={-5}
+                    max={-0.5}
+                    className="w-full px-3 py-2 bg-gray-700 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">
                     {descriptions.maxDebtMinutes.label}
                   </label>
                   <input
@@ -1367,6 +1570,32 @@ function ConfigPanel() {
                     onChange={(e) => updateConfig('maxDebtMinutes', parseInt(e.target.value))}
                     min={10}
                     max={300}
+                    className="w-full px-3 py-2 bg-gray-700 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">
+                    {descriptions.bankruptcyLockHours.label}
+                  </label>
+                  <input
+                    type="number"
+                    value={config.bankruptcyLockHours}
+                    onChange={(e) => updateConfig('bankruptcyLockHours', parseInt(e.target.value))}
+                    min={1}
+                    max={168}
+                    className="w-full px-3 py-2 bg-gray-700 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">
+                    {descriptions.postWatchCooldownMinutes.label}
+                  </label>
+                  <input
+                    type="number"
+                    value={config.postWatchCooldownMinutes}
+                    onChange={(e) => updateConfig('postWatchCooldownMinutes', parseInt(e.target.value))}
+                    min={0}
+                    max={120}
                     className="w-full px-3 py-2 bg-gray-700 rounded"
                   />
                 </div>
@@ -1392,6 +1621,19 @@ function ConfigPanel() {
                 className="w-full px-3 py-2 bg-gray-700 rounded"
               />
             </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.ghostResurrectFuseLength.label}
+              </label>
+              <input
+                type="number"
+                value={config.ghostResurrectFuseLength}
+                onChange={(e) => updateConfig('ghostResurrectFuseLength', parseInt(e.target.value))}
+                min={4}
+                max={128}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
             <div className="flex items-center">
               <label className="flex items-center gap-2">
                 <input
@@ -1404,6 +1646,53 @@ function ConfigPanel() {
               </label>
             </div>
           </div>
+        </div>
+
+        {/* Quota Settings */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h3 className="text-lg font-medium mb-3">📊 配额</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.dailyCoolingQuota.label}
+              </label>
+              <input
+                type="number"
+                value={config.dailyCoolingQuota}
+                onChange={(e) => updateConfig('dailyCoolingQuota', parseInt(e.target.value))}
+                min={0}
+                max={100}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">
+                {descriptions.dailyInstantQuota.label}
+              </label>
+              <input
+                type="number"
+                value={config.dailyInstantQuota}
+                onChange={(e) => updateConfig('dailyInstantQuota', parseInt(e.target.value))}
+                min={0}
+                max={100}
+                className="w-full px-3 py-2 bg-gray-700 rounded"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Detection Settings */}
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h3 className="text-lg font-medium mb-3">🔍 识别</h3>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={config.collectionDetectionEnabled}
+              onChange={(e) => updateConfig('collectionDetectionEnabled', e.target.checked)}
+              className="w-4 h-4 rounded"
+            />
+            <span className="text-sm">{descriptions.collectionDetectionEnabled.label}</span>
+          </label>
         </div>
       </div>
     </div>

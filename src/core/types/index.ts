@@ -50,6 +50,8 @@ export interface DebtAccount {
 export interface BehaviorLogState {
   lastInstantApplication: number;
   instantApplicationsToday: number;
+  coolingApplicationsToday: number;
+  lastQuotaResetDate: string;
   lastWatchEnd: number;
   currentCooldownUntil: number | null;
 }
@@ -57,30 +59,30 @@ export interface BehaviorLogState {
 export interface BehaviorLog {
   id: string;
   timestamp: number;
-  action: 
-    | 'video_view'
-    | 'video_start'
-    | 'video_end'
-    | 'video_pause'
-    | 'fuse_applied'
-    | 'fuse_verified'
-    | 'fuse_rejected'
-    | 'cooling_requested'
-    | 'cooling_granted'
-    | 'instant_requested'
-    | 'instant_granted'
-    | 'limbo_added'
-    | 'limbo_removed'
-    | 'limbo_promoted'
-    | 'ghost_created'
-    | 'ghost_resurrected'
-    | 'debt_incurred'
-    | 'debt_repaid'
-    | 'bankruptcy_declared'
-    | 'config_changed'
-    | 'group_created'
-    | 'group_deleted'
-    | 'item_moved';
+  action:
+  | 'video_view'
+  | 'video_start'
+  | 'video_end'
+  | 'video_pause'
+  | 'fuse_applied'
+  | 'fuse_verified'
+  | 'fuse_rejected'
+  | 'cooling_requested'
+  | 'cooling_granted'
+  | 'instant_requested'
+  | 'instant_granted'
+  | 'limbo_added'
+  | 'limbo_removed'
+  | 'limbo_promoted'
+  | 'ghost_created'
+  | 'ghost_resurrected'
+  | 'debt_incurred'
+  | 'debt_repaid'
+  | 'bankruptcy_declared'
+  | 'config_changed'
+  | 'group_created'
+  | 'group_deleted'
+  | 'item_moved';
   details?: Record<string, unknown>;
   bvid?: string;
   groupId?: string;

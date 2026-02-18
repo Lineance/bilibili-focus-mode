@@ -87,10 +87,10 @@ TypeScript
 复制
 interface DebtAccount {
   currentDebt: number;      // 当前债务（分钟）
-  totalAccrued: number;     // 累计产生
-  totalRepaid: number;      // 累计偿还
   bankruptcyCount: number;  // 破产次数
   bankruptcyEndTime: number | null; // 破产锁定结束时间
+  totalEntertainmentMinutes: number; // 娱乐时长
+  totalLearningMinutes: number;      // 学习时长
 }
 
 interface BehaviorLog {
