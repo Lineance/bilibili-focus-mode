@@ -392,6 +392,11 @@ export class StyleSimplificationService {
     this.removeStyles();
 
     const css = `
+      /* Hide entire header on search page */
+      #bili-header-container > div {
+        display: none !important;
+      }
+
       /* Hide navigation menu items: 首页, 番剧, 直播, 游戏 */
       #bili-header-container > div > div > ul.left-entry > li:nth-child(1),
       #bili-header-container > div > div > ul.left-entry > li:nth-child(2),
