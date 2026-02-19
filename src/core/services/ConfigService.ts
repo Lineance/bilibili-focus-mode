@@ -324,6 +324,16 @@ export class ConfigService {
         description: '简化视频播放页布局，减少干扰元素',
         type: 'boolean',
       },
+      homepageSimplification: {
+        label: '首页样式简化',
+        description: '简化首页布局，减少干扰元素',
+        type: 'boolean',
+      },
+      dynamicSimplification: {
+        label: '动态页样式简化',
+        description: '简化动态页布局，仅显示关注内容',
+        type: 'boolean',
+      },
     };
   }
 

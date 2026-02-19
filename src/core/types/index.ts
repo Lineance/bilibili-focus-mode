@@ -180,6 +180,15 @@ export interface ExtensionConfig {
     hideLiveStreams: boolean;
     compactLayout: boolean;
   };
+  // Dynamic page style simplification
+  dynamicSimplification: {
+    enabled: boolean;
+    hideLiveStreams: boolean;
+    hideRecommendations: boolean;
+    hideAds: boolean;
+    showOnlyFollowing: boolean;
+    compactLayout: boolean;
+  };
 }
 
 export interface ExtensionStorage {

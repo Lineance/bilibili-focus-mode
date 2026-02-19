@@ -480,4 +480,235 @@ describe('StyleSimplificationService', () => {
       expect(styleElement?.textContent).toContain('.header-banner');
     });
   });
+
+  describe('isDynamicPage', () => {
+    it('should return true for dynamic pages', () => {
+      Object.defineProperty(window, 'location', {
+        value: { pathname: '/' },
+        writable: true,
+      });
+      Object.defineProperty(window, 'location', {
+        value: { host: 't.bilibili.com', pathname: '/' },
+        writable: true,
+      });
+      expect(service.isDynamicPage()).toBe(true);
+    });
+
+    it('should return false for non-dynamic pages', () => {
+      Object.defineProperty(window, 'location', {
+        value: { host: 'www.bilibili.com', pathname: '/video/BV1xx' },
+        writable: true,
+      });
+      expect(service.isDynamicPage()).toBe(false);
+
+      Object.defineProperty(window, 'location', {
+        value: { host: 'www.bilibili.com', pathname: '/' },
+        writable: true,
+      });
+      expect(service.isDynamicPage()).toBe(false);
+    });
+  });
+
+  describe('applyDynamicSimplification', () => {
+    beforeEach(() => {
+      Object.defineProperty(window, 'location', {
+        value: { host: 't.bilibili.com', pathname: '/' },
+        writable: true,
+      });
+    });
+
+    it('should inject styles when on dynamic page', () => {
+      service.applyDynamicSimplification({
+        hideRecommendations: true,
+        hideLiveStreams: true,
+        hideAds: true,
+        showOnlyFollowing: false,
+        compactLayout: false,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement).toBeTruthy();
+      expect(styleElement?.tagName).toBe('STYLE');
+    });
+
+    it('should not inject styles when not on dynamic page', () => {
+      Object.defineProperty(window, 'location', {
+        value: { host: 'www.bilibili.com', pathname: '/video/BV1xx' },
+        writable: true,
+      });
+
+      service.applyDynamicSimplification({
+        hideRecommendations: true,
+        hideLiveStreams: true,
+        hideAds: true,
+        showOnlyFollowing: false,
+        compactLayout: false,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement).toBeFalsy();
+    });
+
+    it('should hide recommendations when hideRecommendations is true', () => {
+      service.applyDynamicSimplification({
+        hideRecommendations: true,
+        hideLiveStreams: false,
+        hideAds: false,
+        showOnlyFollowing: false,
+        compactLayout: false,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement?.textContent).toContain('.rcmd-box');
+      expect(styleElement?.textContent).toContain('.bili-dyn-item[data-type="recommend"]');
+    });
+
+    it('should hide live streams when hideLiveStreams is true', () => {
+      service.applyDynamicSimplification({
+        hideRecommendations: false,
+        hideLiveStreams: true,
+        hideAds: false,
+        showOnlyFollowing: false,
+        compactLayout: false,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement?.textContent).toContain('.bili-dyn-item[data-type="live"]');
+      expect(styleElement?.textContent).toContain('.live-card');
+    });
+
+    it('should hide ads when hideAds is true', () => {
+      service.applyDynamicSimplification({
+        hideRecommendations: false,
+        hideLiveStreams: false,
+        hideAds: true,
+        showOnlyFollowing: false,
+        compactLayout: false,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement?.textContent).toContain('.bili-dyn-item[data-type="ad"]');
+      expect(styleElement?.textContent).toContain('.ad-report');
+    });
+
+    it('should show only following when showOnlyFollowing is true', () => {
+      service.applyDynamicSimplification({
+        hideRecommendations: false,
+        hideLiveStreams: false,
+        hideAds: false,
+        showOnlyFollowing: true,
+        compactLayout: false,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement?.textContent).toContain('.bili-dyn-item:not([data-type="following"])');
+    });
+
+    it('should apply compact layout when compactLayout is true', () => {
+      service.applyDynamicSimplification({
+        hideRecommendations: false,
+        hideLiveStreams: false,
+        hideAds: false,
+        showOnlyFollowing: false,
+        compactLayout: true,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement?.textContent).toContain('.bili-dyn-item');
+      expect(styleElement?.textContent).toContain('padding: 8px 0');
+    });
+  });
+
+  describe('applyFromConfig with dynamic page', () => {
+    it('should apply dynamic simplification when on dynamic page', async () => {
+      Object.defineProperty(window, 'location', {
+        value: { host: 't.bilibili.com', pathname: '/' },
+        writable: true,
+      });
+
+      const config: ExtensionConfig = {
+        dynamicSimplification: {
+          enabled: true,
+          hideRecommendations: true,
+          hideLiveStreams: false,
+          hideAds: false,
+          showOnlyFollowing: false,
+          compactLayout: false,
+        },
+      } as ExtensionConfig;
+
+      await service.applyFromConfig(config);
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement).toBeTruthy();
+      expect(styleElement?.textContent).toContain('.rcmd-box');
+    });
+
+    it('should not apply dynamic simplification when disabled', async () => {
+      Object.defineProperty(window, 'location', {
+        value: { host: 't.bilibili.com', pathname: '/' },
+        writable: true,
+      });
+
+      const config: ExtensionConfig = {
+        dynamicSimplification: {
+          enabled: false,
+          hideRecommendations: true,
+          hideLiveStreams: true,
+          hideAds: true,
+          showOnlyFollowing: true,
+          compactLayout: true,
+        },
+      } as ExtensionConfig;
+
+      await service.applyFromConfig(config);
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement).toBeFalsy();
+    });
+
+    it('should remove styles when not on dynamic page', async () => {
+      // First apply styles on dynamic page
+      Object.defineProperty(window, 'location', {
+        value: { host: 't.bilibili.com', pathname: '/' },
+        writable: true,
+      });
+
+      const config: ExtensionConfig = {
+        dynamicSimplification: {
+          enabled: true,
+          hideRecommendations: true,
+          hideLiveStreams: true,
+          hideAds: true,
+          showOnlyFollowing: false,
+          compactLayout: false,
+        },
+      } as ExtensionConfig;
+
+      await service.applyFromConfig(config);
+      expect(document.getElementById('bilibili-focus-mode-styles')).toBeTruthy();
+
+      // Change to non-dynamic page
+      Object.defineProperty(window, 'location', {
+        value: { host: 'www.bilibili.com', pathname: '/video/BV1xx' },
+        writable: true,
+      });
+
+      // Re-apply (should remove)
+      await service.applyFromConfig(config);
+      expect(document.getElementById('bilibili-focus-mode-styles')).toBeFalsy();
+    });
+
+    it('should handle missing dynamicSimplification config', async () => {
+      Object.defineProperty(window, 'location', {
+        value: { host: 't.bilibili.com', pathname: '/' },
+        writable: true,
+      });
+
+      const config: ExtensionConfig = {} as ExtensionConfig;
+
+      await expect(service.applyFromConfig(config)).resolves.not.toThrow();
+      expect(document.getElementById('bilibili-focus-mode-styles')).toBeFalsy();
+    });
+  });
 });

@@ -1856,6 +1856,86 @@ function ConfigPanel() {
                 </div>
               )}
             </div>
+
+            <div className="border-t border-gray-700 pt-3 mt-3">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={config.dynamicSimplification.enabled}
+                  onChange={(e) => updateConfig('dynamicSimplification', {
+                    ...config.dynamicSimplification,
+                    enabled: e.target.checked
+                  })}
+                  className="w-4 h-4 rounded"
+                />
+                <span>启用动态页样式简化</span>
+              </label>
+
+              {config.dynamicSimplification.enabled && (
+                <div className="ml-6 space-y-2 mt-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.dynamicSimplification.hideRecommendations}
+                      onChange={(e) => updateConfig('dynamicSimplification', {
+                        ...config.dynamicSimplification,
+                        hideRecommendations: e.target.checked
+                      })}
+                      className="w-4 h-4 rounded"
+                    />
+                    <span className="text-sm">隐藏推荐内容</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.dynamicSimplification.hideLiveStreams}
+                      onChange={(e) => updateConfig('dynamicSimplification', {
+                        ...config.dynamicSimplification,
+                        hideLiveStreams: e.target.checked
+                      })}
+                      className="w-4 h-4 rounded"
+                    />
+                    <span className="text-sm">隐藏直播入口</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.dynamicSimplification.showOnlyFollowing}
+                      onChange={(e) => updateConfig('dynamicSimplification', {
+                        ...config.dynamicSimplification,
+                        showOnlyFollowing: e.target.checked
+                      })}
+                      className="w-4 h-4 rounded"
+                    />
+                    <span className="text-sm">仅显示关注内容</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.dynamicSimplification.hideAds}
+                      onChange={(e) => updateConfig('dynamicSimplification', {
+                        ...config.dynamicSimplification,
+                        hideAds: e.target.checked
+                      })}
+                      className="w-4 h-4 rounded"
+                    />
+                    <span className="text-sm">隐藏广告</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.dynamicSimplification.compactLayout}
+                      onChange={(e) => updateConfig('dynamicSimplification', {
+                        ...config.dynamicSimplification,
+                        compactLayout: e.target.checked
+                      })}
+                      className="w-4 h-4 rounded"
+                    />
+                    <span className="text-sm">紧凑布局</span>
+                  </label>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

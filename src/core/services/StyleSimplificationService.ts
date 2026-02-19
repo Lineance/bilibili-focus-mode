@@ -16,6 +16,14 @@ export interface HomepageSimplificationOptions {
   compactLayout: boolean;
 }
 
+export interface DynamicSimplificationOptions {
+  hideLiveStreams: boolean;
+  hideRecommendations: boolean;
+  hideAds: boolean;
+  showOnlyFollowing: boolean;
+  compactLayout: boolean;
+}
+
 export class StyleSimplificationService {
   private styleElement: HTMLStyleElement | null = null;
 
@@ -31,6 +39,14 @@ export class StyleSimplificationService {
    */
   isHomepage(): boolean {
     return window.location.pathname === '/' || window.location.pathname === '/index.html';
+  }
+
+  /**
+   * Check if current page is the dynamic page
+   */
+  isDynamicPage(): boolean {
+    return window.location.pathname === '/t.bilibili.com' ||
+           window.location.host === 't.bilibili.com';
   }
 
   /**
@@ -60,6 +76,22 @@ export class StyleSimplificationService {
 
     // Generate CSS rules
     const css = this.generateHomepageCSS(options);
+
+    // Inject styles
+    this.injectStyles(css);
+  }
+
+  /**
+   * Apply style simplification to dynamic page
+   */
+  applyDynamicSimplification(options: DynamicSimplificationOptions): void {
+    if (!this.isDynamicPage()) return;
+
+    // Remove existing styles
+    this.removeStyles();
+
+    // Generate CSS rules
+    const css = this.generateDynamicCSS(options);
 
     // Inject styles
     this.injectStyles(css);
@@ -244,6 +276,86 @@ export class StyleSimplificationService {
   }
 
   /**
+   * Generate CSS for dynamic page simplification
+   */
+  private generateDynamicCSS(options: DynamicSimplificationOptions): string {
+    const rules: string[] = [];
+
+    // Hide live streams
+    if (options.hideLiveStreams) {
+      rules.push(`
+        .live-card, .live-box, .living-box,
+        [class*="live-"], [class*="living"],
+        .bili-dyn-item[data-type="live"],
+        .dyn-live {
+          display: none !important;
+        }
+      `);
+    }
+
+    // Hide recommendations
+    if (options.hideRecommendations) {
+      rules.push(`
+        .rcmd-box, .recommend-box,
+        [class*="recommend"], [class*="rcmd"],
+        .bili-dyn-item[data-type="recommend"] {
+          display: none !important;
+        }
+      `);
+    }
+
+    // Hide ads
+    if (options.hideAds) {
+      rules.push(`
+        .ad-report, .ad-floor,
+        [class*="ad-"], [class*="advertisement"],
+        .bili-dyn-item[data-type="ad"] {
+          display: none !important;
+        }
+      `);
+    }
+
+    // Show only following
+    if (options.showOnlyFollowing) {
+      rules.push(`
+        /* Hide non-following content */
+        .bili-dyn-item:not([data-type="following"]):not([data-type="self"]) {
+          display: none !important;
+        }
+      `);
+    }
+
+    // Compact layout
+    if (options.compactLayout) {
+      rules.push(`
+        /* Reduce padding */
+        .bili-dyn-item {
+          padding: 8px 0 !important;
+          margin-bottom: 4px !important;
+        }
+
+        /* Smaller avatars */
+        .bili-dyn-avatar {
+          width: 40px !important;
+          height: 40px !important;
+        }
+
+        /* Compact header */
+        .bili-dyn-header {
+          margin-bottom: 4px !important;
+        }
+
+        /* Hide decorative elements */
+        .bili-dyn-banner, .dyn-banner {
+          display: none !important;
+        }
+      `);
+    }
+
+    return rules.join('\n');
+  }
+
+  /**
    * Inject CSS into page
    */
   private injectStyles(css: string): void {
@@ -257,7 +369,7 @@ export class StyleSimplificationService {
    * Load config and apply appropriate styles
    */
   async applyFromConfig(config: ExtensionConfig): Promise<void> {
-    const { videoPlayerSimplification, homepageSimplification } = config;
+    const { videoPlayerSimplification, homepageSimplification, dynamicSimplification } = config;
 
     // Apply video player simplification
     if (videoPlayerSimplification?.enabled && this.isVideoPlayerPage()) {
@@ -279,6 +391,18 @@ export class StyleSimplificationService {
         hideAds: homepageSimplification.hideAds,
         hideLiveStreams: homepageSimplification.hideLiveStreams,
         compactLayout: homepageSimplification.compactLayout,
+      });
+      return;
+    }
+
+    // Apply dynamic page simplification
+    if (dynamicSimplification?.enabled && this.isDynamicPage()) {
+      this.applyDynamicSimplification({
+        hideLiveStreams: dynamicSimplification.hideLiveStreams,
+        hideRecommendations: dynamicSimplification.hideRecommendations,
+        hideAds: dynamicSimplification.hideAds,
+        showOnlyFollowing: dynamicSimplification.showOnlyFollowing,
+        compactLayout: dynamicSimplification.compactLayout,
       });
       return;
     }

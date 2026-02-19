@@ -110,7 +110,8 @@ async function checkPermission(): Promise<void> {
       const fullConfig = await sendMessage('get-full-config', {}) as { 
         config: { 
           videoPlayerSimplification?: { enabled: boolean; hideComments: boolean; hideRecommendations: boolean; hideDanmaku: boolean; hideSidebar: boolean; minimalPlayer: boolean; },
-          homepageSimplification?: { enabled: boolean; hideRecommendations: boolean; hideTrending: boolean; hideAds: boolean; hideLiveStreams: boolean; compactLayout: boolean; }
+          homepageSimplification?: { enabled: boolean; hideRecommendations: boolean; hideTrending: boolean; hideAds: boolean; hideLiveStreams: boolean; compactLayout: boolean; },
+          dynamicSimplification?: { enabled: boolean; hideLiveStreams: boolean; hideRecommendations: boolean; hideAds: boolean; showOnlyFollowing: boolean; compactLayout: boolean; }
         } 
       };
       
@@ -122,6 +123,11 @@ async function checkPermission(): Promise<void> {
       // Apply homepage simplification
       if (styleService.isHomepage() && fullConfig.config?.homepageSimplification?.enabled) {
         styleService.applyHomepageSimplification(fullConfig.config.homepageSimplification);
+      }
+      
+      // Apply dynamic page simplification
+      if (styleService.isDynamicPage() && fullConfig.config?.dynamicSimplification?.enabled) {
+        styleService.applyDynamicSimplification(fullConfig.config.dynamicSimplification);
       }
     } catch (error) {
       console.log('[Content] Failed to load style simplification config:', error);
