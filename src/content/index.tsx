@@ -712,16 +712,21 @@ function isLivePage(): boolean {
          window.location.host === 'live.bilibili.com';
 }
 
-// Check if we should redirect to search (exclude video, dynamic, and live pages)
+// Check if current page is search page
+function isSearchPage(): boolean {
+  return window.location.pathname.startsWith('/search');
+}
+
+// Check if we should redirect to search (exclude video, dynamic, live, and search pages)
 async function checkHomepageRedirect(): Promise<void> {
   try {
     const response = await sendMessage('get-full-config', {});
     const fullResponse = response as unknown as { config: ExtensionConfig };
     const config = fullResponse?.config;
     if (config?.homepageSimplification?.redirectToSearch) {
-      // Don't redirect if on video page, dynamic page, or live page
-      if (styleService.isVideoPlayerPage() || styleService.isDynamicPage() || isLivePage()) {
-        console.log('[Content] Not redirecting - on video/dynamic/live page');
+      // Don't redirect if on video page, dynamic page, live page, or already on search page
+      if (styleService.isVideoPlayerPage() || styleService.isDynamicPage() || isLivePage() || isSearchPage()) {
+        console.log('[Content] Not redirecting - on video/dynamic/live/search page');
         return;
       }
       
