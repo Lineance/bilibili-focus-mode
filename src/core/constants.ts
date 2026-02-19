@@ -45,6 +45,15 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     hideSidebar: true,
     minimalPlayer: false,
   },
+  // Homepage style simplification
+  homepageSimplification: {
+    enabled: false,
+    hideRecommendations: true,
+    hideTrending: true,
+    hideAds: true,
+    hideLiveStreams: true,
+    compactLayout: false,
+  },
 };
 
 export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {

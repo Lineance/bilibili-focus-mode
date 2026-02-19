@@ -171,6 +171,15 @@ export interface ExtensionConfig {
     hideSidebar: boolean;
     minimalPlayer: boolean;
   };
+  // Homepage style simplification
+  homepageSimplification: {
+    enabled: boolean;
+    hideRecommendations: boolean;
+    hideTrending: boolean;
+    hideAds: boolean;
+    hideLiveStreams: boolean;
+    compactLayout: boolean;
+  };
 }
 
 export interface ExtensionStorage {

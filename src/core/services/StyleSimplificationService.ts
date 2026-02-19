@@ -1,11 +1,19 @@
 import type { ExtensionConfig } from '@core/types';
 
-export interface StyleSimplificationOptions {
+export interface VideoPlayerSimplificationOptions {
   hideComments: boolean;
   hideRecommendations: boolean;
   hideDanmaku: boolean;
   hideSidebar: boolean;
   minimalPlayer: boolean;
+}
+
+export interface HomepageSimplificationOptions {
+  hideRecommendations: boolean;
+  hideTrending: boolean;
+  hideAds: boolean;
+  hideLiveStreams: boolean;
+  compactLayout: boolean;
 }
 
 export class StyleSimplificationService {
@@ -19,9 +27,16 @@ export class StyleSimplificationService {
   }
 
   /**
+   * Check if current page is the homepage
+   */
+  isHomepage(): boolean {
+    return window.location.pathname === '/' || window.location.pathname === '/index.html';
+  }
+
+  /**
    * Apply style simplification to video player page
    */
-  applyVideoPlayerSimplification(options: StyleSimplificationOptions): void {
+  applyVideoPlayerSimplification(options: VideoPlayerSimplificationOptions): void {
     if (!this.isVideoPlayerPage()) return;
 
     // Remove existing styles
@@ -29,6 +44,22 @@ export class StyleSimplificationService {
 
     // Generate CSS rules
     const css = this.generateVideoPlayerCSS(options);
+
+    // Inject styles
+    this.injectStyles(css);
+  }
+
+  /**
+   * Apply style simplification to homepage
+   */
+  applyHomepageSimplification(options: HomepageSimplificationOptions): void {
+    if (!this.isHomepage()) return;
+
+    // Remove existing styles
+    this.removeStyles();
+
+    // Generate CSS rules
+    const css = this.generateHomepageCSS(options);
 
     // Inject styles
     this.injectStyles(css);
@@ -47,7 +78,7 @@ export class StyleSimplificationService {
   /**
    * Generate CSS for video player simplification
    */
-  private generateVideoPlayerCSS(options: StyleSimplificationOptions): string {
+  private generateVideoPlayerCSS(options: VideoPlayerSimplificationOptions): string {
     const rules: string[] = [];
 
     // Hide comments
@@ -132,6 +163,87 @@ export class StyleSimplificationService {
   }
 
   /**
+   * Generate CSS for homepage simplification
+   */
+  private generateHomepageCSS(options: HomepageSimplificationOptions): string {
+    const rules: string[] = [];
+
+    // Hide recommendations
+    if (options.hideRecommendations) {
+      rules.push(`
+        .recommended-container, .feed-card, .bili-feed4,
+        .rcmd-box, .video-card-reco,
+        [class*="recommend"], [class*="rcmd"] {
+          display: none !important;
+        }
+      `);
+    }
+
+    // Hide trending
+    if (options.hideTrending) {
+      rules.push(`
+        .rank-list, .trending-box, .popular-videos,
+        .rank-container, .hot-list,
+        [class*="trending"], [class*="popular"], [class*="hot"] {
+          display: none !important;
+        }
+      `);
+    }
+
+    // Hide ads
+    if (options.hideAds) {
+      rules.push(`
+        .ad-report, .ad-floor, .banner-ad,
+        [class*="ad-"], [class*="advertisement"],
+        .activity-ad, .game-ad {
+          display: none !important;
+        }
+      `);
+    }
+
+    // Hide live streams
+    if (options.hideLiveStreams) {
+      rules.push(`
+        .live-card, .live-box, .living-box,
+        [class*="live-"], [class*="living"] {
+          display: none !important;
+        }
+      `);
+    }
+
+    // Compact layout
+    if (options.compactLayout) {
+      rules.push(`
+        /* Reduce padding and margins */
+        .header-channel, .channel-menu {
+          padding: 4px 0 !important;
+        }
+
+        .bili-header {
+          margin-bottom: 0 !important;
+        }
+
+        /* Smaller header */
+        .bili-header__bar {
+          height: 50px !important;
+        }
+
+        /* Compact feed items */
+        .feed-card {
+          margin-bottom: 8px !important;
+        }
+
+        /* Hide decorative elements */
+        .header-banner, .banner-img {
+          display: none !important;
+        }
+      `);
+    }
+
+    return rules.join('\n');
+  }
+
+  /**
    * Inject CSS into page
    */
   private injectStyles(css: string): void {
@@ -145,8 +257,9 @@ export class StyleSimplificationService {
    * Load config and apply appropriate styles
    */
   async applyFromConfig(config: ExtensionConfig): Promise<void> {
-    const { videoPlayerSimplification } = config;
+    const { videoPlayerSimplification, homepageSimplification } = config;
 
+    // Apply video player simplification
     if (videoPlayerSimplification?.enabled && this.isVideoPlayerPage()) {
       this.applyVideoPlayerSimplification({
         hideComments: videoPlayerSimplification.hideComments,
@@ -155,8 +268,22 @@ export class StyleSimplificationService {
         hideSidebar: videoPlayerSimplification.hideSidebar,
         minimalPlayer: videoPlayerSimplification.minimalPlayer,
       });
-    } else {
-      this.removeStyles();
+      return;
     }
+
+    // Apply homepage simplification
+    if (homepageSimplification?.enabled && this.isHomepage()) {
+      this.applyHomepageSimplification({
+        hideRecommendations: homepageSimplification.hideRecommendations,
+        hideTrending: homepageSimplification.hideTrending,
+        hideAds: homepageSimplification.hideAds,
+        hideLiveStreams: homepageSimplification.hideLiveStreams,
+        compactLayout: homepageSimplification.compactLayout,
+      });
+      return;
+    }
+
+    // Remove styles if not applicable
+    this.removeStyles();
   }
 }

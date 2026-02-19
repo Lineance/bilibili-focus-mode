@@ -1776,6 +1776,86 @@ function ConfigPanel() {
                 </label>
               </div>
             )}
+
+            <div className="border-t border-gray-700 pt-3 mt-3">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={config.homepageSimplification.enabled}
+                  onChange={(e) => updateConfig('homepageSimplification', {
+                    ...config.homepageSimplification,
+                    enabled: e.target.checked
+                  })}
+                  className="w-4 h-4 rounded"
+                />
+                <span>启用首页样式简化</span>
+              </label>
+
+              {config.homepageSimplification.enabled && (
+                <div className="ml-6 space-y-2 mt-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.homepageSimplification.hideRecommendations}
+                      onChange={(e) => updateConfig('homepageSimplification', {
+                        ...config.homepageSimplification,
+                        hideRecommendations: e.target.checked
+                      })}
+                      className="w-4 h-4 rounded"
+                    />
+                    <span className="text-sm">隐藏推荐视频</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.homepageSimplification.hideTrending}
+                      onChange={(e) => updateConfig('homepageSimplification', {
+                        ...config.homepageSimplification,
+                        hideTrending: e.target.checked
+                      })}
+                      className="w-4 h-4 rounded"
+                    />
+                    <span className="text-sm">隐藏热门榜单</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.homepageSimplification.hideAds}
+                      onChange={(e) => updateConfig('homepageSimplification', {
+                        ...config.homepageSimplification,
+                        hideAds: e.target.checked
+                      })}
+                      className="w-4 h-4 rounded"
+                    />
+                    <span className="text-sm">隐藏广告</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.homepageSimplification.hideLiveStreams}
+                      onChange={(e) => updateConfig('homepageSimplification', {
+                        ...config.homepageSimplification,
+                        hideLiveStreams: e.target.checked
+                      })}
+                      className="w-4 h-4 rounded"
+                    />
+                    <span className="text-sm">隐藏直播</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.homepageSimplification.compactLayout}
+                      onChange={(e) => updateConfig('homepageSimplification', {
+                        ...config.homepageSimplification,
+                        compactLayout: e.target.checked
+                      })}
+                      className="w-4 h-4 rounded"
+                    />
+                    <span className="text-sm">紧凑布局</span>
+                  </label>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

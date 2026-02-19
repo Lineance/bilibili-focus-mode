@@ -41,6 +41,36 @@ describe('StyleSimplificationService', () => {
     });
   });
 
+  describe('isHomepage', () => {
+    it('should return true for homepage', () => {
+      Object.defineProperty(window, 'location', {
+        value: { pathname: '/' },
+        writable: true,
+      });
+      expect(service.isHomepage()).toBe(true);
+
+      Object.defineProperty(window, 'location', {
+        value: { pathname: '/index.html' },
+        writable: true,
+      });
+      expect(service.isHomepage()).toBe(true);
+    });
+
+    it('should return false for non-homepage', () => {
+      Object.defineProperty(window, 'location', {
+        value: { pathname: '/video/BV1xx' },
+        writable: true,
+      });
+      expect(service.isHomepage()).toBe(false);
+
+      Object.defineProperty(window, 'location', {
+        value: { pathname: '/t.bilibili.com' },
+        writable: true,
+      });
+      expect(service.isHomepage()).toBe(false);
+    });
+  });
+
   describe('applyVideoPlayerSimplification', () => {
     beforeEach(() => {
       Object.defineProperty(window, 'location', {
@@ -289,6 +319,165 @@ describe('StyleSimplificationService', () => {
 
       await expect(service.applyFromConfig(config)).resolves.not.toThrow();
       expect(document.getElementById('bilibili-focus-mode-styles')).toBeFalsy();
+    });
+
+    it('should apply homepage simplification when on homepage', async () => {
+      Object.defineProperty(window, 'location', {
+        value: { pathname: '/' },
+        writable: true,
+      });
+
+      const config: ExtensionConfig = {
+        homepageSimplification: {
+          enabled: true,
+          hideRecommendations: true,
+          hideTrending: false,
+          hideAds: false,
+          hideLiveStreams: false,
+          compactLayout: false,
+        },
+      } as ExtensionConfig;
+
+      await service.applyFromConfig(config);
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement).toBeTruthy();
+      expect(styleElement?.textContent).toContain('.recommended-container');
+    });
+
+    it('should not apply homepage simplification when disabled', async () => {
+      Object.defineProperty(window, 'location', {
+        value: { pathname: '/' },
+        writable: true,
+      });
+
+      const config: ExtensionConfig = {
+        homepageSimplification: {
+          enabled: false,
+          hideRecommendations: true,
+          hideTrending: true,
+          hideAds: true,
+          hideLiveStreams: true,
+          compactLayout: true,
+        },
+      } as ExtensionConfig;
+
+      await service.applyFromConfig(config);
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement).toBeFalsy();
+    });
+  });
+
+  describe('applyHomepageSimplification', () => {
+    beforeEach(() => {
+      Object.defineProperty(window, 'location', {
+        value: { pathname: '/' },
+        writable: true,
+      });
+    });
+
+    it('should inject styles when on homepage', () => {
+      service.applyHomepageSimplification({
+        hideRecommendations: true,
+        hideTrending: true,
+        hideAds: true,
+        hideLiveStreams: true,
+        compactLayout: false,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement).toBeTruthy();
+      expect(styleElement?.tagName).toBe('STYLE');
+    });
+
+    it('should not inject styles when not on homepage', () => {
+      Object.defineProperty(window, 'location', {
+        value: { pathname: '/video/BV1xx' },
+        writable: true,
+      });
+
+      service.applyHomepageSimplification({
+        hideRecommendations: true,
+        hideTrending: true,
+        hideAds: true,
+        hideLiveStreams: true,
+        compactLayout: false,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement).toBeFalsy();
+    });
+
+    it('should hide recommendations when hideRecommendations is true', () => {
+      service.applyHomepageSimplification({
+        hideRecommendations: true,
+        hideTrending: false,
+        hideAds: false,
+        hideLiveStreams: false,
+        compactLayout: false,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement?.textContent).toContain('.recommended-container');
+      expect(styleElement?.textContent).toContain('.feed-card');
+    });
+
+    it('should hide trending when hideTrending is true', () => {
+      service.applyHomepageSimplification({
+        hideRecommendations: false,
+        hideTrending: true,
+        hideAds: false,
+        hideLiveStreams: false,
+        compactLayout: false,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement?.textContent).toContain('.rank-list');
+      expect(styleElement?.textContent).toContain('.popular-videos');
+    });
+
+    it('should hide ads when hideAds is true', () => {
+      service.applyHomepageSimplification({
+        hideRecommendations: false,
+        hideTrending: false,
+        hideAds: true,
+        hideLiveStreams: false,
+        compactLayout: false,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement?.textContent).toContain('.ad-report');
+      expect(styleElement?.textContent).toContain('.banner-ad');
+    });
+
+    it('should hide live streams when hideLiveStreams is true', () => {
+      service.applyHomepageSimplification({
+        hideRecommendations: false,
+        hideTrending: false,
+        hideAds: false,
+        hideLiveStreams: true,
+        compactLayout: false,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement?.textContent).toContain('.live-card');
+      expect(styleElement?.textContent).toContain('.live-box');
+    });
+
+    it('should apply compact layout when compactLayout is true', () => {
+      service.applyHomepageSimplification({
+        hideRecommendations: false,
+        hideTrending: false,
+        hideAds: false,
+        hideLiveStreams: false,
+        compactLayout: true,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement?.textContent).toContain('.header-channel');
+      expect(styleElement?.textContent).toContain('padding: 4px');
+      expect(styleElement?.textContent).toContain('.header-banner');
     });
   });
 });

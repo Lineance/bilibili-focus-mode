@@ -106,15 +106,25 @@ async function checkPermission(): Promise<void> {
     latestVideoTag = result.videoTag || 'ENTERTAINMENT';
     
     // Apply style simplification if enabled
-    if (styleService.isVideoPlayerPage()) {
-      try {
-        const fullConfig = await sendMessage('get-full-config', {}) as { config: { videoPlayerSimplification?: { enabled: boolean; hideComments: boolean; hideRecommendations: boolean; hideDanmaku: boolean; hideSidebar: boolean; minimalPlayer: boolean; } } };
-        if (fullConfig.config?.videoPlayerSimplification?.enabled) {
-          styleService.applyVideoPlayerSimplification(fullConfig.config.videoPlayerSimplification);
-        }
-      } catch (error) {
-        console.log('[Content] Failed to load style simplification config:', error);
+    try {
+      const fullConfig = await sendMessage('get-full-config', {}) as { 
+        config: { 
+          videoPlayerSimplification?: { enabled: boolean; hideComments: boolean; hideRecommendations: boolean; hideDanmaku: boolean; hideSidebar: boolean; minimalPlayer: boolean; },
+          homepageSimplification?: { enabled: boolean; hideRecommendations: boolean; hideTrending: boolean; hideAds: boolean; hideLiveStreams: boolean; compactLayout: boolean; }
+        } 
+      };
+      
+      // Apply video player simplification
+      if (styleService.isVideoPlayerPage() && fullConfig.config?.videoPlayerSimplification?.enabled) {
+        styleService.applyVideoPlayerSimplification(fullConfig.config.videoPlayerSimplification);
       }
+      
+      // Apply homepage simplification
+      if (styleService.isHomepage() && fullConfig.config?.homepageSimplification?.enabled) {
+        styleService.applyHomepageSimplification(fullConfig.config.homepageSimplification);
+      }
+    } catch (error) {
+      console.log('[Content] Failed to load style simplification config:', error);
     }
     
     setupVideoTracking();
