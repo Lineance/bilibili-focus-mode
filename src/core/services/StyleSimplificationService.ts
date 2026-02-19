@@ -5,6 +5,7 @@ export interface VideoPlayerSimplificationOptions {
   hideRecommendations: boolean;
   hideDanmaku: boolean;
   hideSidebar: boolean;
+  hideAds: boolean;
   minimalPlayer: boolean;
 }
 
@@ -116,8 +117,9 @@ export class StyleSimplificationService {
     // Hide comments
     if (options.hideComments) {
       rules.push(`
-        #comment, .comment-area, .reply-wrapper,
-        .comment-list, .comment-header, .comment-send {
+        #comment, #commentapp, .comment-area, .reply-wrapper,
+        .comment-list, .comment-header, .comment-send,
+        bili-comments, [class*="comment"], [id*="comment"] {
           display: none !important;
         }
       `);
@@ -150,6 +152,19 @@ export class StyleSimplificationService {
         .right-container, .video-sections,
         .up-info-holder, .tag-panel,
         .video-desc, .video-toolbar {
+          display: none !important;
+        }
+      `);
+    }
+
+    // Hide ads
+    if (options.hideAds) {
+      rules.push(`
+        .ad-report, .ad-floor, .banner-ad,
+        .strip-ad, .strip-ad-inner, .left-banner,
+        .right-bottom-banner, .ad-floor-exp,
+        [class*="ad-"], [class*="advertisement"],
+        [class*="strip-ad"], [id*="ad"] {
           display: none !important;
         }
       `);
@@ -226,7 +241,9 @@ export class StyleSimplificationService {
     if (options.hideAds) {
       rules.push(`
         .ad-report, .ad-floor, .banner-ad,
+        .strip-ad, .strip-ad-inner, .left-banner,
         [class*="ad-"], [class*="advertisement"],
+        [class*="strip-ad"], [id*="ad"],
         .activity-ad, .game-ad {
           display: none !important;
         }
@@ -352,6 +369,18 @@ export class StyleSimplificationService {
       `);
     }
 
+    // Always hide right sidebar on dynamic page
+    rules.push(`
+      /* Hide right sidebar */
+      #app > div.bili-dyn-home--member > aside.right,
+      #app > div.bili-dyn-home--member > aside.right > section.sticky,
+      #app > div.bili-dyn-home--member > aside.right > section.sticky > div,
+      .bili-dyn-home--member aside.right,
+      aside.right section.sticky {
+        display: none !important;
+      }
+    `);
+
     return rules.join('\n');
   }
 
@@ -378,6 +407,7 @@ export class StyleSimplificationService {
         hideRecommendations: videoPlayerSimplification.hideRecommendations,
         hideDanmaku: videoPlayerSimplification.hideDanmaku,
         hideSidebar: videoPlayerSimplification.hideSidebar,
+        hideAds: videoPlayerSimplification.hideAds,
         minimalPlayer: videoPlayerSimplification.minimalPlayer,
       });
       return;

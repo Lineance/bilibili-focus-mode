@@ -43,6 +43,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     hideRecommendations: true,
     hideDanmaku: true,
     hideSidebar: true,
+    hideAds: true,
     minimalPlayer: false,
   },
   // Homepage style simplification
@@ -53,6 +54,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     hideAds: true,
     hideLiveStreams: true,
     compactLayout: false,
+    redirectToSearch: true,
   },
   // Dynamic page style simplification
   dynamicSimplification: {

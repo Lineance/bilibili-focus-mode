@@ -1765,6 +1765,18 @@ function ConfigPanel() {
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
+                    checked={config.videoPlayerSimplification.hideAds}
+                    onChange={(e) => updateConfig('videoPlayerSimplification', {
+                      ...config.videoPlayerSimplification,
+                      hideAds: e.target.checked
+                    })}
+                    className="w-4 h-4 rounded"
+                  />
+                  <span className="text-sm">隐藏广告</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
                     checked={config.videoPlayerSimplification.minimalPlayer}
                     onChange={(e) => updateConfig('videoPlayerSimplification', {
                       ...config.videoPlayerSimplification,
@@ -1852,6 +1864,18 @@ function ConfigPanel() {
                       className="w-4 h-4 rounded"
                     />
                     <span className="text-sm">紧凑布局</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.homepageSimplification.redirectToSearch}
+                      onChange={(e) => updateConfig('homepageSimplification', {
+                        ...config.homepageSimplification,
+                        redirectToSearch: e.target.checked
+                      })}
+                      className="w-4 h-4 rounded"
+                    />
+                    <span className="text-sm">重定向到搜索页（默认开启）</span>
                   </label>
                 </div>
               )}

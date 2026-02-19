@@ -169,6 +169,7 @@ export interface ExtensionConfig {
     hideRecommendations: boolean;
     hideDanmaku: boolean;
     hideSidebar: boolean;
+    hideAds: boolean;
     minimalPlayer: boolean;
   };
   // Homepage style simplification
@@ -179,6 +180,7 @@ export interface ExtensionConfig {
     hideAds: boolean;
     hideLiveStreams: boolean;
     compactLayout: boolean;
+    redirectToSearch: boolean;
   };
   // Dynamic page style simplification
   dynamicSimplification: {

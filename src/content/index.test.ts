@@ -184,4 +184,120 @@ describe('Content Script', () => {
       expect(managerButton?.textContent).toContain('打开管理页');
     });
   });
+
+  describe('Homepage Redirect', () => {
+    it('should redirect homepage to search when redirectToSearch is enabled', async () => {
+      const replaceMock = vi.fn();
+      
+      // Mock homepage
+      Object.defineProperty(window, 'location', {
+        value: {
+          pathname: '/',
+          href: 'https://www.bilibili.com/',
+          hostname: 'www.bilibili.com',
+          replace: replaceMock,
+        },
+        writable: true,
+      });
+
+      // Mock config with redirect enabled - need to mock both check-permission and get-full-config
+      mockSendMessage
+        .mockResolvedValueOnce({
+          allowed: true,
+          reason: 'PERMANENT',
+        } as PermissionResult)
+        .mockResolvedValueOnce({
+          config: {
+            homepageSimplification: {
+              enabled: true,
+              redirectToSearch: true,
+            },
+          },
+        });
+
+      vi.resetModules();
+      await import('./index');
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Check that redirect was called
+      expect(replaceMock).toHaveBeenCalledWith('https://search.bilibili.com/');
+    });
+
+    it('should not redirect when redirectToSearch is disabled', async () => {
+      const replaceMock = vi.fn();
+      
+      // Mock homepage
+      Object.defineProperty(window, 'location', {
+        value: {
+          pathname: '/',
+          href: 'https://www.bilibili.com/',
+          hostname: 'www.bilibili.com',
+          replace: replaceMock,
+        },
+        writable: true,
+      });
+
+      // Mock config with redirect disabled
+      mockSendMessage
+        .mockResolvedValueOnce({
+          allowed: true,
+          reason: 'PERMANENT',
+        } as PermissionResult)
+        .mockResolvedValueOnce({
+          config: {
+            homepageSimplification: {
+              enabled: true,
+              redirectToSearch: false,
+            },
+          },
+        });
+
+      vi.resetModules();
+      await import('./index');
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Check that redirect was not called
+      expect(replaceMock).not.toHaveBeenCalled();
+    });
+
+    it('should not redirect on non-homepage pages', async () => {
+      const replaceMock = vi.fn();
+      
+      // Mock video page
+      Object.defineProperty(window, 'location', {
+        value: {
+          pathname: '/video/BV1xx',
+          href: 'https://www.bilibili.com/video/BV1xx',
+          hostname: 'www.bilibili.com',
+          replace: replaceMock,
+        },
+        writable: true,
+      });
+
+      // Mock config with redirect enabled
+      mockSendMessage
+        .mockResolvedValueOnce({
+          allowed: true,
+          reason: 'PERMANENT',
+        } as PermissionResult)
+        .mockResolvedValueOnce({
+          config: {
+            homepageSimplification: {
+              enabled: true,
+              redirectToSearch: true,
+            },
+          },
+        });
+
+      vi.resetModules();
+      await import('./index');
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Check that redirect was not called on video page
+      expect(replaceMock).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -85,6 +85,7 @@ describe('StyleSimplificationService', () => {
         hideRecommendations: true,
         hideDanmaku: true,
         hideSidebar: true,
+        hideAds: true,
         minimalPlayer: false,
       });
 
@@ -104,6 +105,7 @@ describe('StyleSimplificationService', () => {
         hideRecommendations: true,
         hideDanmaku: true,
         hideSidebar: true,
+        hideAds: true,
         minimalPlayer: false,
       });
 
@@ -117,6 +119,7 @@ describe('StyleSimplificationService', () => {
         hideRecommendations: false,
         hideDanmaku: false,
         hideSidebar: false,
+        hideAds: false,
         minimalPlayer: false,
       });
 
@@ -131,6 +134,7 @@ describe('StyleSimplificationService', () => {
         hideRecommendations: true,
         hideDanmaku: false,
         hideSidebar: false,
+        hideAds: false,
         minimalPlayer: false,
       });
 
@@ -145,6 +149,7 @@ describe('StyleSimplificationService', () => {
         hideRecommendations: false,
         hideDanmaku: true,
         hideSidebar: false,
+        hideAds: false,
         minimalPlayer: false,
       });
 
@@ -159,6 +164,7 @@ describe('StyleSimplificationService', () => {
         hideRecommendations: false,
         hideDanmaku: false,
         hideSidebar: true,
+        hideAds: false,
         minimalPlayer: false,
       });
 
@@ -167,12 +173,28 @@ describe('StyleSimplificationService', () => {
       expect(styleElement?.textContent).toContain('.video-sections');
     });
 
+    it('should hide ads when hideAds is true', () => {
+      service.applyVideoPlayerSimplification({
+        hideComments: false,
+        hideRecommendations: false,
+        hideDanmaku: false,
+        hideSidebar: false,
+        hideAds: true,
+        minimalPlayer: false,
+      });
+
+      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      expect(styleElement?.textContent).toContain('.ad-report');
+      expect(styleElement?.textContent).toContain('.strip-ad');
+    });
+
     it('should apply minimal player styles when minimalPlayer is true', () => {
       service.applyVideoPlayerSimplification({
         hideComments: false,
         hideRecommendations: false,
         hideDanmaku: false,
         hideSidebar: false,
+        hideAds: false,
         minimalPlayer: true,
       });
 
@@ -191,6 +213,7 @@ describe('StyleSimplificationService', () => {
         hideRecommendations: false,
         hideDanmaku: false,
         hideSidebar: false,
+        hideAds: false,
         minimalPlayer: false,
       });
 
@@ -203,6 +226,7 @@ describe('StyleSimplificationService', () => {
         hideRecommendations: true,
         hideDanmaku: false,
         hideSidebar: false,
+        hideAds: false,
         minimalPlayer: false,
       });
 
@@ -227,6 +251,7 @@ describe('StyleSimplificationService', () => {
         hideRecommendations: true,
         hideDanmaku: true,
         hideSidebar: true,
+        hideAds: true,
         minimalPlayer: false,
       });
 
@@ -258,6 +283,7 @@ describe('StyleSimplificationService', () => {
           hideRecommendations: true,
           hideDanmaku: false,
           hideSidebar: false,
+          hideAds: false,
           minimalPlayer: false,
         },
       } as ExtensionConfig;
@@ -277,6 +303,7 @@ describe('StyleSimplificationService', () => {
           hideRecommendations: true,
           hideDanmaku: true,
           hideSidebar: true,
+          hideAds: true,
           minimalPlayer: true,
         },
       } as ExtensionConfig;
@@ -296,6 +323,7 @@ describe('StyleSimplificationService', () => {
           hideRecommendations: true,
           hideDanmaku: true,
           hideSidebar: true,
+          hideAds: true,
           minimalPlayer: false,
         },
       } as ExtensionConfig;

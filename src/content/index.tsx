@@ -1,5 +1,5 @@
 import type { ProtocolMap } from '@core/protocol';
-import type { VideoMetadata, VideoTag } from '@core/types';
+import type { ExtensionConfig, VideoMetadata, VideoTag } from '@core/types';
 import { StyleSimplificationService } from '@core/services';
 import { sendMessage } from 'webext-bridge/content-script';
 import './purify.css';
@@ -28,6 +28,54 @@ const DEFAULT_CONTENT_CONFIG: NonNullable<ProtocolMap['check-permission']['res']
   instantBreakFuse: true,
   collectionDetectionEnabled: true,
 };
+
+// Extract live stream metadata from page
+function extractLiveMetadata(): VideoMetadata | null {
+  const roomIdMatch = window.location.pathname.match(/\/live\/(\d+)/);
+  if (!roomIdMatch) return null;
+
+  const roomId = roomIdMatch[1];
+  const titleEl = document.querySelector('.room-title, .title-text, h1.title');
+  const uploaderEl = document.querySelector('.up-name, .username, .anchor-name, a.up-name');
+
+  let titleText = titleEl?.textContent?.trim().slice(0, 50) || 'Unknown Live';
+  const uploaderName = uploaderEl?.textContent?.trim() || 'Unknown';
+
+  // Try to get cover image
+  let coverUrl = '';
+  const coverSelectors = [
+    'img[src*="hdslb.com"]',
+    'img[src*="bilibili.com"]',
+    '.room-cover img',
+    '.live-cover img',
+    'meta[property="og:image"]',
+  ];
+
+  for (const selector of coverSelectors) {
+    const el = document.querySelector(selector);
+    if (el) {
+      if (selector.includes('meta')) {
+        coverUrl = (el as HTMLMetaElement).content || '';
+      } else {
+        coverUrl = (el as HTMLImageElement).src || '';
+      }
+      if (coverUrl) break;
+    }
+  }
+
+  if (!coverUrl) {
+    coverUrl = `https://i0.hdslb.com/bfs/live/${roomId}.jpg`;
+  }
+
+  return {
+    bvid: `LIVE_${roomId}`,
+    title: titleText,
+    uploader: uploaderName,
+    coverUrl,
+    tag: 'ENTERTAINMENT',
+    addedAt: Date.now(),
+  };
+}
 
 // Extract video metadata from page
 function extractVideoMetadata(collectionDetectionEnabled: boolean): VideoMetadata | null {
@@ -88,7 +136,14 @@ function extractVideoMetadata(collectionDetectionEnabled: boolean): VideoMetadat
 // Check permission and apply block if needed
 async function checkPermission(): Promise<void> {
   const configForExtraction = latestConfig || DEFAULT_CONTENT_CONFIG;
-  const metadata = extractVideoMetadata(configForExtraction.collectionDetectionEnabled);
+  
+  // Try to extract video metadata first, then live metadata
+  let metadata = extractVideoMetadata(configForExtraction.collectionDetectionEnabled);
+  
+  if (!metadata && isLivePage()) {
+    metadata = extractLiveMetadata();
+  }
+  
   if (!metadata) {
     removeBlock();
     return;
@@ -105,32 +160,9 @@ async function checkPermission(): Promise<void> {
     latestConfig = result.config || latestConfig || DEFAULT_CONTENT_CONFIG;
     latestVideoTag = result.videoTag || 'ENTERTAINMENT';
     
-    // Apply style simplification if enabled
-    try {
-      const fullConfig = await sendMessage('get-full-config', {}) as { 
-        config: { 
-          videoPlayerSimplification?: { enabled: boolean; hideComments: boolean; hideRecommendations: boolean; hideDanmaku: boolean; hideSidebar: boolean; minimalPlayer: boolean; },
-          homepageSimplification?: { enabled: boolean; hideRecommendations: boolean; hideTrending: boolean; hideAds: boolean; hideLiveStreams: boolean; compactLayout: boolean; },
-          dynamicSimplification?: { enabled: boolean; hideLiveStreams: boolean; hideRecommendations: boolean; hideAds: boolean; showOnlyFollowing: boolean; compactLayout: boolean; }
-        } 
-      };
-      
-      // Apply video player simplification
-      if (styleService.isVideoPlayerPage() && fullConfig.config?.videoPlayerSimplification?.enabled) {
-        styleService.applyVideoPlayerSimplification(fullConfig.config.videoPlayerSimplification);
-      }
-      
-      // Apply homepage simplification
-      if (styleService.isHomepage() && fullConfig.config?.homepageSimplification?.enabled) {
-        styleService.applyHomepageSimplification(fullConfig.config.homepageSimplification);
-      }
-      
-      // Apply dynamic page simplification
-      if (styleService.isDynamicPage() && fullConfig.config?.dynamicSimplification?.enabled) {
-        styleService.applyDynamicSimplification(fullConfig.config.dynamicSimplification);
-      }
-    } catch (error) {
-      console.log('[Content] Failed to load style simplification config:', error);
+    // Apply video player style simplification if on video page
+    if (styleService.isVideoPlayerPage()) {
+      applyStyleSimplification();
     }
     
     setupVideoTracking();
@@ -618,20 +650,111 @@ function openManagerPage(): void {
   }
 }
 
+// Apply style simplification based on current page
+async function applyStyleSimplification(): Promise<void> {
+  console.log('[Content] Applying style simplification...');
+  console.log('[Content] Current page:', window.location.pathname);
+  console.log('[Content] isHomepage:', styleService.isHomepage());
+  console.log('[Content] isDynamicPage:', styleService.isDynamicPage());
+  console.log('[Content] isVideoPlayerPage:', styleService.isVideoPlayerPage());
+  
+  try {
+    const response = await sendMessage('get-full-config', {});
+    console.log('[Content] Got config response:', response);
+    
+    const fullResponse = response as unknown as { config: ExtensionConfig };
+    const config = fullResponse?.config;
+    
+    if (!config) {
+      console.log('[Content] No config found');
+      return;
+    }
+    
+    console.log('[Content] Config loaded:', {
+      homepageSimplification: config.homepageSimplification,
+      dynamicSimplification: config.dynamicSimplification,
+      videoPlayerSimplification: config.videoPlayerSimplification,
+    });
+    
+    // Apply video player simplification
+    if (styleService.isVideoPlayerPage() && config.videoPlayerSimplification?.enabled) {
+      console.log('[Content] Applying video player simplification');
+      const vps = config.videoPlayerSimplification;
+      styleService.applyVideoPlayerSimplification({
+        hideComments: vps.hideComments,
+        hideRecommendations: vps.hideRecommendations,
+        hideDanmaku: vps.hideDanmaku,
+        hideSidebar: vps.hideSidebar,
+        hideAds: vps.hideAds,
+        minimalPlayer: vps.minimalPlayer,
+      });
+    }
+    
+    // Apply homepage simplification
+    if (styleService.isHomepage() && config.homepageSimplification?.enabled) {
+      console.log('[Content] Applying homepage simplification');
+      styleService.applyHomepageSimplification(config.homepageSimplification);
+    }
+    
+    // Apply dynamic page simplification
+    if (styleService.isDynamicPage() && config.dynamicSimplification?.enabled) {
+      console.log('[Content] Applying dynamic page simplification');
+      styleService.applyDynamicSimplification(config.dynamicSimplification);
+    }
+  } catch (error) {
+    console.log('[Content] Failed to apply style simplification:', error);
+  }
+}
+
+// Check if current page is a live streaming page
+function isLivePage(): boolean {
+  return window.location.pathname.startsWith('/live/') ||
+         window.location.host === 'live.bilibili.com';
+}
+
+// Check if we should redirect to search (exclude video, dynamic, and live pages)
+async function checkHomepageRedirect(): Promise<void> {
+  try {
+    const response = await sendMessage('get-full-config', {});
+    const fullResponse = response as unknown as { config: ExtensionConfig };
+    const config = fullResponse?.config;
+    if (config?.homepageSimplification?.redirectToSearch) {
+      // Don't redirect if on video page, dynamic page, or live page
+      if (styleService.isVideoPlayerPage() || styleService.isDynamicPage() || isLivePage()) {
+        console.log('[Content] Not redirecting - on video/dynamic/live page');
+        return;
+      }
+      
+      console.log('[Content] Redirecting to search page');
+      window.location.replace('https://search.bilibili.com/');
+    }
+  } catch (error) {
+    console.error('[Content] Failed to check homepage redirect:', error);
+  }
+}
+
 // Watch for navigation changes (SPA)
 let lastUrl = location.href;
 new MutationObserver(() => {
   const url = location.href;
   if (url !== lastUrl) {
     lastUrl = url;
+    checkHomepageRedirect();
+    applyStyleSimplification();
     setTimeout(checkPermission, 1000);
   }
 }).observe(document, { subtree: true, childList: true });
 
 // Initial check
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', checkPermission);
+  document.addEventListener('DOMContentLoaded', () => {
+    checkHomepageRedirect();
+    applyStyleSimplification();
+    checkPermission();
+  });
 } else {
+  checkHomepageRedirect();
+  applyStyleSimplification();
   checkPermission();
 }
 
