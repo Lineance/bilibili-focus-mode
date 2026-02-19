@@ -397,7 +397,11 @@ export class StyleSimplificationService {
       #bili-header-container > div > div > ul.left-entry > li:nth-child(2),
       #bili-header-container > div > div > ul.left-entry > li:nth-child(3),
       #bili-header-container > div > div > ul.left-entry > li:nth-child(4),
-      .left-entry li:nth-child(-n+4) {
+      .left-entry li:nth-child(-n+4),
+      ul.left-entry > li:nth-child(1),
+      ul.left-entry > li:nth-child(2),
+      ul.left-entry > li:nth-child(3),
+      ul.left-entry > li:nth-child(4) {
         display: none !important;
       }
 
