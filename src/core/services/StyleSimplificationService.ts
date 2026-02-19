@@ -385,6 +385,35 @@ export class StyleSimplificationService {
   }
 
   /**
+   * Apply global styles that work on all pages
+   */
+  applyGlobalStyles(): void {
+    // Remove existing styles first
+    this.removeStyles();
+
+    const css = `
+      /* Hide navigation menu items: 首页, 番剧, 直播, 游戏 */
+      #bili-header-container > div > div > ul.left-entry > li:nth-child(1),
+      #bili-header-container > div > div > ul.left-entry > li:nth-child(2),
+      #bili-header-container > div > div > ul.left-entry > li:nth-child(3),
+      #bili-header-container > div > div > ul.left-entry > li:nth-child(4),
+      .left-entry li:nth-child(-n+4) {
+        display: none !important;
+      }
+
+      /* Hide search entry banner on search page */
+      #i_cecream > div > div.search-entry-page.p_relative,
+      #i_cecream > div > div.search-entry-page.p_relative > div > div > div > div > div,
+      .search-entry-page,
+      .search-entry-page.p_relative {
+        display: none !important;
+      }
+    `;
+
+    this.injectStyles(css);
+  }
+
+  /**
    * Inject CSS into page
    */
   private injectStyles(css: string): void {
@@ -399,6 +428,9 @@ export class StyleSimplificationService {
    */
   async applyFromConfig(config: ExtensionConfig): Promise<void> {
     const { videoPlayerSimplification, homepageSimplification, dynamicSimplification } = config;
+
+    // Always apply global styles first
+    this.applyGlobalStyles();
 
     // Apply video player simplification
     if (videoPlayerSimplification?.enabled && this.isVideoPlayerPage()) {
@@ -436,8 +468,5 @@ export class StyleSimplificationService {
       });
       return;
     }
-
-    // Remove styles if not applicable
-    this.removeStyles();
   }
 }

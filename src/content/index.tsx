@@ -657,25 +657,28 @@ async function applyStyleSimplification(): Promise<void> {
   console.log('[Content] isHomepage:', styleService.isHomepage());
   console.log('[Content] isDynamicPage:', styleService.isDynamicPage());
   console.log('[Content] isVideoPlayerPage:', styleService.isVideoPlayerPage());
-  
+
   try {
     const response = await sendMessage('get-full-config', {});
     console.log('[Content] Got config response:', response);
-    
+
     const fullResponse = response as unknown as { config: ExtensionConfig };
     const config = fullResponse?.config;
-    
+
     if (!config) {
       console.log('[Content] No config found');
       return;
     }
-    
+
     console.log('[Content] Config loaded:', {
       homepageSimplification: config.homepageSimplification,
       dynamicSimplification: config.dynamicSimplification,
       videoPlayerSimplification: config.videoPlayerSimplification,
     });
-    
+
+    // Always apply global styles first
+    styleService.applyGlobalStyles();
+
     // Apply video player simplification
     if (styleService.isVideoPlayerPage() && config.videoPlayerSimplification?.enabled) {
       console.log('[Content] Applying video player simplification');
@@ -689,13 +692,13 @@ async function applyStyleSimplification(): Promise<void> {
         minimalPlayer: vps.minimalPlayer,
       });
     }
-    
+
     // Apply homepage simplification
     if (styleService.isHomepage() && config.homepageSimplification?.enabled) {
       console.log('[Content] Applying homepage simplification');
       styleService.applyHomepageSimplification(config.homepageSimplification);
     }
-    
+
     // Apply dynamic page simplification
     if (styleService.isDynamicPage() && config.dynamicSimplification?.enabled) {
       console.log('[Content] Applying dynamic page simplification');
