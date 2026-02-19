@@ -717,7 +717,8 @@ function isLivePage(): boolean {
 
 // Check if current page is search page
 function isSearchPage(): boolean {
-  return window.location.pathname.startsWith('/search');
+  return window.location.pathname.startsWith('/search') ||
+         window.location.host === 'search.bilibili.com';
 }
 
 // Check if we should redirect to search (exclude video, dynamic, live, and search pages)
