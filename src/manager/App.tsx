@@ -96,6 +96,11 @@ function ItemCard({
   onDelete: () => void;
   children?: React.ReactNode;
 }) {
+  // Generate video URL
+  const videoUrl = item.bvid.startsWith('LIVE_')
+    ? `https://live.bilibili.com/${item.bvid.replace('LIVE_', '')}`
+    : `https://www.bilibili.com/video/${item.bvid}`;
+
   return (
     <div className={`bg-gray-800 p-4 rounded-lg flex gap-4 items-center ${selected ? 'ring-2 ring-blue-500' : ''}`}>
       <input
@@ -104,9 +109,23 @@ function ItemCard({
         onChange={onSelect}
         className="w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
       />
-      <VideoCover url={item.coverUrl} title={item.title} />
+      <a
+        href={videoUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:opacity-80 transition-opacity"
+      >
+        <VideoCover url={item.coverUrl} title={item.title} />
+      </a>
       <div className="flex-1">
-        <h3 className="font-medium mb-1">{item.title}</h3>
+        <a
+          href={videoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium mb-1 hover:text-blue-400 transition-colors block"
+        >
+          {item.title}
+        </a>
         <p className="text-sm text-gray-400">{item.uploader}</p>
         {children}
       </div>
@@ -420,7 +439,11 @@ function LimboReview({ items, config }: { items: readonly LimboItem[]; config: E
         <p className="text-gray-500">待审池为空，在B站播放页添加视频</p>
       ) : (
         <div className="grid gap-4">
-          {items.map((item) => (
+          {items.map((item) => {
+            const videoUrl = item.bvid.startsWith('LIVE_')
+              ? `https://live.bilibili.com/${item.bvid.replace('LIVE_', '')}`
+              : `https://www.bilibili.com/video/${item.bvid}`;
+            return (
             <div key={item.bvid} className={`bg-gray-800 p-4 rounded-lg ${selected.has(item.bvid) ? 'ring-2 ring-blue-500' : ''}`}>
               <div className="flex gap-4 items-start">
                 <input
@@ -429,9 +452,23 @@ function LimboReview({ items, config }: { items: readonly LimboItem[]; config: E
                   onChange={() => toggleSelection(item.bvid)}
                   className="w-5 h-5 mt-2 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                 />
-                <VideoCover url={item.coverUrl} title={item.title} />
+                <a
+                  href={videoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:opacity-80 transition-opacity"
+                >
+                  <VideoCover url={item.coverUrl} title={item.title} />
+                </a>
                 <div className="flex-1">
-                  <h3 className="font-medium mb-1">{item.title}</h3>
+                  <a
+                    href={videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium mb-1 hover:text-blue-400 transition-colors block"
+                  >
+                    {item.title}
+                  </a>
                   <p className="text-sm text-gray-400 mb-2">{item.uploader}</p>
                   <div className="flex gap-2 flex-wrap">
                     <span className={`px-2 py-1 rounded text-xs ${item.tag === 'LEARNING' ? 'bg-green-600' : 'bg-yellow-600'}`}>
@@ -480,7 +517,8 @@ function LimboReview({ items, config }: { items: readonly LimboItem[]; config: E
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
 
