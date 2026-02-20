@@ -29,12 +29,9 @@ const DEFAULT_CONTENT_CONFIG: NonNullable<ProtocolMap['check-permission']['res']
   collectionDetectionEnabled: true,
 };
 
-// Extract live stream metadata from page
-function extractLiveMetadata(): VideoMetadata | null {
-  console.log('[Content] Extracting live metadata...');
-  console.log('[Content] Current pathname:', window.location.pathname);
-  console.log('[Content] Document ready state:', document.readyState);
-  console.log('[Content] Head-info-vm exists:', !!document.querySelector('#head-info-vm'));
+// Extract live stream metadata from page with retry mechanism
+async function extractLiveMetadataWithRetry(maxRetries = 5, delay = 1000): Promise<VideoMetadata | null> {
+  console.log('[Content] Extracting live metadata with retry...');
   
   // Match both /live/123456 and /123456 (direct room ID)
   const roomIdMatch = window.location.pathname.match(/(?:\/live\/)?(\d+)/);
@@ -44,105 +41,120 @@ function extractLiveMetadata(): VideoMetadata | null {
   }
 
   const roomId = roomIdMatch[1];
-  console.log('[Content] Room ID:', roomId);
   
-  // Try multiple selectors for live room title - using exact selectors provided by user
-  const titleSelectors = [
-    '#head-info-vm > div > div.lower-row > div.left-ctnr > div.live-title > div > div',
-    '#head-info-vm .title-length-limit',
-    '#head-info-vm .live-title',
-    '[data-v-65e2b007]',
-    '.live-title .text',
-    '.title-length-limit',
-    '.room-title',
-    'h1.title',
-    '[class*="title"]',
-    'h1'
-  ];
-  
-  let titleEl = null;
-  for (const selector of titleSelectors) {
-    try {
-      titleEl = document.querySelector(selector);
-      if (titleEl && titleEl.textContent?.trim()) {
-        console.log('[Content] Found title with selector:', selector, 'text:', titleEl.textContent.trim());
-        break;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    console.log(`[Content] Attempt ${attempt}/${maxRetries} to extract metadata`);
+    console.log('[Content] Document ready state:', document.readyState);
+    console.log('[Content] Head-info-vm exists:', !!document.querySelector('#head-info-vm'));
+    
+    // Try multiple selectors for live room title - using exact selectors provided by user
+    const titleSelectors = [
+      '#head-info-vm > div > div.lower-row > div.left-ctnr > div.live-title > div > div',
+      '#head-info-vm .title-length-limit',
+      '#head-info-vm .live-title',
+      '[data-v-65e2b007]',
+      '.live-title .text',
+      '.title-length-limit',
+      '.room-title',
+      'h1.title',
+      '[class*="title"]',
+      'h1'
+    ];
+    
+    let titleEl = null;
+    for (const selector of titleSelectors) {
+      try {
+        titleEl = document.querySelector(selector);
+        if (titleEl && titleEl.textContent?.trim()) {
+          console.log('[Content] Found title with selector:', selector, 'text:', titleEl.textContent.trim());
+          break;
+        }
+      } catch (e) {
+        console.log('[Content] Error with selector:', selector, e);
       }
-    } catch (e) {
-      console.log('[Content] Error with selector:', selector, e);
+    }
+
+    // Try multiple selectors for anchor/uploader name - using exact selectors provided by user
+    const uploaderSelectors = [
+      '#head-info-vm > div > div.upper-row > div.left-ctnr.left-header-area > a',
+      '#head-info-vm .room-owner-username',
+      '[data-v-4dfcc850]',
+      '.room-owner-username',
+      '.anchor-name',
+      '.up-name',
+      '.username',
+      'a[href*="space"]'
+    ];
+    
+    let uploaderEl = null;
+    for (const selector of uploaderSelectors) {
+      try {
+        uploaderEl = document.querySelector(selector);
+        if (uploaderEl && uploaderEl.textContent?.trim()) {
+          console.log('[Content] Found uploader with selector:', selector, 'text:', uploaderEl.textContent.trim());
+          break;
+        }
+      } catch (e) {
+        console.log('[Content] Error with selector:', selector, e);
+      }
+    }
+
+    // If we found both title and uploader, return the metadata
+    if (titleEl?.textContent?.trim() && uploaderEl?.textContent?.trim()) {
+      const titleText = titleEl.textContent.trim().slice(0, 50);
+      const uploaderName = uploaderEl.textContent.trim();
+      
+      console.log('[Content] Successfully extracted metadata:');
+      console.log('[Content] Title:', titleText);
+      console.log('[Content] Uploader:', uploaderName);
+
+      // Try to get cover image
+      let coverUrl = '';
+      const coverSelectors = [
+        '.room-cover img',
+        '.live-cover img',
+        '[class*="cover"] img',
+        'meta[property="og:image"]',
+      ];
+
+      for (const selector of coverSelectors) {
+        const el = document.querySelector(selector);
+        if (el) {
+          if (selector.includes('meta')) {
+            coverUrl = (el as HTMLMetaElement).content || '';
+          } else {
+            coverUrl = (el as HTMLImageElement).src || '';
+          }
+          if (coverUrl) {
+            console.log('[Content] Found cover with selector:', selector);
+            break;
+          }
+        }
+      }
+
+      if (!coverUrl) {
+        coverUrl = `https://i0.hdslb.com/bfs/live/${roomId}.jpg`;
+      }
+
+      return {
+        bvid: `LIVE_${roomId}`,
+        title: titleText,
+        uploader: uploaderName,
+        coverUrl,
+        tag: 'ENTERTAINMENT' as VideoTag,
+        addedAt: Date.now(),
+      };
+    }
+
+    // If not found and not last attempt, wait and retry
+    if (attempt < maxRetries) {
+      console.log(`[Content] Metadata not ready, waiting ${delay}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
 
-  // Try multiple selectors for anchor/uploader name - using exact selectors provided by user
-  const uploaderSelectors = [
-    '#head-info-vm > div > div.upper-row > div.left-ctnr.left-header-area > a',
-    '#head-info-vm .room-owner-username',
-    '[data-v-4dfcc850]',
-    '.room-owner-username',
-    '.anchor-name',
-    '.up-name',
-    '.username',
-    'a[href*="space"]'
-  ];
-  
-  let uploaderEl = null;
-  for (const selector of uploaderSelectors) {
-    try {
-      uploaderEl = document.querySelector(selector);
-      if (uploaderEl && uploaderEl.textContent?.trim()) {
-        console.log('[Content] Found uploader with selector:', selector, 'text:', uploaderEl.textContent.trim());
-        break;
-      }
-    } catch (e) {
-      console.log('[Content] Error with selector:', selector, e);
-    }
-  }
-
-  let titleText = titleEl?.textContent?.trim().slice(0, 50) || `Live Room ${roomId}`;
-  const uploaderName = uploaderEl?.textContent?.trim() || 'Unknown Anchor';
-  
-  console.log('[Content] Final Title:', titleText);
-  console.log('[Content] Final Uploader:', uploaderName);
-
-  // Try to get cover image
-  let coverUrl = '';
-  const coverSelectors = [
-    '.room-cover img',
-    '.live-cover img',
-    '[class*="cover"] img',
-    'meta[property="og:image"]',
-  ];
-
-  for (const selector of coverSelectors) {
-    const el = document.querySelector(selector);
-    if (el) {
-      if (selector.includes('meta')) {
-        coverUrl = (el as HTMLMetaElement).content || '';
-      } else {
-        coverUrl = (el as HTMLImageElement).src || '';
-      }
-      if (coverUrl) {
-        console.log('[Content] Found cover with selector:', selector);
-        break;
-      }
-    }
-  }
-
-  if (!coverUrl) {
-    coverUrl = `https://i0.hdslb.com/bfs/live/${roomId}.jpg`;
-  }
-
-  const metadata = {
-    bvid: `LIVE_${roomId}`,
-    title: titleText,
-    uploader: uploaderName,
-    coverUrl,
-    tag: 'ENTERTAINMENT' as VideoTag,
-    addedAt: Date.now(),
-  };
-  
-  console.log('[Content] Live metadata extracted:', metadata);
-  return metadata;
+  console.log('[Content] Failed to extract metadata after all retries');
+  return null;
 }
 
 // Extract video metadata from page
@@ -214,8 +226,8 @@ async function checkPermission(): Promise<void> {
   console.log('[Content] Video metadata:', metadata);
   
   if (!metadata && isLivePage()) {
-    console.log('[Content] Extracting live metadata...');
-    metadata = extractLiveMetadata();
+    console.log('[Content] Extracting live metadata with retry...');
+    metadata = await extractLiveMetadataWithRetry(10, 1000);
     console.log('[Content] Live metadata:', metadata);
   }
   
