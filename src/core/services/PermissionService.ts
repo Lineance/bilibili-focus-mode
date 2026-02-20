@@ -38,6 +38,20 @@ export class PermissionService {
       const inReviewWindow = windowStatus.isInWindow;
       const timeUntilWindow = windowStatus.timeUntilWindow;
 
+      // Check Bankruptcy FIRST - should block all new applications
+      if (this.storage.config.debtEnabled && this.storage.debtAccount?.bankruptcyEndTime) {
+        const now = Date.now();
+        if (now < this.storage.debtAccount.bankruptcyEndTime) {
+          return {
+            allowed: false,
+            reason: 'BANKRUPTCY',
+            inReviewWindow,
+            timeUntilWindow,
+            videoTag: resolvedTag
+          };
+        }
+      }
+
       // Check if uploader is in allowlist
       if (uploaderName && this.storage.allowedUploaders) {
         const allowedUploader = this.storage.allowedUploaders.find(u => u.name === uploaderName);
@@ -109,20 +123,6 @@ export class PermissionService {
             inReviewWindow,
             timeUntilWindow,
             videoTag: coolingItem.tag
-          };
-        }
-      }
-
-      // Check Bankruptcy
-      if (this.storage.config.debtEnabled && this.storage.debtAccount.bankruptcyEndTime) {
-        const now = Date.now();
-        if (now < this.storage.debtAccount.bankruptcyEndTime) {
-          return {
-            allowed: false,
-            reason: 'BANKRUPTCY',
-            inReviewWindow,
-            timeUntilWindow,
-            videoTag: resolvedTag
           };
         }
       }

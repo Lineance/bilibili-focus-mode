@@ -169,6 +169,102 @@ describe('PermissionService', () => {
       expect(result.reason).toBe('BANKRUPTCY');
     });
 
+    it('should deny even permanent videos when in bankruptcy', () => {
+      const futureTime = Date.now() + 86400000; // 1 day from now
+      mockStorage = {
+        ...mockStorage,
+        debtAccount: {
+          ...mockStorage.debtAccount,
+          bankruptcyEndTime: futureTime,
+        },
+        permanentGroups: [
+          {
+            id: 'learning',
+            name: '学习',
+            items: [
+              {
+                bvid: 'BV10xx',
+                title: 'Test Video',
+                uploader: 'Test Uploader',
+                coverUrl: '',
+                tag: 'LEARNING' as const,
+                addedAt: Date.now(),
+              },
+            ],
+            debtPriority: 1,
+          },
+        ],
+      };
+      service = new PermissionService(mockStorage);
+
+      const result = service.check('BV10xx');
+
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toBe('BANKRUPTCY');
+    });
+
+    it('should deny instant videos when in bankruptcy', () => {
+      const futureTime = Date.now() + 86400000; // 1 day from now
+      const futureExpiry = Date.now() + 3600000; // 1 hour from now
+      mockStorage = {
+        ...mockStorage,
+        debtAccount: {
+          ...mockStorage.debtAccount,
+          bankruptcyEndTime: futureTime,
+        },
+        instantList: [
+          {
+            bvid: 'BV11xx',
+            title: 'Test Video',
+            uploader: 'Test Uploader',
+            coverUrl: '',
+            tag: 'ENTERTAINMENT' as const,
+            addedAt: Date.now(),
+            expiresAt: futureExpiry,
+            fuseCode: 'ABCD-1234',
+            usedFuse: false,
+          },
+        ],
+      };
+      service = new PermissionService(mockStorage);
+
+      const result = service.check('BV11xx');
+
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toBe('BANKRUPTCY');
+    });
+
+    it('should deny cooling videos when in bankruptcy', () => {
+      const futureTime = Date.now() + 86400000; // 1 day from now
+      const pastTime = Date.now() - 3600000; // 1 hour ago
+      const futureExpiry = Date.now() + 3600000; // 1 hour from now
+      mockStorage = {
+        ...mockStorage,
+        debtAccount: {
+          ...mockStorage.debtAccount,
+          bankruptcyEndTime: futureTime,
+        },
+        coolingList: [
+          {
+            bvid: 'BV12xx',
+            title: 'Test Video',
+            uploader: 'Test Uploader',
+            coverUrl: '',
+            tag: 'ENTERTAINMENT' as const,
+            addedAt: pastTime,
+            availableAt: pastTime,
+            expiresAt: futureExpiry,
+          },
+        ],
+      };
+      service = new PermissionService(mockStorage);
+
+      const result = service.check('BV12xx');
+
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toBe('BANKRUPTCY');
+    });
+
     it('should deny videos without permission', () => {
       const result = service.check('BV7xx');
 
