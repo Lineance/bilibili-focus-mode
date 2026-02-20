@@ -479,15 +479,19 @@ export class StyleSimplificationService {
       `);
     }
 
-    // Minimal player mode
+    // Minimal player mode - keep control bar visible
     if (options.minimalPlayer) {
       rules.push(`
-        /* Hide non-essential elements */
+        /* Hide non-essential elements but keep control bar */
         #head-info-vm,
         .head-info,
-        #gift-control-vm,
-        #chat-control-panel-vm {
+        #gift-control-vm {
           display: none !important;
+        }
+
+        /* Keep chat control panel visible for controls */
+        #chat-control-panel-vm {
+          display: block !important;
         }
 
         /* Center the player */
@@ -534,6 +538,13 @@ export class StyleSimplificationService {
       /* Hide rank list content */
       #rank-list-ctnr-box > div.tab-content.ts-dot-2,
       .tab-content.ts-dot-2 {
+        display: none !important;
+      }
+
+      /* Hide footer */
+      body > div.live-room-app.p-relative > main > footer,
+      .live-room-app footer,
+      main > footer {
         display: none !important;
       }
     `);
