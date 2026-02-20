@@ -38,7 +38,21 @@ export class PermissionService {
       const inReviewWindow = windowStatus.isInWindow;
       const timeUntilWindow = windowStatus.timeUntilWindow;
 
-      // Check Bankruptcy FIRST - should block all new applications
+      // Check Permanent Groups FIRST - always allowed even during bankruptcy
+      const inPermanent = this.storage.permanentGroups.some(group =>
+        group.items.some(item => item.bvid === bvid)
+      );
+      if (inPermanent) {
+        return {
+          allowed: true,
+          reason: 'PERMANENT',
+          inReviewWindow,
+          timeUntilWindow,
+          videoTag: resolvedTag
+        };
+      }
+
+      // Check Bankruptcy - blocks all new applications except permanent groups
       if (this.storage.config.debtEnabled && this.storage.debtAccount?.bankruptcyEndTime) {
         const now = Date.now();
         if (now < this.storage.debtAccount.bankruptcyEndTime) {
@@ -65,20 +79,6 @@ export class PermissionService {
             videoTag: allowedUploader.tag
           };
         }
-      }
-
-      // Check Permanent Groups - always allowed once approved
-      const inPermanent = this.storage.permanentGroups.some(group =>
-        group.items.some(item => item.bvid === bvid)
-      );
-      if (inPermanent) {
-        return {
-          allowed: true,
-          reason: 'PERMANENT',
-          inReviewWindow,
-          timeUntilWindow,
-          videoTag: resolvedTag
-        };
       }
 
       // Check Instant List - allowed if not expired

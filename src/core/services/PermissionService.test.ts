@@ -169,7 +169,7 @@ describe('PermissionService', () => {
       expect(result.reason).toBe('BANKRUPTCY');
     });
 
-    it('should deny even permanent videos when in bankruptcy', () => {
+    it('should allow permanent videos even when in bankruptcy', () => {
       const futureTime = Date.now() + 86400000; // 1 day from now
       mockStorage = {
         ...mockStorage,
@@ -199,8 +199,8 @@ describe('PermissionService', () => {
 
       const result = service.check('BV10xx');
 
-      expect(result.allowed).toBe(false);
-      expect(result.reason).toBe('BANKRUPTCY');
+      expect(result.allowed).toBe(true);
+      expect(result.reason).toBe('PERMANENT');
     });
 
     it('should deny instant videos when in bankruptcy', () => {
