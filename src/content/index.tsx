@@ -34,7 +34,8 @@ function extractLiveMetadata(): VideoMetadata | null {
   console.log('[Content] Extracting live metadata...');
   console.log('[Content] Current pathname:', window.location.pathname);
   
-  const roomIdMatch = window.location.pathname.match(/\/live\/(\d+)/);
+  // Match both /live/123456 and /123456 (direct room ID)
+  const roomIdMatch = window.location.pathname.match(/(?:\/live\/)?(\d+)/);
   if (!roomIdMatch) {
     console.log('[Content] No room ID found in pathname');
     return null;
@@ -793,7 +794,8 @@ async function applyStyleSimplification(): Promise<void> {
 // Check if current page is a live streaming page
 function isLivePage(): boolean {
   return window.location.pathname.startsWith('/live/') ||
-         window.location.host === 'live.bilibili.com';
+         window.location.host === 'live.bilibili.com' ||
+         /^\/\d+$/.test(window.location.pathname);
 }
 
 // Check if current page is search page
