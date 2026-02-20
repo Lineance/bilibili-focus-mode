@@ -313,7 +313,8 @@ onMessage('watch-ended', async (message) => {
 onMessage('get-full-config', async () => {
   const storage = await chrome.storage.local.get();
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
-  return { config };
+  const debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
+  return { config, debtAccount };
 });
 
 chrome.storage.local.get('config').then((storage) => {
