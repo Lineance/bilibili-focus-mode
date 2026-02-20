@@ -32,11 +32,99 @@ export function App() {
   const [activeTab, setActiveTab] = useState<'limbo' | 'cooling' | 'instant' | 'permanent' | 'ghost' | 'debt' | 'uploaders' | 'config'>('limbo');
   const storage = useStorage();
 
+  const handleExport = async () => {
+    const storage = await chrome.storage.local.get();
+    const exportData = {
+      version: 3,
+      exportDate: new Date().toISOString(),
+      config: storage.config,
+      limboList: storage.limboList || [],
+      coolingList: storage.coolingList || [],
+      instantList: storage.instantList || [],
+      permanentGroups: storage.permanentGroups || [],
+      ghostList: storage.ghostList || [],
+      allowedUploaders: storage.allowedUploaders || [],
+      debtAccount: storage.debtAccount,
+      globalStats: storage.globalStats,
+      behaviorLog: storage.behaviorLog,
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bilibili-focus-mode-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (data.version !== 3) {
+        alert('不支持的备份文件版本');
+        return;
+      }
+
+      if (!confirm('导入将覆盖现有数据，确定要继续吗？')) {
+        return;
+      }
+
+      await chrome.storage.local.set({
+        config: data.config,
+        limboList: data.limboList || [],
+        coolingList: data.coolingList || [],
+        instantList: data.instantList || [],
+        permanentGroups: data.permanentGroups || [],
+        ghostList: data.ghostList || [],
+        allowedUploaders: data.allowedUploaders || [],
+        debtAccount: data.debtAccount,
+        globalStats: data.globalStats,
+        behaviorLog: data.behaviorLog,
+      });
+
+      alert('导入成功！');
+      window.location.reload();
+    } catch (error) {
+      console.error('Import error:', error);
+      alert('导入失败：文件格式错误');
+    }
+
+    // Reset input
+    event.target.value = '';
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Bilibili Focus Mode</h1>
-        <p className="text-gray-400">意图性娱乐时间管理工具</p>
+      <header className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Bilibili Focus Mode</h1>
+          <p className="text-gray-400">意图性娱乐时间管理工具</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExport}
+            className="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-700"
+          >
+            导出备份
+          </button>
+          <label className="px-3 py-1 bg-green-600 rounded text-sm hover:bg-green-700 cursor-pointer">
+            导入备份
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+          </label>
+        </div>
       </header>
 
       <nav className="flex gap-4 mb-6 border-b border-gray-700 pb-4 flex-wrap">
