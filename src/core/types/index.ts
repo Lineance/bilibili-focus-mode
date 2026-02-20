@@ -191,6 +191,15 @@ export interface ExtensionConfig {
     showOnlyFollowing: boolean;
     compactLayout: boolean;
   };
+  // Live streaming page style simplification
+  liveSimplification: {
+    enabled: boolean;
+    hideComments: boolean;
+    hideGiftEffects: boolean;
+    hideAds: boolean;
+    hideSidebar: boolean;
+    minimalPlayer: boolean;
+  };
 }
 
 export interface ExtensionStorage {

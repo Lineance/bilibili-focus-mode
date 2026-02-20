@@ -762,6 +762,7 @@ async function applyStyleSimplification(): Promise<void> {
       homepageSimplification: config.homepageSimplification,
       dynamicSimplification: config.dynamicSimplification,
       videoPlayerSimplification: config.videoPlayerSimplification,
+      liveSimplification: config.liveSimplification,
     });
 
     // Always apply global styles first
@@ -791,6 +792,19 @@ async function applyStyleSimplification(): Promise<void> {
     if (styleService.isDynamicPage() && config.dynamicSimplification?.enabled) {
       console.log('[Content] Applying dynamic page simplification');
       styleService.applyDynamicSimplification(config.dynamicSimplification);
+    }
+
+    // Apply live streaming page simplification
+    if (styleService.isLivePage() && config.liveSimplification?.enabled) {
+      console.log('[Content] Applying live page simplification');
+      const ls = config.liveSimplification;
+      styleService.applyLiveSimplification({
+        hideComments: ls.hideComments,
+        hideGiftEffects: ls.hideGiftEffects,
+        hideAds: ls.hideAds,
+        hideSidebar: ls.hideSidebar,
+        minimalPlayer: ls.minimalPlayer,
+      });
     }
   } catch (error) {
     console.log('[Content] Failed to apply style simplification:', error);

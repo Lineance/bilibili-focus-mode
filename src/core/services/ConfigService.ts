@@ -334,6 +334,11 @@ export class ConfigService {
         description: '简化动态页布局，仅显示关注内容',
         type: 'boolean',
       },
+      liveSimplification: {
+        label: '直播页样式简化',
+        description: '简化直播页面布局，减少干扰元素',
+        type: 'boolean',
+      },
     };
   }
 

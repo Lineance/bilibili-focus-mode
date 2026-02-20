@@ -65,6 +65,15 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     showOnlyFollowing: false,
     compactLayout: false,
   },
+  // Live streaming page style simplification
+  liveSimplification: {
+    enabled: false,
+    hideComments: true,
+    hideGiftEffects: true,
+    hideAds: true,
+    hideSidebar: true,
+    minimalPlayer: false,
+  },
 };
 
 export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {

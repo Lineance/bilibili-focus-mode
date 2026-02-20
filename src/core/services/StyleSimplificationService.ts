@@ -25,6 +25,14 @@ export interface DynamicSimplificationOptions {
   compactLayout: boolean;
 }
 
+export interface LiveSimplificationOptions {
+  hideComments: boolean;
+  hideGiftEffects: boolean;
+  hideAds: boolean;
+  hideSidebar: boolean;
+  minimalPlayer: boolean;
+}
+
 export class StyleSimplificationService {
   private styleElement: HTMLStyleElement | null = null;
 
@@ -48,6 +56,15 @@ export class StyleSimplificationService {
   isDynamicPage(): boolean {
     return window.location.pathname === '/t.bilibili.com' ||
       window.location.host === 't.bilibili.com';
+  }
+
+  /**
+   * Check if current page is a live streaming page
+   */
+  isLivePage(): boolean {
+    return window.location.pathname.startsWith('/live/') ||
+      window.location.host === 'live.bilibili.com' ||
+      /^\/\d+$/.test(window.location.pathname);
   }
 
   /**
@@ -93,6 +110,22 @@ export class StyleSimplificationService {
 
     // Generate CSS rules
     const css = this.generateDynamicCSS(options);
+
+    // Inject styles
+    this.injectStyles(css);
+  }
+
+  /**
+   * Apply style simplification to live streaming page
+   */
+  applyLiveSimplification(options: LiveSimplificationOptions): void {
+    if (!this.isLivePage()) return;
+
+    // Remove existing styles
+    this.removeStyles();
+
+    // Generate CSS rules
+    const css = this.generateLiveCSS(options);
 
     // Inject styles
     this.injectStyles(css);
@@ -380,6 +413,91 @@ export class StyleSimplificationService {
         display: none !important;
       }
     `);
+
+    return rules.join('\n');
+  }
+
+  /**
+   * Generate CSS for live streaming simplification
+   */
+  private generateLiveCSS(options: LiveSimplificationOptions): string {
+    const rules: string[] = [];
+
+    // Hide comments
+    if (options.hideComments) {
+      rules.push(`
+        #chat-control-panel-vm,
+        #chat-history-panel,
+        .chat-history-panel,
+        .chat-control-panel,
+        #rank-list-vm,
+        .rank-list,
+        [class*="chat"],
+        [class*="comment"] {
+          display: none !important;
+        }
+      `);
+    }
+
+    // Hide gift effects
+    if (options.hideGiftEffects) {
+      rules.push(`
+        #gift-control-vm,
+        .gift-control,
+        #my-dear-haruna-vm,
+        .gift-box,
+        [class*="gift"],
+        [class*="present"],
+        .gift-icon,
+        .gift-effect {
+          display: none !important;
+        }
+      `);
+    }
+
+    // Hide ads
+    if (options.hideAds) {
+      rules.push(`
+        .ad-report,
+        .ad-floor,
+        [class*="ad-"],
+        [class*="advertisement"] {
+          display: none !important;
+        }
+      `);
+    }
+
+    // Hide sidebar
+    if (options.hideSidebar) {
+      rules.push(`
+        #aside-area-vm,
+        .aside-area,
+        #sidebar-vm,
+        .sidebar {
+          display: none !important;
+        }
+      `);
+    }
+
+    // Minimal player mode
+    if (options.minimalPlayer) {
+      rules.push(`
+        /* Hide non-essential elements */
+        #head-info-vm,
+        .head-info,
+        #gift-control-vm,
+        #chat-control-panel-vm {
+          display: none !important;
+        }
+
+        /* Center the player */
+        #live-player,
+        .live-player {
+          width: 100% !important;
+          height: 100vh !important;
+        }
+      `);
+    }
 
     return rules.join('\n');
   }
