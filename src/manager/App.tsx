@@ -132,7 +132,7 @@ export function App() {
           { id: 'limbo', label: '待审池', count: storage.limboList?.length || 0 },
           { id: 'cooling', label: '冷静期', count: storage.coolingList?.length || 0 },
           { id: 'instant', label: '即时许可', count: storage.instantList?.length || 0 },
-          { id: 'permanent', label: '永久分组', count: storage.permanentGroups?.length || 0 },
+          { id: 'permanent', label: '永久分组', count: storage.permanentGroups?.reduce((sum, group) => sum + group.items.length, 0) || 0 },
           { id: 'ghost', label: '幽灵档案', count: storage.ghostList?.length || 0 },
           { id: 'debt', label: '债务', count: null },
           { id: 'uploaders', label: 'UP主白名单', count: storage.allowedUploaders?.length || 0 },
