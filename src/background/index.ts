@@ -1,6 +1,6 @@
 import { DEFAULT_GLOBAL_STATS, DEFAULT_STORAGE } from '@core/constants';
 import type { ProtocolMap } from '@core/protocol';
-import { DebtService, FuseApplicationService, PermissionService } from '@core/services';
+import { DebtService, FuseApplicationService, FuseService, PermissionService } from '@core/services';
 import { TimeWindowService } from '@core/services/TimeWindowService';
 import type { BehaviorLogState, ExtensionConfig, VideoMetadata } from '@core/types';
 import { onMessage } from 'webext-bridge/background';
@@ -330,6 +330,59 @@ onMessage('get-full-config', async () => {
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
   const debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
   return { config, debtAccount };
+});
+
+// Time window fuse code storage
+let timeWindowFuseCode: string | null = null;
+let timeWindowFuseExpiresAt: number | null = null;
+
+onMessage('apply-time-window-fuse', async () => {
+  const storage = await chrome.storage.local.get();
+  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  
+  if (!config.instantBreakFuse) {
+    return { success: false, message: '熔断功能未启用' };
+  }
+  
+  const fuseService = new FuseService(config);
+  const fuseLength = fuseService.calculateFuseLength(0, false); // Base length for time window
+  timeWindowFuseCode = fuseService.generateFuseCode(fuseLength);
+  timeWindowFuseExpiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes validity
+  
+  return { 
+    success: true, 
+    message: '熔断码已生成', 
+    fuseCode: timeWindowFuseCode, 
+    expiresAt: timeWindowFuseExpiresAt 
+  };
+});
+
+onMessage('verify-time-window-fuse', async (message) => {
+  const data = message.data as unknown as ProtocolMap['verify-time-window-fuse']['req'];
+  const storage = await chrome.storage.local.get();
+  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  
+  if (!timeWindowFuseCode || !timeWindowFuseExpiresAt) {
+    return { success: false, message: '没有有效的熔断码，请先生成' };
+  }
+  
+  if (Date.now() > timeWindowFuseExpiresAt) {
+    timeWindowFuseCode = null;
+    timeWindowFuseExpiresAt = null;
+    return { success: false, message: '熔断码已过期，请重新生成' };
+  }
+  
+  const fuseService = new FuseService(config);
+  const isValid = fuseService.verifyFuseCode(data.fuseCode, timeWindowFuseCode);
+  
+  if (isValid) {
+    // Clear the fuse code after successful verification (one-time use)
+    timeWindowFuseCode = null;
+    timeWindowFuseExpiresAt = null;
+    return { success: true, message: '熔断码验证成功', expiresAt: Date.now() + 60 * 60 * 1000 }; // 1 hour break
+  }
+  
+  return { success: false, message: '熔断码无效' };
 });
 
 chrome.storage.local.get('config').then((storage) => {

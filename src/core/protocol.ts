@@ -53,4 +53,12 @@ export interface ProtocolMap {
     req: {};
     res: { config: ExtensionConfig };
   };
+  'verify-time-window-fuse': {
+    req: { fuseCode: string };
+    res: { success: boolean; message: string; expiresAt?: number };
+  };
+  'apply-time-window-fuse': {
+    req: {};
+    res: { success: boolean; message: string; fuseCode?: string; expiresAt?: number };
+  };
 }
