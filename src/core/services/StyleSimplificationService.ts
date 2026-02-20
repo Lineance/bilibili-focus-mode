@@ -499,6 +499,45 @@ export class StyleSimplificationService {
       `);
     }
 
+    // Always hide specific live page elements
+    rules.push(`
+      /* Hide navigation bar */
+      #room-ssr-vm > div.link-navbar-ctnr.z-link-navbar.w-100.p-fixed.p-zero.ts-dot-4.z-navbar.contain-optimize,
+      .link-navbar-ctnr,
+      .z-link-navbar {
+        display: none !important;
+      }
+
+      /* Hide right section of header */
+      #head-info-vm > div > div.upper-row > div.right-ctnr,
+      .right-ctnr {
+        display: none !important;
+      }
+
+      /* Hide left header area extra elements */
+      #head-info-vm > div > div.upper-row > div.left-ctnr.left-header-area > div > div {
+        display: none !important;
+      }
+
+      /* Hide gift control */
+      #gift-control-vm,
+      .gift-control-vm {
+        display: none !important;
+      }
+
+      /* Hide sections */
+      #sections-vm,
+      .sections-vm {
+        display: none !important;
+      }
+
+      /* Hide rank list content */
+      #rank-list-ctnr-box > div.tab-content.ts-dot-2,
+      .tab-content.ts-dot-2 {
+        display: none !important;
+      }
+    `);
+
     return rules.join('\n');
   }
 
