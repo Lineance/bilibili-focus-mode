@@ -980,12 +980,20 @@ function DebtDashboard({
   account,
   config,
 }: {
-  account?: { currentDebt: number; totalEntertainmentMinutes?: number; totalLearningMinutes?: number };
+  account?: { 
+    currentDebt: number; 
+    totalEntertainmentMinutes?: number; 
+    totalLearningMinutes?: number;
+    // Legacy field names
+    totalAccrued?: number;
+    totalRepaid?: number;
+  };
   config: ExtensionConfig;
 }) {
   const debt = account?.currentDebt || 0;
-  const entertainmentMinutes = account?.totalEntertainmentMinutes || 0;
-  const learningMinutes = account?.totalLearningMinutes || 0;
+  // Support both new and legacy field names
+  const entertainmentMinutes = account?.totalEntertainmentMinutes ?? account?.totalAccrued ?? 0;
+  const learningMinutes = account?.totalLearningMinutes ?? account?.totalRepaid ?? 0;
   const isBankrupt = debt >= config.maxDebtMinutes;
 
   // Calculate net debt composition

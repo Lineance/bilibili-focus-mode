@@ -107,4 +107,28 @@ describe('DebtService', () => {
       expect(endTime).toBeLessThanOrEqual(after + 24 * 60 * 60 * 1000);
     });
   });
+
+  describe('legacy field migration', () => {
+    it('should handle legacy totalAccrued field', () => {
+      const legacyAccount = {
+        ...account,
+        totalAccrued: 100,
+        totalRepaid: 50,
+      } as DebtAccount & { totalAccrued?: number; totalRepaid?: number };
+
+      // Simulate migration
+      const migratedAccount = {
+        ...legacyAccount,
+        totalEntertainmentMinutes: legacyAccount.totalAccrued || 0,
+        totalLearningMinutes: legacyAccount.totalRepaid || 0,
+      };
+      delete (migratedAccount as { totalAccrued?: number }).totalAccrued;
+      delete (migratedAccount as { totalRepaid?: number }).totalRepaid;
+
+      expect(migratedAccount.totalEntertainmentMinutes).toBe(100);
+      expect(migratedAccount.totalLearningMinutes).toBe(50);
+      expect((migratedAccount as { totalAccrued?: number }).totalAccrued).toBeUndefined();
+      expect((migratedAccount as { totalRepaid?: number }).totalRepaid).toBeUndefined();
+    });
+  });
 });

@@ -177,7 +177,20 @@ onMessage('update-debt', async (message) => {
 
   const storage = await chrome.storage.local.get();
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
-  const debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
+  let debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
+  
+  // Migrate old field names to new field names
+  if ('totalAccrued' in debtAccount || 'totalRepaid' in debtAccount) {
+    debtAccount = {
+      ...debtAccount,
+      totalEntertainmentMinutes: (debtAccount as { totalAccrued?: number }).totalAccrued || 0,
+      totalLearningMinutes: (debtAccount as { totalRepaid?: number }).totalRepaid || 0,
+    };
+    // Remove old fields
+    delete (debtAccount as { totalAccrued?: number }).totalAccrued;
+    delete (debtAccount as { totalRepaid?: number }).totalRepaid;
+  }
+  
   console.log('[Background] Current debt account:', debtAccount);
 
   if (!config.debtEnabled) {
