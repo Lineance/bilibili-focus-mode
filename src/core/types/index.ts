@@ -200,6 +200,12 @@ export interface ExtensionConfig {
     hideSidebar: boolean;
     minimalPlayer: boolean;
   };
+  // Keyword-based auto-allow rules
+  keywordRules: {
+    enabled: boolean;
+    keywords: string[];
+    tag: VideoTag;
+  };
 }
 
 export interface ExtensionStorage {

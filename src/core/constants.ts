@@ -74,6 +74,12 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     hideSidebar: true,
     minimalPlayer: false,
   },
+  // Keyword-based auto-allow rules
+  keywordRules: {
+    enabled: true,
+    keywords: ['playlist', '歌单'],
+    tag: 'LEARNING',
+  },
 };
 
 export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {

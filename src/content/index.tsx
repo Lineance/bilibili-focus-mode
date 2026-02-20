@@ -244,7 +244,8 @@ async function checkPermission(): Promise<void> {
     console.log('[Content] Sending check-permission request for:', metadata.bvid);
     const result = await sendMessage('check-permission', {
       bvid: metadata.bvid,
-      uploaderName: metadata.uploader
+      uploaderName: metadata.uploader,
+      title: metadata.title
     } as ProtocolMap['check-permission']['req']) as ProtocolMap['check-permission']['res'];
 
     console.log('[Content] Permission result:', result);

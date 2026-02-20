@@ -122,7 +122,7 @@ onMessage('check-permission', async (message) => {
 
   const storage = await chrome.storage.local.get() as typeof DEFAULT_STORAGE;
   const service = new PermissionService(storage);
-  const result = service.check(data.bvid, data.uploaderName);
+  const result = service.check(data.bvid, data.uploaderName, data.title);
   const config = storage.config || DEFAULT_STORAGE.config;
 
   return {

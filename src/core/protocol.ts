@@ -2,7 +2,7 @@ import type { ExtensionConfig, PermissionResult, VideoMetadata, VideoTag } from 
 
 export interface ProtocolMap {
   'check-permission': {
-    req: { bvid: string; uploaderName?: string };
+    req: { bvid: string; uploaderName?: string; title?: string };
     res: PermissionResult & {
       inReviewWindow?: boolean;
       timeUntilWindow?: number;

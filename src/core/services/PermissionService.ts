@@ -1,6 +1,7 @@
 import { DEFAULT_STORAGE } from '@core/constants';
 import type { ExtensionStorage, PermissionResult, VideoTag } from '@core/types';
 import { TimeWindowService } from './TimeWindowService';
+import { KeywordRule } from './KeywordRule';
 
 export class PermissionError extends Error {
   constructor(
@@ -25,7 +26,7 @@ export class PermissionService {
    * Check if video can be watched
    * Returns permission result and review window status
    */
-  check(bvid: string, uploaderName?: string): PermissionResult & {
+  check(bvid: string, uploaderName?: string, title?: string): PermissionResult & {
     inReviewWindow: boolean;
     timeUntilWindow: number;
     uploaderAllowed?: boolean;
@@ -50,6 +51,21 @@ export class PermissionService {
           timeUntilWindow,
           videoTag: resolvedTag
         };
+      }
+
+      // Check Keyword Rules - auto-allow based on title keywords
+      if (title && this.storage.config.keywordRules?.enabled) {
+        const keywordRule = new KeywordRule(this.storage.config.keywordRules);
+        const matchedTag = keywordRule.check(title);
+        if (matchedTag) {
+          return {
+            allowed: true,
+            reason: 'PERMANENT',
+            inReviewWindow,
+            timeUntilWindow,
+            videoTag: matchedTag
+          };
+        }
       }
 
       // Check Bankruptcy - blocks all new applications except permanent groups
