@@ -6,6 +6,20 @@ import './purify.css';
 
 console.log('[Content] Script loaded');
 
+// Wrapper for sendMessage to handle bfcache errors
+async function safeSendMessage<T>(type: string, data?: unknown): Promise<T | null> {
+  try {
+    return await sendMessage(type as never, data as never) as T;
+  } catch (error) {
+    // Ignore bfcache-related errors
+    if (error instanceof Error && error.message?.includes('back/forward cache')) {
+      console.log('[Content] Ignoring bfcache error for:', type);
+      return null;
+    }
+    throw error;
+  }
+}
+
 // Initialize style simplification service
 const styleService = new StyleSimplificationService();
 
@@ -242,11 +256,17 @@ async function checkPermission(): Promise<void> {
 
   try {
     console.log('[Content] Sending check-permission request for:', metadata.bvid);
-    const result = await sendMessage('check-permission', {
+    const result = await safeSendMessage<ProtocolMap['check-permission']['res']>('check-permission', {
       bvid: metadata.bvid,
       uploaderName: metadata.uploader,
       title: metadata.title
-    } as ProtocolMap['check-permission']['req']) as ProtocolMap['check-permission']['res'];
+    } as ProtocolMap['check-permission']['req']);
+
+    if (!result) {
+      console.log('[Content] Failed to get permission result, allowing video');
+      removeBlock();
+      return;
+    }
 
     console.log('[Content] Permission result:', result);
 
@@ -532,7 +552,7 @@ async function showFuseInputDialog(metadata: VideoMetadata, isBankruptcy: boolea
 
     dialog.querySelector('#bfm-fuse-apply')?.addEventListener('click', async () => {
       try {
-        const response = await sendMessage('apply-fuse', {
+        const response = await safeSendMessage<ProtocolMap['apply-fuse']['res']>('apply-fuse', {
           metadata: {
             bvid: metadata.bvid,
             title: metadata.title,
@@ -542,11 +562,11 @@ async function showFuseInputDialog(metadata: VideoMetadata, isBankruptcy: boolea
             addedAt: metadata.addedAt,
           },
           isBankruptcy,
-        } as ProtocolMap['apply-fuse']['req']) as ProtocolMap['apply-fuse']['res'];
+        } as ProtocolMap['apply-fuse']['req']);
 
-        if (!response.success || !response.fuseCode) {
+        if (!response || !response.success || !response.fuseCode) {
           errorDiv.style.display = 'block';
-          errorDiv.textContent = response.message || '申请失败';
+          errorDiv.textContent = response?.message || '申请失败';
           return;
         }
 
@@ -566,19 +586,19 @@ async function showFuseInputDialog(metadata: VideoMetadata, isBankruptcy: boolea
       if (!fuseCode) return;
 
       try {
-        const result = await sendMessage('verify-fuse', {
+        const result = await safeSendMessage<{ success: boolean; message: string }>('verify-fuse', {
           bvid: metadata.bvid,
           fuseCode
-        } as ProtocolMap['verify-fuse']['req']) as { success: boolean; message: string };
+        } as ProtocolMap['verify-fuse']['req']);
 
-        if (result.success) {
+        if (result?.success) {
           dialog.remove();
           removeBlock();
           alert('熔断码验证成功！可以观看视频（已记录债务）');
         } else {
           errorDiv.style.display = 'block';
           errorDiv.style.color = '#ef4444';
-          errorDiv.textContent = result.message || '熔断码错误';
+          errorDiv.textContent = result?.message || '熔断码错误';
         }
       } catch (error) {
         console.error('[Content] Failed to verify fuse:', error);
@@ -648,9 +668,9 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
       sourceUrl: window.location.href,
     };
 
-    const result = await sendMessage('add-to-limbo', payload as { [key: string]: string | number | boolean | null | { [key: string]: string | number | boolean | null } }) as { success: boolean; limboCount: number };
+    const result = await safeSendMessage<{ success: boolean; limboCount: number }>('add-to-limbo', payload as { [key: string]: string | number | boolean | null | { [key: string]: string | number | boolean | null } });
 
-    if (result.success) {
+    if (result?.success) {
       const tagText = tagSelection === 'LEARNING' ? '学习' : '娱乐';
       alert(`已加入待审池！标签：${tagText}\n请在审批时间前往管理页处理`);
 
@@ -661,7 +681,7 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
           statusText.textContent = `状态: 已加入待审池（${tagText}），等待审批时间处理`;
         }
       }
-    } else {
+    } else if (result) {
       alert('添加失败，请重试');
     }
   } catch (error) {
@@ -770,11 +790,15 @@ async function applyStyleSimplification(): Promise<void> {
   console.log('[Content] isVideoPlayerPage:', styleService.isVideoPlayerPage());
 
   try {
-    const response = await sendMessage('get-full-config', {});
+    const response = await safeSendMessage<{ config: ExtensionConfig }>('get-full-config', {});
     console.log('[Content] Got config response:', response);
 
-    const fullResponse = response as unknown as { config: ExtensionConfig };
-    const config = fullResponse?.config;
+    if (!response) {
+      console.log('[Content] Failed to get config');
+      return;
+    }
+
+    const config = response.config;
 
     if (!config) {
       console.log('[Content] No config found');
@@ -850,9 +874,13 @@ function isSearchPage(): boolean {
 // Check if we should redirect to search (exclude video, dynamic, live, and search pages)
 async function checkHomepageRedirect(): Promise<void> {
   try {
-    const response = await sendMessage('get-full-config', {});
-    const fullResponse = response as unknown as { config: ExtensionConfig };
-    const config = fullResponse?.config;
+    const response = await safeSendMessage<{ config: ExtensionConfig }>('get-full-config', {});
+    if (!response) {
+      console.log('[Content] Failed to get config for redirect check');
+      return;
+    }
+    
+    const config = response.config;
     if (config?.homepageSimplification?.redirectToSearch) {
       // Don't redirect if on video page, dynamic page, live page, or already on search page
       if (styleService.isVideoPlayerPage() || styleService.isDynamicPage() || isLivePage() || isSearchPage()) {
@@ -928,7 +956,7 @@ function handlePause(): void {
 function handleEnded(): void {
   stopWatchTimer(true);
   if (!currentBvid) return;
-  sendMessage('watch-ended', {
+  safeSendMessage('watch-ended', {
     bvid: currentBvid,
     endedAt: Date.now(),
   } as ProtocolMap['watch-ended']['req']).catch((error) => {
@@ -960,7 +988,7 @@ function sendDebtDelta(): void {
   if (minutes <= 0) return;
   lastWatchTick = now;
 
-  sendMessage('update-debt', {
+  safeSendMessage('update-debt', {
     minutes,
     tag: latestVideoTag,
   } as ProtocolMap['update-debt']['req']).catch((error) => {
