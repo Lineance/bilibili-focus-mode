@@ -46,6 +46,10 @@ function extractLiveMetadata(): VideoMetadata | null {
   
   // Try multiple selectors for live room title
   const titleSelectors = [
+    '#head-info-vm > div > div.lower-row > div.left-ctnr > div.live-title > div > div',
+    '[data-v-65e2b007].text.live-skin-main-text.title-length-limit.small-title',
+    '.live-title .text',
+    '.title-length-limit',
     '[data-v-2f3cd9] .title-text',
     '.room-title',
     '.title-text',
@@ -65,7 +69,9 @@ function extractLiveMetadata(): VideoMetadata | null {
 
   // Try multiple selectors for anchor/uploader name
   const uploaderSelectors = [
-    '[data-v-2f3cd9] .up-name',
+    '#head-info-vm > div > div.upper-row > div.left-ctnr.left-header-area > a',
+    '[data-v-4dfcc850].room-owner-username.live-skin-normal-a-text',
+    '.room-owner-username',
     '.anchor-name',
     '.up-name',
     '.username',
