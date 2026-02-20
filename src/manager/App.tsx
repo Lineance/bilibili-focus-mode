@@ -809,30 +809,50 @@ function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }) {
     setSelected(new Set());
   };
 
-  const renderItemCard = (item: VideoMetadata) => (
-    <div
-      key={item.bvid}
-      className={`flex gap-3 items-center bg-gray-700 p-3 rounded ${selected.has(item.bvid) ? 'ring-2 ring-blue-500' : ''}`}
-    >
-      <input
-        type="checkbox"
-        checked={selected.has(item.bvid)}
-        onChange={() => toggleSelection(item.bvid)}
-        className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-      />
-      <VideoCover url={item.coverUrl} title={item.title} small />
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm truncate">{item.title}</p>
-        <p className="text-xs text-gray-400">{item.uploader}</p>
-      </div>
-      <button
-        onClick={() => handleDeleteItem(item.bvid)}
-        className="px-2 py-1 bg-red-600 rounded text-xs hover:bg-red-700 flex-shrink-0"
+  const renderItemCard = (item: VideoMetadata) => {
+    const videoUrl = item.bvid.startsWith('LIVE_')
+      ? `https://live.bilibili.com/${item.bvid.replace('LIVE_', '')}`
+      : `https://www.bilibili.com/video/${item.bvid}`;
+
+    return (
+      <div
+        key={item.bvid}
+        className={`flex gap-3 items-center bg-gray-700 p-3 rounded ${selected.has(item.bvid) ? 'ring-2 ring-blue-500' : ''}`}
       >
-        删除
-      </button>
-    </div>
-  );
+        <input
+          type="checkbox"
+          checked={selected.has(item.bvid)}
+          onChange={() => toggleSelection(item.bvid)}
+          className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+        />
+        <a
+          href={videoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:opacity-80 transition-opacity"
+        >
+          <VideoCover url={item.coverUrl} title={item.title} small />
+        </a>
+        <div className="flex-1 min-w-0">
+          <a
+            href={videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-sm truncate hover:text-blue-400 transition-colors block"
+          >
+            {item.title}
+          </a>
+          <p className="text-xs text-gray-400">{item.uploader}</p>
+        </div>
+        <button
+          onClick={() => handleDeleteItem(item.bvid)}
+          className="px-2 py-1 bg-red-600 rounded text-xs hover:bg-red-700 flex-shrink-0"
+        >
+          删除
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
