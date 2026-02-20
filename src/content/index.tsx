@@ -46,13 +46,13 @@ function extractLiveMetadata(): VideoMetadata | null {
   const roomId = roomIdMatch[1];
   console.log('[Content] Room ID:', roomId);
   
-  // Try multiple selectors for live room title
+  // Try multiple selectors for live room title - using exact selectors provided by user
   const titleSelectors = [
+    '#head-info-vm > div > div.lower-row > div.left-ctnr > div.live-title > div > div',
     '#head-info-vm .title-length-limit',
     '#head-info-vm .live-title',
-    '#head-info-vm [class*="title"]',
     '[data-v-65e2b007]',
-    '.live-title',
+    '.live-title .text',
     '.title-length-limit',
     '.room-title',
     'h1.title',
@@ -73,12 +73,10 @@ function extractLiveMetadata(): VideoMetadata | null {
     }
   }
 
-  // Try multiple selectors for anchor/uploader name
+  // Try multiple selectors for anchor/uploader name - using exact selectors provided by user
   const uploaderSelectors = [
+    '#head-info-vm > div > div.upper-row > div.left-ctnr.left-header-area > a',
     '#head-info-vm .room-owner-username',
-    '#head-info-vm a[href*="space"]',
-    '#head-info-vm [class*="username"]',
-    '#head-info-vm [class*="anchor"]',
     '[data-v-4dfcc850]',
     '.room-owner-username',
     '.anchor-name',
