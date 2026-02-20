@@ -178,6 +178,7 @@ onMessage('update-debt', async (message) => {
   const storage = await chrome.storage.local.get();
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
   const debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
+  console.log('[Background] Current debt account:', debtAccount);
 
   if (!config.debtEnabled) {
     return { currentDebt: debtAccount.currentDebt, bankruptcyEndTime: debtAccount.bankruptcyEndTime };
@@ -190,6 +191,7 @@ onMessage('update-debt', async (message) => {
   );
 
   const updatedAccount = debtService.updateDebt(debtAccount, data.minutes, data.tag);
+  console.log('[Background] Updated account:', updatedAccount);
   let bankruptcyEndTime = updatedAccount.bankruptcyEndTime;
   let bankruptcyDeclared = false;
 
