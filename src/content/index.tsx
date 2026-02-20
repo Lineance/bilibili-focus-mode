@@ -6,7 +6,7 @@ import './purify.css';
 
 console.log('[Content] Script loaded');
 
-// Wrapper for sendMessage to handle bfcache errors
+// Wrapper for sendMessage to handle bfcache and extension context errors
 async function safeSendMessage<T>(type: string, data?: unknown): Promise<T | null> {
   try {
     return await sendMessage(type as never, data as never) as T;
@@ -16,12 +16,36 @@ async function safeSendMessage<T>(type: string, data?: unknown): Promise<T | nul
       console.log('[Content] Ignoring bfcache error for:', type);
       return null;
     }
+    // Handle extension context invalidated (extension reloaded/updated)
+    if (error instanceof Error && error.message?.includes('Extension context invalidated')) {
+      console.log('[Content] Extension context invalidated, reloading page...');
+      // Reload the page to establish new connection
+      window.location.reload();
+      return null;
+    }
     throw error;
+  }
+}
+
+// Check if extension context is valid
+function isExtensionContextValid(): boolean {
+  try {
+    // Try to access chrome.runtime
+    return !!chrome.runtime?.id;
+  } catch {
+    return false;
   }
 }
 
 // Initialize style simplification service
 const styleService = new StyleSimplificationService();
+
+// Check extension context on load
+if (!isExtensionContextValid()) {
+  console.log('[Content] Extension context not available, skipping initialization');
+  // Don't run the rest of the script
+  throw new Error('Extension context not available');
+}
 
 // Track current block state
 let isBlocking = false;
