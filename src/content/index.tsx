@@ -33,6 +33,8 @@ const DEFAULT_CONTENT_CONFIG: NonNullable<ProtocolMap['check-permission']['res']
 function extractLiveMetadata(): VideoMetadata | null {
   console.log('[Content] Extracting live metadata...');
   console.log('[Content] Current pathname:', window.location.pathname);
+  console.log('[Content] Document ready state:', document.readyState);
+  console.log('[Content] Head-info-vm exists:', !!document.querySelector('#head-info-vm'));
   
   // Match both /live/123456 and /123456 (direct room ID)
   const roomIdMatch = window.location.pathname.match(/(?:\/live\/)?(\d+)/);
@@ -46,13 +48,13 @@ function extractLiveMetadata(): VideoMetadata | null {
   
   // Try multiple selectors for live room title
   const titleSelectors = [
-    '#head-info-vm > div > div.lower-row > div.left-ctnr > div.live-title > div > div',
-    '[data-v-65e2b007].text.live-skin-main-text.title-length-limit.small-title',
-    '.live-title .text',
+    '#head-info-vm .title-length-limit',
+    '#head-info-vm .live-title',
+    '#head-info-vm [class*="title"]',
+    '[data-v-65e2b007]',
+    '.live-title',
     '.title-length-limit',
-    '[data-v-2f3cd9] .title-text',
     '.room-title',
-    '.title-text',
     'h1.title',
     '[class*="title"]',
     'h1'
@@ -60,39 +62,49 @@ function extractLiveMetadata(): VideoMetadata | null {
   
   let titleEl = null;
   for (const selector of titleSelectors) {
-    titleEl = document.querySelector(selector);
-    if (titleEl && titleEl.textContent?.trim()) {
-      console.log('[Content] Found title with selector:', selector);
-      break;
+    try {
+      titleEl = document.querySelector(selector);
+      if (titleEl && titleEl.textContent?.trim()) {
+        console.log('[Content] Found title with selector:', selector, 'text:', titleEl.textContent.trim());
+        break;
+      }
+    } catch (e) {
+      console.log('[Content] Error with selector:', selector, e);
     }
   }
 
   // Try multiple selectors for anchor/uploader name
   const uploaderSelectors = [
-    '#head-info-vm > div > div.upper-row > div.left-ctnr.left-header-area > a',
-    '[data-v-4dfcc850].room-owner-username.live-skin-normal-a-text',
+    '#head-info-vm .room-owner-username',
+    '#head-info-vm a[href*="space"]',
+    '#head-info-vm [class*="username"]',
+    '#head-info-vm [class*="anchor"]',
+    '[data-v-4dfcc850]',
     '.room-owner-username',
     '.anchor-name',
     '.up-name',
     '.username',
-    '[class*="anchor"]',
-    '[class*="up-"]'
+    'a[href*="space"]'
   ];
   
   let uploaderEl = null;
   for (const selector of uploaderSelectors) {
-    uploaderEl = document.querySelector(selector);
-    if (uploaderEl && uploaderEl.textContent?.trim()) {
-      console.log('[Content] Found uploader with selector:', selector);
-      break;
+    try {
+      uploaderEl = document.querySelector(selector);
+      if (uploaderEl && uploaderEl.textContent?.trim()) {
+        console.log('[Content] Found uploader with selector:', selector, 'text:', uploaderEl.textContent.trim());
+        break;
+      }
+    } catch (e) {
+      console.log('[Content] Error with selector:', selector, e);
     }
   }
 
   let titleText = titleEl?.textContent?.trim().slice(0, 50) || `Live Room ${roomId}`;
   const uploaderName = uploaderEl?.textContent?.trim() || 'Unknown Anchor';
   
-  console.log('[Content] Title:', titleText);
-  console.log('[Content] Uploader:', uploaderName);
+  console.log('[Content] Final Title:', titleText);
+  console.log('[Content] Final Uploader:', uploaderName);
 
   // Try to get cover image
   let coverUrl = '';
