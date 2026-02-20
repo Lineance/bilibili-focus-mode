@@ -47,7 +47,7 @@ export class StyleSimplificationService {
    */
   isDynamicPage(): boolean {
     return window.location.pathname === '/t.bilibili.com' ||
-           window.location.host === 't.bilibili.com';
+      window.location.host === 't.bilibili.com';
   }
 
   /**
@@ -397,27 +397,8 @@ export class StyleSimplificationService {
         display: none !important;
       }
 
-      /* Hide navigation menu items: 首页, 番剧, 直播, 游戏 */
-      #bili-header-container > div > div > ul.left-entry > li:nth-child(1),
-      #bili-header-container > div > div > ul.left-entry > li:nth-child(2),
-      #bili-header-container > div > div > ul.left-entry > li:nth-child(3),
-      #bili-header-container > div > div > ul.left-entry > li:nth-child(4),
-      .left-entry li:nth-child(-n+4),
-      ul.left-entry > li:nth-child(1),
-      ul.left-entry > li:nth-child(2),
-      ul.left-entry > li:nth-child(3),
-      ul.left-entry > li:nth-child(4) {
-        display: none !important;
-      }
-
       /* Hide search entry banner on search page */
-      #i_cecream > div > div.search-entry-page.p_relative,
-      #i_cecream > div > div.search-entry-page.p_relative > div > div > div > div > div,
-      .search-entry-page,
-      .search-entry-page.p_relative {
-        display: none !important;
-      }
-    `;
+      #i_cecream > div > div.search-entry-page.p_relative > div > div > div > div > div    `;
 
     this.injectStyles(css);
   }

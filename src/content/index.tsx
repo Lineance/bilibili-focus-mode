@@ -31,23 +31,68 @@ const DEFAULT_CONTENT_CONFIG: NonNullable<ProtocolMap['check-permission']['res']
 
 // Extract live stream metadata from page
 function extractLiveMetadata(): VideoMetadata | null {
+  console.log('[Content] Extracting live metadata...');
+  console.log('[Content] Current pathname:', window.location.pathname);
+  
   const roomIdMatch = window.location.pathname.match(/\/live\/(\d+)/);
-  if (!roomIdMatch) return null;
+  if (!roomIdMatch) {
+    console.log('[Content] No room ID found in pathname');
+    return null;
+  }
 
   const roomId = roomIdMatch[1];
-  const titleEl = document.querySelector('.room-title, .title-text, h1.title');
-  const uploaderEl = document.querySelector('.up-name, .username, .anchor-name, a.up-name');
+  console.log('[Content] Room ID:', roomId);
+  
+  // Try multiple selectors for live room title
+  const titleSelectors = [
+    '[data-v-2f3cd9] .title-text',
+    '.room-title',
+    '.title-text',
+    'h1.title',
+    '[class*="title"]',
+    'h1'
+  ];
+  
+  let titleEl = null;
+  for (const selector of titleSelectors) {
+    titleEl = document.querySelector(selector);
+    if (titleEl && titleEl.textContent?.trim()) {
+      console.log('[Content] Found title with selector:', selector);
+      break;
+    }
+  }
 
-  let titleText = titleEl?.textContent?.trim().slice(0, 50) || 'Unknown Live';
-  const uploaderName = uploaderEl?.textContent?.trim() || 'Unknown';
+  // Try multiple selectors for anchor/uploader name
+  const uploaderSelectors = [
+    '[data-v-2f3cd9] .up-name',
+    '.anchor-name',
+    '.up-name',
+    '.username',
+    '[class*="anchor"]',
+    '[class*="up-"]'
+  ];
+  
+  let uploaderEl = null;
+  for (const selector of uploaderSelectors) {
+    uploaderEl = document.querySelector(selector);
+    if (uploaderEl && uploaderEl.textContent?.trim()) {
+      console.log('[Content] Found uploader with selector:', selector);
+      break;
+    }
+  }
+
+  let titleText = titleEl?.textContent?.trim().slice(0, 50) || `Live Room ${roomId}`;
+  const uploaderName = uploaderEl?.textContent?.trim() || 'Unknown Anchor';
+  
+  console.log('[Content] Title:', titleText);
+  console.log('[Content] Uploader:', uploaderName);
 
   // Try to get cover image
   let coverUrl = '';
   const coverSelectors = [
-    'img[src*="hdslb.com"]',
-    'img[src*="bilibili.com"]',
     '.room-cover img',
     '.live-cover img',
+    '[class*="cover"] img',
     'meta[property="og:image"]',
   ];
 
@@ -59,7 +104,10 @@ function extractLiveMetadata(): VideoMetadata | null {
       } else {
         coverUrl = (el as HTMLImageElement).src || '';
       }
-      if (coverUrl) break;
+      if (coverUrl) {
+        console.log('[Content] Found cover with selector:', selector);
+        break;
+      }
     }
   }
 
@@ -67,14 +115,17 @@ function extractLiveMetadata(): VideoMetadata | null {
     coverUrl = `https://i0.hdslb.com/bfs/live/${roomId}.jpg`;
   }
 
-  return {
+  const metadata = {
     bvid: `LIVE_${roomId}`,
     title: titleText,
     uploader: uploaderName,
     coverUrl,
-    tag: 'ENTERTAINMENT',
+    tag: 'ENTERTAINMENT' as VideoTag,
     addedAt: Date.now(),
   };
+  
+  console.log('[Content] Live metadata extracted:', metadata);
+  return metadata;
 }
 
 // Extract video metadata from page
@@ -135,35 +186,45 @@ function extractVideoMetadata(collectionDetectionEnabled: boolean): VideoMetadat
 
 // Check permission and apply block if needed
 async function checkPermission(): Promise<void> {
+  console.log('[Content] Checking permission...');
+  console.log('[Content] isLivePage:', isLivePage());
+  console.log('[Content] isVideoPlayerPage:', styleService.isVideoPlayerPage());
+  
   const configForExtraction = latestConfig || DEFAULT_CONTENT_CONFIG;
   
   // Try to extract video metadata first, then live metadata
   let metadata = extractVideoMetadata(configForExtraction.collectionDetectionEnabled);
+  console.log('[Content] Video metadata:', metadata);
   
   if (!metadata && isLivePage()) {
+    console.log('[Content] Extracting live metadata...');
     metadata = extractLiveMetadata();
+    console.log('[Content] Live metadata:', metadata);
   }
   
   if (!metadata) {
+    console.log('[Content] No metadata found, removing block');
     removeBlock();
     return;
   }
 
   currentBvid = metadata.bvid;
+  console.log('[Content] Current BVID:', currentBvid);
 
   try {
+    console.log('[Content] Sending check-permission request for:', metadata.bvid);
     const result = await sendMessage('check-permission', {
       bvid: metadata.bvid,
       uploaderName: metadata.uploader
     } as ProtocolMap['check-permission']['req']) as ProtocolMap['check-permission']['res'];
 
+    console.log('[Content] Permission result:', result);
+
     latestConfig = result.config || latestConfig || DEFAULT_CONTENT_CONFIG;
     latestVideoTag = result.videoTag || 'ENTERTAINMENT';
     
-    // Apply video player style simplification if on video page
-    if (styleService.isVideoPlayerPage()) {
-      applyStyleSimplification();
-    }
+    // Apply style simplification
+    applyStyleSimplification();
     
     setupVideoTracking();
 
@@ -175,6 +236,7 @@ async function checkPermission(): Promise<void> {
     }
 
     if (!result.allowed) {
+      console.log('[Content] Permission denied, showing block overlay');
       // Video is not approved - show block overlay
       // Check if it's outside review window (for messaging purposes)
       const allowFuseOutsideWindow = Boolean(latestConfig?.instantBreakFuse);
@@ -187,6 +249,7 @@ async function checkPermission(): Promise<void> {
         isBankruptcy: result.reason === 'BANKRUPTCY',
       });
     } else {
+      console.log('[Content] Permission granted, removing block');
       // Video is approved - remove block
       removeBlock();
     }
@@ -200,19 +263,28 @@ function applyHardBlock(): void {
   if (isBlocking) return;
   isBlocking = true;
 
-  // Hide video player elements
+  console.log('[Content] Applying hard block');
+
+  // Hide video player elements (including live stream players)
   const playerSelectors = [
     '.bilibili-player',
     '.bpx-player-container',
     '#bilibili-player',
     '.player-container',
+    // Live stream specific selectors
+    '#live-player',
+    '.live-player',
+    '[class*="live-player"]',
+    '[class*="player"]',
+    '#player',
   ];
 
   playerSelectors.forEach(selector => {
-    const player = document.querySelector(selector);
-    if (player) {
+    const players = document.querySelectorAll(selector);
+    players.forEach(player => {
       (player as HTMLElement).style.display = 'none';
-    }
+      console.log('[Content] Hiding player:', selector);
+    });
   });
 
   // Stop any playing video
@@ -220,6 +292,7 @@ function applyHardBlock(): void {
   videos.forEach(video => {
     video.pause();
     video.currentTime = 0;
+    console.log('[Content] Stopped video');
   });
 }
 
@@ -228,23 +301,31 @@ function removeBlock(): void {
   if (!isBlocking) return;
   isBlocking = false;
 
+  console.log('[Content] Removing block');
+
   // Remove overlay
   const overlay = document.querySelector('.bilibili-focus-mode-block-overlay');
   if (overlay) overlay.remove();
 
-  // Show video player
+  // Show video player (including live stream players)
   const playerSelectors = [
     '.bilibili-player',
     '.bpx-player-container',
     '#bilibili-player',
     '.player-container',
+    // Live stream specific selectors
+    '#live-player',
+    '.live-player',
+    '[class*="live-player"]',
+    '[class*="player"]',
+    '#player',
   ];
 
   playerSelectors.forEach(selector => {
-    const player = document.querySelector(selector);
-    if (player) {
+    const players = document.querySelectorAll(selector);
+    players.forEach(player => {
       (player as HTMLElement).style.display = '';
-    }
+    });
   });
 }
 
