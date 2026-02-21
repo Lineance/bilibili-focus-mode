@@ -78,12 +78,26 @@ describe('Content Script', () => {
         writable: true,
       });
 
+      // Mock config for style simplification and redirect check
+      mockSendMessage.mockResolvedValue({
+        config: {
+          homepageSimplification: {
+            enabled: false,
+            redirectToSearch: false,
+          },
+        },
+      });
+
       await import('./index');
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      // Should not send message on non-video pages
-      expect(mockSendMessage).not.toHaveBeenCalled();
+      // Should not send check-permission message on non-video pages
+      // (but may send get-full-config for style simplification and redirect check)
+      const checkPermissionCalls = mockSendMessage.mock.calls.filter(
+        (call) => call[0] === 'check-permission'
+      );
+      expect(checkPermissionCalls).toHaveLength(0);
     });
   });
 
@@ -94,11 +108,19 @@ describe('Content Script', () => {
         <div class="up-name">Uploader</div>
       `;
 
-      // Mock permission denied
-      mockSendMessage.mockResolvedValueOnce({ 
-        allowed: false, 
-        reason: 'NO_PERMISSION' 
-      } as PermissionResult);
+      // Mock config first, then permission denied
+      mockSendMessage
+        .mockResolvedValueOnce({
+          config: {
+            videoPlayerSimplification: { enabled: false },
+            homepageSimplification: { enabled: false },
+            dynamicSimplification: { enabled: false },
+          },
+        })
+        .mockResolvedValueOnce({ 
+          allowed: false, 
+          reason: 'NO_PERMISSION' 
+        } as PermissionResult);
 
       await import('./index');
 
@@ -117,11 +139,26 @@ describe('Content Script', () => {
         <div class="up-name">Uploader</div>
       `;
 
-      // Mock permission granted
-      mockSendMessage.mockResolvedValueOnce({ 
-        allowed: true, 
-        reason: 'PERMANENT' 
-      } as PermissionResult);
+      // Mock config for redirect check, style simplification, then permission granted
+      mockSendMessage
+        .mockResolvedValueOnce({
+          config: {
+            videoPlayerSimplification: { enabled: false },
+            homepageSimplification: { enabled: false },
+            dynamicSimplification: { enabled: false },
+          },
+        })
+        .mockResolvedValueOnce({
+          config: {
+            videoPlayerSimplification: { enabled: false },
+            homepageSimplification: { enabled: false },
+            dynamicSimplification: { enabled: false },
+          },
+        })
+        .mockResolvedValueOnce({ 
+          allowed: true, 
+          reason: 'PERMANENT' 
+        } as PermissionResult);
 
       await import('./index');
 
@@ -140,13 +177,21 @@ describe('Content Script', () => {
         <div class="up-name">Uploader</div>
       `;
 
-      // Mock permission denied to show overlay
-      mockSendMessage.mockResolvedValueOnce({ 
-        allowed: false, 
-        reason: 'NO_PERMISSION',
-        inReviewWindow: true,
-        timeUntilWindow: 0
-      } as PermissionResult);
+      // Mock config first, then permission denied to show overlay
+      mockSendMessage
+        .mockResolvedValueOnce({
+          config: {
+            videoPlayerSimplification: { enabled: false },
+            homepageSimplification: { enabled: false },
+            dynamicSimplification: { enabled: false },
+          },
+        })
+        .mockResolvedValueOnce({ 
+          allowed: false, 
+          reason: 'NO_PERMISSION',
+          inReviewWindow: true,
+          timeUntilWindow: 0
+        } as PermissionResult);
 
       await import('./index');
 
@@ -166,13 +211,21 @@ describe('Content Script', () => {
         <div class="up-name">Uploader</div>
       `;
 
-      // Mock permission denied to show overlay
-      mockSendMessage.mockResolvedValueOnce({ 
-        allowed: false, 
-        reason: 'NO_PERMISSION',
-        inReviewWindow: true,
-        timeUntilWindow: 0
-      } as PermissionResult);
+      // Mock config first, then permission denied to show overlay
+      mockSendMessage
+        .mockResolvedValueOnce({
+          config: {
+            videoPlayerSimplification: { enabled: false },
+            homepageSimplification: { enabled: false },
+            dynamicSimplification: { enabled: false },
+          },
+        })
+        .mockResolvedValueOnce({ 
+          allowed: false, 
+          reason: 'NO_PERMISSION',
+          inReviewWindow: true,
+          timeUntilWindow: 0
+        } as PermissionResult);
 
       await import('./index');
 
@@ -200,12 +253,8 @@ describe('Content Script', () => {
         writable: true,
       });
 
-      // Mock config with redirect enabled - need to mock both check-permission and get-full-config
+      // Mock config with redirect enabled - get-full-config is called first for style simplification/redirect check
       mockSendMessage
-        .mockResolvedValueOnce({
-          allowed: true,
-          reason: 'PERMANENT',
-        } as PermissionResult)
         .mockResolvedValueOnce({
           config: {
             homepageSimplification: {
@@ -213,7 +262,11 @@ describe('Content Script', () => {
               redirectToSearch: true,
             },
           },
-        });
+        })
+        .mockResolvedValueOnce({
+          allowed: true,
+          reason: 'PERMANENT',
+        } as PermissionResult);
 
       vi.resetModules();
       await import('./index');
@@ -238,12 +291,8 @@ describe('Content Script', () => {
         writable: true,
       });
 
-      // Mock config with redirect disabled
+      // Mock config with redirect disabled - get-full-config is called first
       mockSendMessage
-        .mockResolvedValueOnce({
-          allowed: true,
-          reason: 'PERMANENT',
-        } as PermissionResult)
         .mockResolvedValueOnce({
           config: {
             homepageSimplification: {
@@ -251,7 +300,11 @@ describe('Content Script', () => {
               redirectToSearch: false,
             },
           },
-        });
+        })
+        .mockResolvedValueOnce({
+          allowed: true,
+          reason: 'PERMANENT',
+        } as PermissionResult);
 
       vi.resetModules();
       await import('./index');
@@ -276,12 +329,8 @@ describe('Content Script', () => {
         writable: true,
       });
 
-      // Mock config with redirect enabled
+      // Mock config with redirect enabled - get-full-config is called first
       mockSendMessage
-        .mockResolvedValueOnce({
-          allowed: true,
-          reason: 'PERMANENT',
-        } as PermissionResult)
         .mockResolvedValueOnce({
           config: {
             homepageSimplification: {
@@ -289,7 +338,11 @@ describe('Content Script', () => {
               redirectToSearch: true,
             },
           },
-        });
+        })
+        .mockResolvedValueOnce({
+          allowed: true,
+          reason: 'PERMANENT',
+        } as PermissionResult);
 
       vi.resetModules();
       await import('./index');

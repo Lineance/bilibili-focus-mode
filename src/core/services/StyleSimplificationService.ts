@@ -587,11 +587,22 @@ export class StyleSimplificationService {
   async applyFromConfig(config: ExtensionConfig): Promise<void> {
     const { videoPlayerSimplification, homepageSimplification, dynamicSimplification } = config;
 
-    // Always apply global styles first
+    // Check if any simplification is enabled
+    const isVideoEnabled = videoPlayerSimplification?.enabled && this.isVideoPlayerPage();
+    const isHomepageEnabled = homepageSimplification?.enabled && this.isHomepage();
+    const isDynamicEnabled = dynamicSimplification?.enabled && this.isDynamicPage();
+
+    // If no simplification is enabled, remove existing styles
+    if (!isVideoEnabled && !isHomepageEnabled && !isDynamicEnabled) {
+      this.removeStyles();
+      return;
+    }
+
+    // Apply global styles first
     this.applyGlobalStyles();
 
     // Apply video player simplification
-    if (videoPlayerSimplification?.enabled && this.isVideoPlayerPage()) {
+    if (isVideoEnabled) {
       this.applyVideoPlayerSimplification({
         hideComments: videoPlayerSimplification.hideComments,
         hideRecommendations: videoPlayerSimplification.hideRecommendations,
@@ -604,7 +615,7 @@ export class StyleSimplificationService {
     }
 
     // Apply homepage simplification
-    if (homepageSimplification?.enabled && this.isHomepage()) {
+    if (isHomepageEnabled) {
       this.applyHomepageSimplification({
         hideRecommendations: homepageSimplification.hideRecommendations,
         hideTrending: homepageSimplification.hideTrending,
@@ -616,7 +627,7 @@ export class StyleSimplificationService {
     }
 
     // Apply dynamic page simplification
-    if (dynamicSimplification?.enabled && this.isDynamicPage()) {
+    if (isDynamicEnabled) {
       this.applyDynamicSimplification({
         hideLiveStreams: dynamicSimplification.hideLiveStreams,
         hideRecommendations: dynamicSimplification.hideRecommendations,

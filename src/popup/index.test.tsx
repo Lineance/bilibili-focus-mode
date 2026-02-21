@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Popup } from './index';
+import { Popup } from './Popup';
 
 // Mock chrome APIs
 const mockOpenOptionsPage = vi.fn();

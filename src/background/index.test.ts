@@ -1,6 +1,43 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DEFAULT_STORAGE } from '@core/constants';
 
+// Mock webext-bridge before importing background script
+vi.mock('webext-bridge/background', () => ({
+  onMessage: vi.fn(),
+}));
+
+// Mock webextension-polyfill
+vi.mock('webextension-polyfill', () => ({
+  default: {
+    runtime: {
+      onInstalled: { addListener: vi.fn() },
+      onMessage: { addListener: vi.fn() },
+      getURL: vi.fn((path: string) => `chrome-extension://test-id/${path}`),
+      lastError: null,
+    },
+    storage: {
+      local: {
+        get: vi.fn(),
+        set: vi.fn(),
+      },
+      onChanged: {
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+      },
+    },
+    alarms: {
+      create: vi.fn(),
+      onAlarm: { addListener: vi.fn() },
+    },
+    notifications: {
+      create: vi.fn(),
+    },
+    tabs: {
+      create: vi.fn(),
+    },
+  },
+}));
+
 // Mock chrome APIs
 const mockStorage: Record<string, unknown> = {};
 const mockListeners: Array<(request: unknown, sender: unknown, sendResponse: (response: unknown) => void) => boolean | void> = [];

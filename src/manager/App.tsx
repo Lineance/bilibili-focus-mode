@@ -1371,6 +1371,7 @@ function ConfigPanel() {
       setConfig(loaded);
     };
     loadConfig();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSave = async () => {
@@ -2232,7 +2233,7 @@ function TimeWindowFuseButton({ onFuseApplied }: { onFuseApplied: () => void }) 
       } else {
         setMessage(response.message || '生成失败');
       }
-    } catch (error) {
+    } catch {
       setMessage('生成熔断码时出错');
     }
     setIsLoading(false);
@@ -2255,7 +2256,7 @@ function TimeWindowFuseButton({ onFuseApplied }: { onFuseApplied: () => void }) 
       } else {
         setMessage(response.message || '验证失败');
       }
-    } catch (error) {
+    } catch {
       setMessage('验证熔断码时出错');
     }
     setIsLoading(false);

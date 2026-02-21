@@ -339,6 +339,11 @@ export class ConfigService {
         description: '简化直播页面布局，减少干扰元素',
         type: 'boolean',
       },
+      keywordRules: {
+        label: '关键词自动放行',
+        description: '根据视频标题关键词自动放行',
+        type: 'boolean',
+      },
     };
   }
 
