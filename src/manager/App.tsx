@@ -2361,21 +2361,97 @@ function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
     await saveToStorage(keywords, newEnabled);
   };
 
+  const handleExport = () => {
+    const exportData = {
+      version: 1,
+      type: 'keyword-rules',
+      exportDate: new Date().toISOString(),
+      keywordRules: {
+        enabled,
+        keywords,
+        tag: 'LEARNING' as const,
+      },
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `keyword-rules-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setMessage('导出成功');
+    setTimeout(() => setMessage(''), 2000);
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if (data.type !== 'keyword-rules') {
+        setMessage('导入失败：不是关键词规则文件');
+        return;
+      }
+
+      if (!confirm(`导入将覆盖现有的 ${keywords.length} 个关键词，确定要继续吗？`)) {
+        return;
+      }
+
+      const importedKeywords = data.keywordRules?.keywords || [];
+      const importedEnabled = data.keywordRules?.enabled ?? true;
+      
+      setKeywords(importedKeywords);
+      setEnabled(importedEnabled);
+      await saveToStorage(importedKeywords, importedEnabled);
+      setMessage(`导入成功：${importedKeywords.length} 个关键词`);
+    } catch (error) {
+      console.error('Import error:', error);
+      setMessage('导入失败：文件格式错误');
+    }
+
+    event.target.value = '';
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">关键词自动放行规则</h2>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={handleToggleEnabled}
-            className="w-4 h-4 rounded"
-          />
-          <span className={enabled ? 'text-green-400' : 'text-gray-400'}>
-            {enabled ? '已启用' : '已禁用'}
-          </span>
-        </label>
+        <div className="flex items-center gap-4">
+          <div className="flex gap-2">
+            <button
+              onClick={handleExport}
+              className="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-700"
+            >
+              导出规则
+            </button>
+            <label className="px-3 py-1 bg-green-600 rounded text-sm hover:bg-green-700 cursor-pointer">
+              导入规则
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImport}
+                className="hidden"
+              />
+            </label>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={handleToggleEnabled}
+              className="w-4 h-4 rounded"
+            />
+            <span className={enabled ? 'text-green-400' : 'text-gray-400'}>
+              {enabled ? '已启用' : '已禁用'}
+            </span>
+          </label>
+        </div>
       </div>
 
       <p className="text-gray-400 mb-4 text-sm">
