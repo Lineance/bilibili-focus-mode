@@ -9,13 +9,13 @@ import os
 from pathlib import Path
 
 # Ensure screenshots directory exists
-Path("e2e/screenshots").mkdir(parents=True, exist_ok=True)
+Path("src/test/e2e/screenshots").mkdir(parents=True, exist_ok=True)
 
 test_files = [
-    "e2e/test_element_discovery.py",
-    "e2e/test_manager_functionality.py",
-    "e2e/test_popup_functionality.py",
-    "e2e/test_responsive_layout.py",
+    "src/test/e2e/test_element_discovery.py",
+    "src/test/e2e/test_manager_functionality.py",
+    "src/test/e2e/test_popup_functionality.py",
+    "src/test/e2e/test_responsive_layout.py",
 ]
 
 print("=" * 60)

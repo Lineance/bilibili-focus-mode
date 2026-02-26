@@ -28,7 +28,9 @@ with sync_playwright() as p:
         page.wait_for_timeout(500)
 
         # Take screenshot
-        screenshot_path = f"e2e/screenshots/responsive_{viewport['name'].lower()}.png"
+        screenshot_path = (
+            f"src/test/e2e/screenshots/responsive_{viewport['name'].lower()}.png"
+        )
         page.screenshot(path=screenshot_path, full_page=True)
         print(f"  Screenshot saved: {screenshot_path}")
 

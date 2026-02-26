@@ -72,8 +72,10 @@ with sync_playwright() as p:
                     print(f"  ✗ Failed to click {text}: {e}")
 
     # Take screenshot of current state
-    page.screenshot(path="e2e/screenshots/manager_tabs_tested.png", full_page=True)
-    print(f"\n  Screenshot saved: e2e/screenshots/manager_tabs_tested.png")
+    page.screenshot(
+        path="src/test/e2e/screenshots/manager_tabs_tested.png", full_page=True
+    )
+    print(f"\n  Screenshot saved: src/test/e2e/screenshots/manager_tabs_tested.png")
 
     # Test 4: Check Export/Import buttons exist
     print("\nTest 4: Backup Functionality")
@@ -104,8 +106,10 @@ with sync_playwright() as p:
         visible_inputs = [inp for inp in inputs if inp.is_visible()]
         print(f"  Found {len(visible_inputs)} configuration inputs")
 
-        page.screenshot(path="e2e/screenshots/manager_config_tab.png", full_page=True)
-        print(f"  Screenshot saved: e2e/screenshots/manager_config_tab.png")
+        page.screenshot(
+            path="src/test/e2e/screenshots/manager_config_tab.png", full_page=True
+        )
+        print(f"  Screenshot saved: src/test/e2e/screenshots/manager_config_tab.png")
 
     # Test 6: Keyword Rules Section
     print("\nTest 6: Keyword Rules Section")
@@ -136,8 +140,10 @@ with sync_playwright() as p:
         print(f"  Export rules button: {has_export_rules}")
         print(f"  Import rules button: {has_import_rules}")
 
-        page.screenshot(path="e2e/screenshots/manager_keyword_tab.png", full_page=True)
-        print(f"  Screenshot saved: e2e/screenshots/manager_keyword_tab.png")
+        page.screenshot(
+            path="src/test/e2e/screenshots/manager_keyword_tab.png", full_page=True
+        )
+        print(f"  Screenshot saved: src/test/e2e/screenshots/manager_keyword_tab.png")
 
     browser.close()
     print("\n=== Manager Page Tests Complete ===")

@@ -8,7 +8,7 @@ echo ==========================================
 echo.
 
 REM Create screenshots directory
-if not exist e2e\screenshots mkdir e2e\screenshots
+if not exist src\test\e2e\screenshots mkdir src\test\e2e\screenshots
 
 REM Check if playwright is installed
 python -c "import playwright" 2>NUL
@@ -25,7 +25,7 @@ echo.
 REM Run tests using with_server.py helper
 python %USERPROFILE%\.opencode\skills\webapp-testing\scripts\with_server.py ^
     --server "npm run dev" --port 5173 --timeout 60 ^
-    -- python e2e/run_all_tests.py
+    -- python src/test/e2e/run_all_tests.py
 
 if errorlevel 1 (
     echo.

@@ -16,8 +16,8 @@ with sync_playwright() as p:
     print("=== Bilibili Focus Mode Manager - Element Discovery ===\n")
 
     # Take initial screenshot
-    page.screenshot(path="e2e/screenshots/manager_initial.png", full_page=True)
-    print("Screenshot saved: e2e/screenshots/manager_initial.png\n")
+    page.screenshot(path="src/test/e2e/screenshots/manager_initial.png", full_page=True)
+    print("Screenshot saved: src/test/e2e/screenshots/manager_initial.png\n")
 
     # Discover all buttons
     buttons = page.locator("button").all()
@@ -77,8 +77,8 @@ with sync_playwright() as p:
     page.goto("http://localhost:5173/src/popup/index.html")
     page.wait_for_load_state("networkidle")
 
-    page.screenshot(path="e2e/screenshots/popup_initial.png", full_page=True)
-    print("Screenshot saved: e2e/screenshots/popup_initial.png\n")
+    page.screenshot(path="src/test/e2e/screenshots/popup_initial.png", full_page=True)
+    print("Screenshot saved: src/test/e2e/screenshots/popup_initial.png\n")
 
     popup_buttons = page.locator("button").all()
     print(f"Popup has {len(popup_buttons)} buttons:")

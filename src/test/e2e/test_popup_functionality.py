@@ -19,8 +19,8 @@ with sync_playwright() as p:
     page.wait_for_timeout(500)
 
     # Take initial screenshot
-    page.screenshot(path="e2e/screenshots/popup_test.png")
-    print("Screenshot saved: e2e/screenshots/popup_test.png\n")
+    page.screenshot(path="src/test/e2e/screenshots/popup_test.png")
+    print("Screenshot saved: src/test/e2e/screenshots/popup_test.png\n")
 
     # Test 1: Check popup title
     print("Test 1: Popup Title")

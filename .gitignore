@@ -54,3 +54,6 @@ lerna-debug.log*
 *.pem
 *.crx
 *.zip
+
+# Opencode
+.opencode/

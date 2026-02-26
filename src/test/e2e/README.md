@@ -24,7 +24,7 @@ python -m playwright install chromium
 
 ### Option 1: Using the batch script (Windows)
 ```bash
-run_e2e_tests.bat
+src/test/e2e/run_e2e_tests.bat
 ```
 
 This will:
@@ -41,19 +41,19 @@ npm run dev
 
 2. Run tests in another terminal:
 ```bash
-python e2e/run_all_tests.py
+python src/test/e2e/run_all_tests.py
 ```
 
 ### Option 3: Using with_server.py helper
 ```bash
 python %USERPROFILE%\.opencode\skills\webapp-testing\scripts\with_server.py \
     --server "npm run dev" --port 5173 \
-    -- python e2e/test_element_discovery.py
+    -- python src/test/e2e/test_element_discovery.py
 ```
 
 ## Test Output
 
-- Screenshots are saved to `e2e/screenshots/`
+- Screenshots are saved to `src/test/e2e/screenshots/`
 - Console output shows test progress and results
 
 ## Writing New Tests
