@@ -183,7 +183,41 @@ css
 [data-hours="24-36"] { filter: grayscale(50%); border: 2px solid #facc15; } /* 黄色：可用早期 */
 [data-hours="36-48"] { filter: grayscale(80%) contrast(120%); border: 2px solid #fb923c; animation: shake 2s infinite; } /* 橙色：即将过期 */
 [data-hours="48+"] { filter: grayscale(100%) blur(2px); border: 2px dashed #ef4444; opacity: 0.6; } /* 红色：已过期，进入 Ghost */
-3.5 幽灵招魂仪式（Ghost Resurrection）
+3.5 关键词自动放行规则（Keyword Rules）
+功能说明：
+基于视频标题关键词自动识别学习类视频并放行
+支持自定义关键词列表（如"教程"、"课程"、"学习"等）
+匹配成功后自动标记为 LEARNING 标签，不产生债务
+支持导出/导入关键词规则配置
+
+实现逻辑：
+TypeScript
+复制
+// 权限检查流程中增加关键词匹配
+if (title && config.keywordRules?.enabled) {
+  const keywordRule = new KeywordRule(config.keywordRules);
+  const matchedTag = keywordRule.check(title);
+  if (matchedTag) {
+    return { allowed: true, reason: 'KEYWORD_MATCH', tag: matchedTag };
+  }
+}
+
+// KeywordRule 类实现
+class KeywordRule {
+  check(title: string): VideoTag | null {
+    if (!this.config.enabled || this.config.keywords.length === 0) {
+      return null;
+    }
+    const lowerTitle = title.toLowerCase();
+    for (const keyword of this.config.keywords) {
+      if (lowerTitle.includes(keyword.toLowerCase())) {
+        return this.config.tag; // 'LEARNING'
+      }
+    }
+    return null;
+  }
+}
+3.6 幽灵招魂仪式（Ghost Resurrection）
 流程：
 管理页 Ghost 区域选择视频
 输入 128位熔断码（破产绕过长度）
@@ -267,6 +301,13 @@ interface ExtensionConfig {
   
   // Collection
   collectionDetectionEnabled: boolean; // UGC Season 自动检测
+  
+  // Keyword Rules
+  keywordRules: {
+    enabled: boolean;              // 是否启用关键词自动放行
+    keywords: string[];            // 关键词列表
+    tag: 'LEARNING';               // 匹配后自动标记的标签
+  };
 }
 6. 已知问题与限制（Known Issues）
 表格
@@ -278,6 +319,10 @@ interface ExtensionConfig {
 播放器监听精度	低	后台播放/倍速影响债务计算	采用 currentTime 差值，接受近似值
 跨天计算复杂度	中	23:00 申请需等待至第三日 20:00（45小时）	可配置缩短 coolingCooldownHours
 7. 未来开发路线图（Roadmap）
+Phase 1（已完成）
+[x] 关键词自动放行：基于标题关键词自动识别学习视频
+[x] 关键词规则导出/导入：支持备份和分享关键词配置
+
 Phase 2（功能增强）
 [ ] 合集批量添加：UGC Season 自动检测，一键添加全部分 P
 [ ] 导出 CSV 增强：包含全局统计（熔断次数、破产次数、净债务、生命周期转换）
