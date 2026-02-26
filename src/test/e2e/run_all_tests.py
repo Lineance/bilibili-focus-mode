@@ -27,14 +27,14 @@ print()
 try:
     import playwright
 
-    print("✓ Playwright is installed")
+    print("[OK] Playwright is installed")
 except ImportError:
-    print("✗ Playwright not found. Installing...")
+    print("[FAIL] Playwright not found. Installing...")
     subprocess.run([sys.executable, "-m", "pip", "install", "playwright"], check=True)
     subprocess.run(
         [sys.executable, "-m", "playwright", "install", "chromium"], check=True
     )
-    print("✓ Playwright installed")
+    print("[OK] Playwright installed")
 
 print()
 
@@ -51,10 +51,10 @@ for test_file in test_files:
         )
         results.append((test_file, result.returncode == 0))
     except subprocess.TimeoutExpired:
-        print(f"✗ {test_file} - TIMEOUT")
+        print(f"[FAIL] {test_file} - TIMEOUT")
         results.append((test_file, False))
     except Exception as e:
-        print(f"✗ {test_file} - ERROR: {e}")
+        print(f"[FAIL] {test_file} - ERROR: {e}")
         results.append((test_file, False))
 
 # Print summary
@@ -66,15 +66,15 @@ passed = sum(1 for _, success in results if success)
 total = len(results)
 
 for test_file, success in results:
-    status = "✓ PASS" if success else "✗ FAIL"
+    status = "[PASS]" if success else "[FAIL]"
     print(f"{status}: {test_file}")
 
 print()
 print(f"Results: {passed}/{total} tests passed")
 
 if passed == total:
-    print("\n🎉 All tests passed!")
+    print("\n[SUCCESS] All tests passed!")
     sys.exit(0)
 else:
-    print(f"\n⚠️  {total - passed} test(s) failed")
+    print(f"\n[WARNING] {total - passed} test(s) failed")
     sys.exit(1)

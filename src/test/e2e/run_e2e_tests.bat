@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 REM Run E2E tests with dev server
 REM Usage: run_e2e_tests.bat
 

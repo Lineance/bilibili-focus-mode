@@ -1,6 +1,7 @@
 """
 E2E Test: Responsive Layout Testing
-Tests the manager page at different viewport sizes
+Tests the popup page at different viewport sizes
+Note: Manager page requires Chrome APIs, testing popup instead
 """
 
 from playwright.sync_api import sync_playwright
@@ -15,7 +16,8 @@ viewports = [
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
 
-    print("=== Responsive Layout Testing ===\n")
+    print("=== Responsive Layout Testing (Popup Page) ===\n")
+    print("Note: Testing popup page as manager requires Chrome extension context\n")
 
     for viewport in viewports:
         print(f"Testing {viewport['name']} ({viewport['width']}x{viewport['height']})")
@@ -23,9 +25,11 @@ with sync_playwright() as p:
         page = browser.new_page(
             viewport={"width": viewport["width"], "height": viewport["height"]}
         )
-        page.goto("http://localhost:5173/src/manager/index.html")
+
+        # Test popup page
+        page.goto("http://localhost:5173/src/popup/index.html")
         page.wait_for_load_state("networkidle")
-        page.wait_for_timeout(500)
+        page.wait_for_timeout(1000)
 
         # Take screenshot
         screenshot_path = (
@@ -35,17 +39,14 @@ with sync_playwright() as p:
         print(f"  Screenshot saved: {screenshot_path}")
 
         # Check for layout issues
-        # Count visible elements
         buttons = page.locator("button").all()
         visible_buttons = [b for b in buttons if b.is_visible()]
         print(f"  Visible buttons: {len(visible_buttons)}")
 
-        # Check if critical elements are visible
         headings = page.locator("h1").all()
         visible_headings = [h for h in headings if h.is_visible()]
         print(f"  Visible headings: {len(visible_headings)}")
 
-        # Check page dimensions
         page_dims = page.evaluate(
             "() => ({ width: window.innerWidth, height: document.body.scrollHeight })"
         )

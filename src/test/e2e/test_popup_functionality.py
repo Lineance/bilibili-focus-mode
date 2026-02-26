@@ -26,10 +26,10 @@ with sync_playwright() as p:
     print("Test 1: Popup Title")
     try:
         title = page.locator("h1").inner_text()
-        print(f"  ✓ Popup title: {title}")
+        print(f"  [OK] Popup title: {title}")
         assert "Bilibili Focus Mode" in title
     except Exception as e:
-        print(f"  ✗ Error getting title: {e}")
+        print(f"  [FAIL] Error getting title: {e}")
 
     # Test 2: Check all buttons in popup
     print("\nTest 2: Popup Buttons")
@@ -52,11 +52,11 @@ with sync_playwright() as p:
             break
 
     if manager_btn:
-        print("  ✓ Found '打开管理页' button")
+        print("  [OK] Found '打开管理页' button")
         # Note: In real extension, this would open options page
         # In test environment, we just verify it exists
     else:
-        print("  ✗ '打开管理页' button not found")
+        print("  [FAIL] '打开管理页' button not found")
 
     # Find "前往B站" button
     bilibili_btn = None
@@ -68,17 +68,17 @@ with sync_playwright() as p:
             break
 
     if bilibili_btn:
-        print("  ✓ Found '前往B站' button")
+        print("  [OK] Found '前往B站' button")
     else:
-        print("  ✗ '前往B站' button not found")
+        print("  [FAIL] '前往B站' button not found")
 
     # Test 4: Check for keyboard shortcut info
     print("\nTest 4: Keyboard Shortcut Info")
     page_content = page.content()
     if "Ctrl+Shift" in page_content or "快捷键" in page_content:
-        print("  ✓ Keyboard shortcut information present")
+        print("  [OK] Keyboard shortcut information present")
     else:
-        print("  ℹ Keyboard shortcut info not found in content")
+        print("  [INFO] Keyboard shortcut info not found in content")
 
     # Test 5: Check styling
     print("\nTest 5: Visual Elements")
