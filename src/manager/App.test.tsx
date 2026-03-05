@@ -139,12 +139,14 @@ describe('Manager App', () => {
   });
 
   it('should show bankruptcy warning', () => {
+    // Set entertainment minutes to create debt >= maxDebtMinutes (60)
+    // 35 minutes * 2.0 ratio = 70 debt, which exceeds 60 threshold
     mockStorage.debtAccount = {
-      currentDebt: 60,
+      currentDebt: 70,
       bankruptcyCount: 1,
       bankruptcyEndTime: null,
-      totalEntertainmentMinutes: 30,
-      totalLearningMinutes: 5,
+      totalEntertainmentMinutes: 35,
+      totalLearningMinutes: 0,
     };
 
     render(<App />);

@@ -1146,16 +1146,18 @@ function DebtDashboard({
   };
   config: ExtensionConfig;
 }) {
-  const debt = account?.currentDebt || 0;
   // Support both new and legacy field names
   const entertainmentMinutes = account?.totalEntertainmentMinutes ?? account?.totalAccrued ?? 0;
   const learningMinutes = account?.totalLearningMinutes ?? account?.totalRepaid ?? 0;
-  const isBankrupt = debt >= config.maxDebtMinutes;
 
   // Calculate net debt composition
   const entertainmentDebt = entertainmentMinutes * config.entertainmentRatio;
   const learningRepaid = learningMinutes * config.learningRepayRatio;
   const learningRepaidAbs = Math.abs(learningRepaid);
+  
+  // Calculate net debt from components (more accurate than stored currentDebt)
+  const debt = entertainmentDebt + learningRepaid;
+  const isBankrupt = debt >= config.maxDebtMinutes;
 
   return (
     <div>

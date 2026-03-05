@@ -1,11 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import type { PermissionResult } from '@core/types';
+import { describe, expect, it } from 'vitest';
 import {
   BaseAIService,
-  type CheckContext,
-  type AIServiceConfig,
   type AICheckResult,
+  type AIServiceConfig,
+  type CheckContext,
 } from './SmartPermissionChecker';
-import type { PermissionResult } from '@core/types';
 
 // Mock implementation for testing
 class MockAIService extends BaseAIService {
@@ -15,9 +15,16 @@ class MockAIService extends BaseAIService {
 
   async check(context: CheckContext): Promise<PermissionResult> {
     const result = await this.analyze(context.title);
+    if (result.allowed) {
+      return {
+        allowed: true,
+        reason: 'COOLING_AVAILABLE',
+      };
+    }
+
     return {
-      allowed: result.allowed,
-      reason: result.reason,
+      allowed: false,
+      reason: 'NO_PERMISSION',
     };
   }
 
@@ -60,7 +67,7 @@ describe('SmartPermissionChecker', () => {
     it('should build prompt correctly', () => {
       const service = new MockAIService(mockConfig);
       const prompt = (service as any).buildPrompt('测试标题', '测试描述');
-      
+
       expect(prompt).toContain('测试标题');
       expect(prompt).toContain('测试描述');
       expect(prompt).toContain('LEARNING');
@@ -70,7 +77,7 @@ describe('SmartPermissionChecker', () => {
     it('should build prompt without description', () => {
       const service = new MockAIService(mockConfig);
       const prompt = (service as any).buildPrompt('测试标题');
-      
+
       expect(prompt).toContain('测试标题');
       expect(prompt).not.toContain('简介：');
     });
@@ -82,9 +89,9 @@ describe('SmartPermissionChecker', () => {
         confidence: 0.95,
         reason: '这是一个学习视频',
       });
-      
+
       const result = (service as any).parseResponse(response);
-      
+
       expect(result.allowed).toBe(true);
       expect(result.confidence).toBe(0.95);
       expect(result.category).toBe('LEARNING');
@@ -94,9 +101,9 @@ describe('SmartPermissionChecker', () => {
     it('should handle invalid JSON response', () => {
       const service = new MockAIService(mockConfig);
       const response = 'invalid json';
-      
+
       const result = (service as any).parseResponse(response);
-      
+
       expect(result.allowed).toBe(false);
       expect(result.confidence).toBe(0);
       expect(result.category).toBe('ENTERTAINMENT');
@@ -109,9 +116,9 @@ describe('SmartPermissionChecker', () => {
         category: 'ENTERTAINMENT',
         confidence: 0.5,
       });
-      
+
       const result = (service as any).parseResponse(response);
-      
+
       expect(result.allowed).toBe(false);
       expect(result.confidence).toBe(0.5);
       expect(result.category).toBe('ENTERTAINMENT');
@@ -134,9 +141,9 @@ describe('SmartPermissionChecker', () => {
         title: 'Python教程',
         uploader: 'Test',
       };
-      
+
       const result = await service.check(context);
-      
+
       expect(result.allowed).toBe(true);
     });
 
@@ -147,9 +154,9 @@ describe('SmartPermissionChecker', () => {
         title: '搞笑视频',
         uploader: 'Test',
       };
-      
+
       const result = await service.check(context);
-      
+
       expect(result.allowed).toBe(false);
     });
 
@@ -161,9 +168,9 @@ describe('SmartPermissionChecker', () => {
         uploader: 'Test',
         coverUrl: 'https://example.com/cover.jpg',
       };
-      
+
       const result = await service.check(context);
-      
+
       expect(result).toBeDefined();
       expect(result.reason).toBeDefined();
     });
@@ -177,7 +184,7 @@ describe('SmartPermissionChecker', () => {
         'local',
         'custom',
       ];
-      
+
       providers.forEach((provider) => {
         const config: AIServiceConfig = {
           provider,
@@ -185,7 +192,7 @@ describe('SmartPermissionChecker', () => {
           timeoutMs: 5000,
           cacheResults: false,
         };
-        
+
         const service = new MockAIService(config);
         expect(service).toBeDefined();
       });
@@ -202,7 +209,7 @@ describe('SmartPermissionChecker', () => {
         timeoutMs: 10000,
         cacheResults: true,
       };
-      
+
       const service = new MockAIService(config);
       expect(service).toBeDefined();
     });

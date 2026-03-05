@@ -4,7 +4,9 @@ export class FuseService {
   constructor(private readonly config: ExtensionConfig) {}
 
   generateFuseCode(length: number): string {
-    const bytes = new Uint8Array(length / 2);
+    // Ensure length is at least 8 and even number
+    const safeLength = Math.max(8, Math.ceil(length / 2) * 2);
+    const bytes = new Uint8Array(safeLength / 2);
     crypto.getRandomValues(bytes);
     const hex = Array.from(bytes)
       .map(b => b.toString(16).padStart(2, '0'))
@@ -34,10 +36,11 @@ export class FuseService {
   }
 
   calculateBankruptcyFuse(remainingMinutes: number): number {
-    return Math.min(
-      64 + (remainingMinutes / 60) * 2,
-      this.config.bankruptcyOverrideMaxFuse
-    );
+    // Ensure result is always an even number to avoid truncation
+    const rawLength = 64 + Math.floor(remainingMinutes / 60) * 2;
+    const clampedLength = Math.min(rawLength, this.config.bankruptcyOverrideMaxFuse);
+    // Round up to nearest even number
+    return Math.ceil(clampedLength / 2) * 2;
   }
 
   verifyFuseCode(input: string, expected: string): boolean {

@@ -332,28 +332,34 @@ onMessage('get-full-config', async () => {
   return { config, debtAccount };
 });
 
-// Time window fuse code storage
-let timeWindowFuseCode: string | null = null;
-let timeWindowFuseExpiresAt: number | null = null;
+// Time window fuse code storage - now persisted in chrome.storage.session for MV3
+const TIME_WINDOW_FUSE_KEY = 'timeWindowFuse';
+const TIME_WINDOW_FUSE_EXPIRES_KEY = 'timeWindowFuseExpiresAt';
 
 onMessage('apply-time-window-fuse', async () => {
   const storage = await chrome.storage.local.get();
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
-  
+
   if (!config.instantBreakFuse) {
     return { success: false, message: '熔断功能未启用' };
   }
-  
+
   const fuseService = new FuseService(config);
   const fuseLength = fuseService.calculateFuseLength(0, false); // Base length for time window
-  timeWindowFuseCode = fuseService.generateFuseCode(fuseLength);
-  timeWindowFuseExpiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes validity
-  
-  return { 
-    success: true, 
-    message: '熔断码已生成', 
-    fuseCode: timeWindowFuseCode, 
-    expiresAt: timeWindowFuseExpiresAt 
+  const timeWindowFuseCode = fuseService.generateFuseCode(fuseLength);
+  const timeWindowFuseExpiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes validity
+
+  // Persist to storage for MV3 service worker persistence
+  await chrome.storage.session.set({
+    [TIME_WINDOW_FUSE_KEY]: timeWindowFuseCode,
+    [TIME_WINDOW_FUSE_EXPIRES_KEY]: timeWindowFuseExpiresAt,
+  });
+
+  return {
+    success: true,
+    message: '熔断码已生成',
+    fuseCode: timeWindowFuseCode,
+    expiresAt: timeWindowFuseExpiresAt
   };
 });
 
@@ -361,27 +367,31 @@ onMessage('verify-time-window-fuse', async (message) => {
   const data = message.data as unknown as ProtocolMap['verify-time-window-fuse']['req'];
   const storage = await chrome.storage.local.get();
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
-  
+
+  // Retrieve from persistent storage
+  const sessionData = await chrome.storage.session.get([TIME_WINDOW_FUSE_KEY, TIME_WINDOW_FUSE_EXPIRES_KEY]);
+  let timeWindowFuseCode = sessionData[TIME_WINDOW_FUSE_KEY] as string | null;
+  let timeWindowFuseExpiresAt = sessionData[TIME_WINDOW_FUSE_EXPIRES_KEY] as number | null;
+
   if (!timeWindowFuseCode || !timeWindowFuseExpiresAt) {
     return { success: false, message: '没有有效的熔断码，请先生成' };
   }
-  
+
   if (Date.now() > timeWindowFuseExpiresAt) {
-    timeWindowFuseCode = null;
-    timeWindowFuseExpiresAt = null;
+    // Clear expired fuse code
+    await chrome.storage.session.remove([TIME_WINDOW_FUSE_KEY, TIME_WINDOW_FUSE_EXPIRES_KEY]);
     return { success: false, message: '熔断码已过期，请重新生成' };
   }
-  
+
   const fuseService = new FuseService(config);
   const isValid = fuseService.verifyFuseCode(data.fuseCode, timeWindowFuseCode);
-  
+
   if (isValid) {
     // Clear the fuse code after successful verification (one-time use)
-    timeWindowFuseCode = null;
-    timeWindowFuseExpiresAt = null;
+    await chrome.storage.session.remove([TIME_WINDOW_FUSE_KEY, TIME_WINDOW_FUSE_EXPIRES_KEY]);
     return { success: true, message: '熔断码验证成功', expiresAt: Date.now() + 60 * 60 * 1000 }; // 1 hour break
   }
-  
+
   return { success: false, message: '熔断码无效' };
 });
 

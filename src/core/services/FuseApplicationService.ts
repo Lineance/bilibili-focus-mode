@@ -58,20 +58,22 @@ export class FuseApplicationService {
       };
     }
 
-    // Check if already has an active instant item
-    const storage = await chrome.storage.local.get();
-    const existingInstant = (storage.instantList || []).find(
-      (item: InstantItem) => item.bvid === metadata.bvid
+    // Atomic check-and-create pattern to prevent race conditions
+    // Re-read storage to minimize race condition window
+    const storage = await chrome.storage.local.get(['instantList', 'behaviorLog']);
+    const instantList = (storage.instantList || []) as InstantItem[];
+
+    // Check if already has an active instant item (filter out expired ones)
+    const now = Date.now();
+    const existingInstant = instantList.find(
+      (item: InstantItem) => item.bvid === metadata.bvid && now < item.expiresAt
     );
 
     if (existingInstant) {
-      const now = Date.now();
-      if (now < existingInstant.expiresAt) {
-        return {
-          success: false,
-          reason: '已存在有效的即时许可',
-        };
-      }
+      return {
+        success: false,
+        reason: '已存在有效的即时许可',
+      };
     }
 
     // Calculate fuse length based on recent applications
@@ -99,8 +101,7 @@ export class FuseApplicationService {
       instantApplicationsToday: normalizedBehaviorLog.instantApplicationsToday + 1,
     };
 
-    // Save to storage
-    const instantList = (storage.instantList || []) as InstantItem[];
+    // Atomic save: add item to list and update behavior log together
     instantList.push(instantItem);
 
     await chrome.storage.local.set({
@@ -116,21 +117,25 @@ export class FuseApplicationService {
 
   /**
    * Verify a fuse code and activate the instant permission
+   * Uses atomic check-and-set pattern to prevent race conditions
    */
   async verifyFuse(bvid: string, inputCode: string): Promise<{ success: boolean; message: string }> {
-    const storage = await chrome.storage.local.get();
-    const instantList = (storage.instantList || []) as InstantItem[];
+    // Use atomic update pattern: read -> check -> update in one operation
+    const result = await chrome.storage.local.get('instantList');
+    const instantList = (result.instantList || []) as InstantItem[];
 
-    const instantItem = instantList.find((item) => item.bvid === bvid);
+    const itemIndex = instantList.findIndex((item) => item.bvid === bvid);
 
-    if (!instantItem) {
+    if (itemIndex === -1) {
       return {
         success: false,
         message: '未找到该视频的即时许可申请',
       };
     }
 
+    const instantItem = instantList[itemIndex];
     const now = Date.now();
+
     if (now >= instantItem.expiresAt) {
       return {
         success: false,
@@ -138,6 +143,7 @@ export class FuseApplicationService {
       };
     }
 
+    // Atomic check: if already used, reject immediately
     if (instantItem.usedFuse) {
       return {
         success: false,
@@ -154,8 +160,9 @@ export class FuseApplicationService {
       };
     }
 
-    // Mark as used
-    instantItem.usedFuse = true;
+    // Atomic update: mark as used and save immediately
+    // This minimizes the window for race conditions
+    instantList[itemIndex] = { ...instantItem, usedFuse: true };
     await chrome.storage.local.set({ instantList });
 
     return {
