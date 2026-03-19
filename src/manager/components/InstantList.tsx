@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { sendMessage } from 'webext-bridge/options';
 
 import type { ExtensionConfig, InstantItem } from '@core/types';
+import type { ProtocolMap } from '@core/protocol';
 
 import { BatchToolbar, ItemCard } from './shared';
 
@@ -71,29 +73,26 @@ export function InstantList({ items, config }: { items: readonly InstantItem[]; 
 
     setIsLoading(true);
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'apply-fuse',
-        data: {
-          metadata: {
-            bvid: bvidInput.trim(),
-            title: titleInput.trim(),
-            uploader: uploaderInput.trim(),
-            coverUrl: '',
-            tag: tagInput,
-            addedAt: Date.now(),
-          },
-          isBankruptcy: false,
+      const response = await sendMessage('apply-fuse', {
+        metadata: {
+          bvid: bvidInput.trim(),
+          title: titleInput.trim(),
+          uploader: uploaderInput.trim(),
+          coverUrl: '',
+          tag: tagInput,
+          addedAt: Date.now(),
         },
-      });
+        isBankruptcy: false,
+      } as ProtocolMap['apply-fuse']['req'], 'background') as any;
 
-      if (response.success && response.fuseCode) {
+      if (response?.success && response.fuseCode) {
         setFuseCode(response.fuseCode);
         // Clear inputs
         setBvidInput('');
         setTitleInput('');
         setUploaderInput('');
       } else {
-        alert(response.message || '申请失败');
+        alert(response?.message || '申请失败');
       }
     } catch (error) {
       console.error('Failed to apply for fuse:', error);

@@ -4,7 +4,7 @@ import { DEFAULT_BEHAVIOR_LOG } from '@core/constants';
 import { ExpirationService } from '@core/services';
 import type { CoolingItem, ExtensionConfig, InstantItem, LimboItem, PermanentGroup, VideoMetadata } from '@core/types';
 
-import { TimeWindowFuseButton } from './TimeWindowFuseButton';
+import { TimeWindowFusePanel } from './TimeWindowFusePanel';
 import { BatchToolbar, VideoCover } from './shared';
 
 export function LimboReview({ items, config }: { items: readonly LimboItem[]; config: ExtensionConfig }) {
@@ -223,7 +223,7 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
     <div>
       {/* Review Window Status Banner */}
       <div className={`mb-4 p-3 rounded-lg ${isInReviewWindow ? 'bg-green-900/50 border border-green-600' : 'bg-yellow-900/50 border border-yellow-600'}`}>
-        <div className="flex items-center justify-between">
+        <div className={`flex ${isInReviewWindow ? 'items-center justify-between' : 'flex-col gap-4'}`}>
           <div className="flex items-center gap-2">
             <span className="text-lg">{isInReviewWindow ? '✅' : '⏰'}</span>
             <span className={isInReviewWindow ? 'text-green-400 font-medium' : 'text-yellow-400 font-medium'}>
@@ -235,13 +235,8 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
             </span>
           </div>
           {!config.timeWindowEnabled || isInReviewWindow ? null : (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-yellow-500">
-                请在审批时间处理待审池
-              </span>
-              {config.instantBreakFuse && (
-                <TimeWindowFuseButton onFuseApplied={() => setIsInReviewWindow(true)} />
-              )}
+            <div>
+              <TimeWindowFusePanel onFuseApplied={() => setIsInReviewWindow(true)} />
             </div>
           )}
         </div>

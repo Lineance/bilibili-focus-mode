@@ -418,209 +418,75 @@ function showBlockOverlay(
 
   const isOutsideWindow = !windowInfo.inReviewWindow;
   const timeText = formatTime(windowInfo.timeUntilWindow);
+  const isBankruptcy = fuseInfo.isBankruptcy || reason === 'BANKRUPTCY';
 
   const overlay = document.createElement('div');
   overlay.className = 'bilibili-focus-mode-block-overlay';
 
-  // Different UI based on whether we're in review window or not
-  if (isOutsideWindow) {
-    // Outside review window - can only use fuse or add to limbo
-    overlay.innerHTML = `
-      <div style="text-align: center; max-width: 500px; padding: 20px;">
-        <h2 style="margin-bottom: 16px; font-size: 24px;">🔒 视频未审批</h2>
-        <p style="margin-bottom: 8px; font-size: 16px; opacity: 0.9;">${metadata.title}</p>
-        <p style="margin-bottom: 24px; font-size: 14px; opacity: 0.7;">UP主: ${metadata.uploader}</p>
-        
-        <div style="margin-bottom: 24px; padding: 16px; background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; border-radius: 8px;">
-          <p style="margin-bottom: 8px; font-weight: bold; color: #f59e0b;">⏰ 当前不在审批时间</p>
-          <p style="font-size: 14px; opacity: 0.8;">距离下次审批时间: ${timeText}</p>
-          <p style="font-size: 12px; opacity: 0.6; margin-top: 8px;">
-            审批时间才能处理待审池视频<br>
-            现在可以选择：加入待审池 或 使用熔断码临时观看
-          </p>
-        </div>
-
-        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-          <button id="bfm-add-limbo" style="padding: 10px 20px; background: #00aeec; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
-            加入待审池
-          </button>
-          ${fuseInfo.allowFuse
-        ? '<button id="bfm-use-fuse" style="padding: 10px 20px; background: #f59e0b; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">使用熔断码</button>'
-        : '<span style="padding: 10px 20px; border: 1px solid #666; border-radius: 6px; color: #777; font-size: 14px;">熔断码已禁用</span>'
-      }
-          <button id="bfm-open-manager" style="padding: 10px 20px; background: transparent; border: 1px solid white; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
-            打开管理页
-          </button>
-        </div>
-      </div>
+  // Define box content based on state
+  let boxContent = '';
+  if (isBankruptcy) {
+    boxContent = `
+      <p style="margin-bottom: 8px; font-weight: bold; color: #ef4444;">❌ 破产锁定中</p>
+      <p style="font-size: 14px; opacity: 0.8;">破产期间禁止所有娱乐消费<br>虽然当前是审批时间，但你已陷入债务破产，请先前往管理页偿还债务。</p>
+    `;
+  } else if (isOutsideWindow) {
+    boxContent = `
+      <p style="margin-bottom: 8px; font-weight: bold; color: #f59e0b;">⏰ 当前不在审批时间</p>
+      <p style="font-size: 14px; opacity: 0.8;">距离下次审批时间: ${timeText}<br><span style="font-size: 12px; opacity: 0.6; margin-top: 8px;">审批时间才能处理待审池视频</span></p>
     `;
   } else {
-    // In review window - can add to limbo (will be processed later)
-    overlay.innerHTML = `
-      <div style="text-align: center; max-width: 500px; padding: 20px;">
-        <h2 style="margin-bottom: 16px; font-size: 24px;">🔒 视频未审批</h2>
-        <p style="margin-bottom: 8px; font-size: 16px; opacity: 0.9;">${metadata.title}</p>
-        <p style="margin-bottom: 24px; font-size: 14px; opacity: 0.7;">UP主: ${metadata.uploader}</p>
-        
-        <div style="margin-bottom: 24px; padding: 16px; background: rgba(255,255,255,0.1); border-radius: 8px;">
-          <p style="margin-bottom: 8px; font-weight: bold;">${getReasonText(reason)}</p>
-          <p style="font-size: 12px; opacity: 0.6; margin-top: 8px;">
-            ✓ 当前是审批时间，可以前往管理页处理待审池<br>
-            或使用熔断码临时观看
-          </p>
-        </div>
-
-        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-          <button id="bfm-add-limbo" style="padding: 10px 20px; background: #00aeec; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
-            加入待审池
-          </button>
-          <button id="bfm-use-fuse" style="padding: 10px 20px; background: #f59e0b; border: none; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
-            使用熔断码
-          </button>
-          <button id="bfm-open-manager" style="padding: 10px 20px; background: transparent; border: 1px solid white; border-radius: 6px; color: white; cursor: pointer; font-size: 14px;">
-            打开管理页
-          </button>
-        </div>
-      </div>
+    boxContent = `
+      <p style="margin-bottom: 8px; font-weight: bold; color: #10b981;">✅ 当前是审批时间</p>
+      <p style="font-size: 14px; opacity: 0.8;">你可以现在处理待审池视频。<br>请先将此视频“加入待审池”，然后在管理页点击通过即可开始观看。</p>
     `;
   }
 
-  document.body.appendChild(overlay);
+  const boxBg = isBankruptcy ? 'rgba(239, 68, 68, 0.2)' : (isOutsideWindow ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.1)');
+  const boxBorder = (isBankruptcy || isOutsideWindow) ? `1px solid ${isBankruptcy ? '#ef4444' : '#f59e0b'}` : 'none';
 
-  // Add event listeners
-  overlay.querySelector('#bfm-add-limbo')?.addEventListener('click', () => {
-    addToLimbo(metadata);
-  });
-
-  overlay.querySelector('#bfm-use-fuse')?.addEventListener('click', () => {
-    showFuseInputDialog(metadata);
-  });
-
-  overlay.querySelector('#bfm-open-manager')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    openManagerPage();
-  });
-}
-
-// Show fuse code input dialog
-async function showFuseInputDialog(metadata: VideoMetadata): Promise<void> {
-  // Remove existing dialog
-  const existing = document.querySelector('.bfm-fuse-dialog');
-  if (existing) existing.remove();
-
-  const dialog = document.createElement('div');
-  dialog.className = 'bfm-fuse-dialog';
-  dialog.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999999;
-  `;
-
-  dialog.innerHTML = `
-    <div style="background: #1a1a2e; padding: 24px; border-radius: 12px; max-width: 450px; width: 90%;">
-      <h3 style="margin: 0 0 16px 0; font-size: 18px; color: white;">输入熔断码</h3>
-      <p style="margin: 0 0 20px 0; color: #aaa; font-size: 14px;">
-        使用熔断码临时观看将产生额外债务<br>
-        <span style="color: #f59e0b;">请先在管理页申请熔断码，然后在此处输入</span>
-      </p>
+  overlay.innerHTML = `
+    <div style="text-align: center; max-width: 500px; padding: 20px;">
+      <h2 style="margin-bottom: 16px; font-size: 24px;">🔒 视频未审批</h2>
+      <p style="margin-bottom: 8px; font-size: 16px; opacity: 0.9;">${metadata.title}</p>
+      <p style="margin-bottom: 24px; font-size: 14px; opacity: 0.7;">UP主: ${metadata.uploader}</p>
       
-      <input 
-        type="text" 
-        id="bfm-fuse-input" 
-        placeholder="XXXX-XXXX-XXXX-XXXX"
-        style="width: 100%; padding: 12px; background: #2a2a3e; border: 1px solid #444; border-radius: 8px; color: white; font-size: 16px; font-family: monospace; margin-bottom: 16px; text-align: center;"
-      >
-      
-      <div id="bfm-fuse-error" style="color: #ef4444; font-size: 14px; margin-bottom: 16px; display: none;">
-        熔断码错误，请检查后重试
+      <div style="margin-bottom: 24px; padding: 16px; background: ${boxBg}; border: ${boxBorder}; border-radius: 8px;">
+        ${boxContent}
       </div>
-      
-      <div style="display: flex; gap: 12px; margin-bottom: 12px;">
-        <button id="bfm-fuse-open-manager" style="flex: 1; padding: 10px; background: #2563eb; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
-          前往管理页申请熔断码
-        </button>
-      </div>
-      <div style="display: flex; gap: 12px;">
-        <button id="bfm-fuse-cancel" style="flex: 1; padding: 12px; background: transparent; border: 1px solid #666; border-radius: 8px; color: #aaa; cursor: pointer; font-size: 14px;">
-          取消
-        </button>
-        <button id="bfm-fuse-submit" style="flex: 1; padding: 12px; background: #f59e0b; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
-          确认
-        </button>
+
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+        <div id="bfm-add-limbo" style="padding: 10px 24px !important; background: #00aeec !important; border-radius: 6px !important; color: white !important; cursor: pointer !important; font-size: 14px !important; font-weight: bold !important; display: inline-block !important; user-select: none !important; transition: opacity 0.2s !important;">
+          加入待审池
+        </div>
+        <div id="bfm-open-manager" style="padding: 10px 24px !important; background: transparent !important; border: 1px solid white !important; border-radius: 6px !important; color: white !important; cursor: pointer !important; font-size: 14px !important; display: inline-block !important; user-select: none !important; transition: opacity 0.2s !important;">
+          打开管理页
+        </div>
       </div>
     </div>
   `;
 
-  document.body.appendChild(dialog);
+  document.body.appendChild(overlay);
 
-  const input = dialog.querySelector('#bfm-fuse-input') as HTMLInputElement;
-  const errorDiv = dialog.querySelector('#bfm-fuse-error') as HTMLDivElement;
-
-  input.focus();
-
-  return new Promise((resolve) => {
-    const closeDialog = () => {
-      dialog.remove();
-      resolve();
+  // Hover effects for the div "buttons"
+  const addBtn = overlay.querySelector('#bfm-add-limbo') as HTMLElement;
+  const mgrBtn = overlay.querySelector('#bfm-open-manager') as HTMLElement;
+  
+  if (addBtn) {
+    addBtn.onmouseover = () => { addBtn.style.opacity = '0.8'; };
+    addBtn.onmouseout = () => { addBtn.style.opacity = '1'; };
+    addBtn.onclick = () => addToLimbo(metadata);
+  }
+  
+  if (mgrBtn) {
+    mgrBtn.onmouseover = () => { mgrBtn.style.opacity = '0.8'; };
+    mgrBtn.onmouseout = () => { mgrBtn.style.opacity = '1'; };
+    mgrBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openManagerPage();
     };
-
-    dialog.querySelector('#bfm-fuse-cancel')?.addEventListener('click', closeDialog);
-
-    dialog.querySelector('#bfm-fuse-open-manager')?.addEventListener('click', () => {
-      // Open manager page for fuse application
-      chrome.runtime.sendMessage({ type: 'open-options-page' });
-      closeDialog();
-    });
-
-    dialog.querySelector('#bfm-fuse-submit')?.addEventListener('click', async () => {
-      const fuseCode = input.value.trim().toUpperCase();
-      if (!fuseCode) return;
-
-      try {
-        const result = await safeSendMessage<{ success: boolean; message: string }>('verify-fuse', {
-          bvid: metadata.bvid,
-          fuseCode
-        } as ProtocolMap['verify-fuse']['req']);
-
-        if (result?.success) {
-          dialog.remove();
-          removeBlock();
-          alert('熔断码验证成功！可以观看视频（已记录债务）');
-        } else {
-          errorDiv.style.display = 'block';
-          errorDiv.style.color = '#ef4444';
-          errorDiv.textContent = result?.message || '熔断码错误';
-        }
-      } catch (error) {
-        console.error('[Content] Failed to verify fuse:', error);
-        errorDiv.style.display = 'block';
-        errorDiv.style.color = '#ef4444';
-        errorDiv.textContent = '验证失败，请重试';
-      }
-    });
-
-    // Allow Enter key to submit
-    input?.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        dialog.querySelector('#bfm-fuse-submit')?.dispatchEvent(new Event('click'));
-      }
-    });
-
-    // Close on backdrop click
-    dialog.addEventListener('click', (e) => {
-      if (e.target === dialog) {
-        closeDialog();
-      }
-    });
-  });
+  }
 }
 
 // Format milliseconds to readable time
@@ -632,16 +498,6 @@ function formatTime(ms: number): string {
     return `${hours}小时${minutes}分钟`;
   }
   return `${minutes}分钟`;
-}
-
-function getReasonText(reason: string): string {
-  const reasons: Record<string, string> = {
-    'NO_PERMISSION': '视频未审批，请先加入待审池',
-    'COOLING_WAITING': '冷静期中，请等待',
-    'EXPIRED': '许可已过期',
-    'BANKRUPTCY': '破产锁定中',
-  };
-  return reasons[reason] || '未知原因';
 }
 
 async function addToLimbo(metadata: VideoMetadata): Promise<void> {

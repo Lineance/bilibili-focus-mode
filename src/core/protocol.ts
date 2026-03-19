@@ -61,4 +61,8 @@ export interface ProtocolMap {
     req: {};
     res: { success: boolean; message: string; fuseCode?: string; expiresAt?: number };
   };
+  'sync-debt': {
+    req: {};
+    res: { currentDebt: number; bankruptcyEndTime: number | null };
+  };
 }

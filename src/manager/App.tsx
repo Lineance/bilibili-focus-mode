@@ -1,6 +1,7 @@
 import { DEFAULT_CONFIG } from '@core/constants';
 import { useStorage } from '@hooks/useStorage';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { sendMessage } from 'webext-bridge/options';
 
 import {
   ConfigPanel,
@@ -28,6 +29,13 @@ type ActiveTab =
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('limbo');
   const storage = useStorage();
+
+  useEffect(() => {
+    // Sync debt and bankruptcy status on mount
+    sendMessage('sync-debt', {}, 'background').catch(err => {
+      console.error('[Manager] Failed to sync debt:', err);
+    });
+  }, []);
 
   const handleExport = async () => {
     const storage = await chrome.storage.local.get();

@@ -8,6 +8,7 @@ export function DebtDashboard({
     currentDebt: number;
     totalEntertainmentMinutes?: number;
     totalLearningMinutes?: number;
+    bankruptcyEndTime?: number | null;
     // Legacy field names
     totalAccrued?: number;
     totalRepaid?: number;
@@ -25,20 +26,26 @@ export function DebtDashboard({
 
   // Calculate net debt from components (more accurate than stored currentDebt)
   const debt = entertainmentDebt + learningRepaid;
+  
+  // Real-time bankruptcy status from storage, but also from recalculated debt
   const isBankrupt = debt >= config.maxDebtMinutes;
+  const isLocked = account?.bankruptcyEndTime && Date.now() < account.bankruptcyEndTime;
+  const effectiveBankrupt = isBankrupt || isLocked;
 
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">债务仪表盘</h2>
 
       {/* Main Debt Display */}
-      <div className={`p-6 rounded-lg mb-4 ${isBankrupt ? 'bg-red-900/50' : 'bg-gray-800'}`}>
+      <div className={`p-6 rounded-lg mb-4 ${effectiveBankrupt ? 'bg-red-900/50' : 'bg-gray-800'}`}>
         <div className="text-4xl font-bold mb-2">
           {debt.toFixed(1)} 分钟
         </div>
         <p className="text-gray-400">
-          {isBankrupt
-            ? `⚠️ 已破产！${config.bankruptcyLockHours}小时内禁止新申请`
+          {effectiveBankrupt
+            ? (isLocked && !isBankrupt 
+                ? `⚠️ 破产锁定期（债务已偿还，请稍候或刷新管理页自动解锁）`
+                : `⚠️ 已破产！${config.bankruptcyLockHours}小时内禁止新申请`)
             : debt > config.maxDebtMinutes * 0.5
               ? '债务较高，建议观看学习类视频偿还'
               : '债务状况良好'}

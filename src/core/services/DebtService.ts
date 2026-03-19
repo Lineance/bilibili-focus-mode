@@ -17,8 +17,7 @@ export class DebtService {
 
   updateDebt(account: DebtAccount, minutes: number, tag: VideoTag): DebtAccount {
     const change = this.calculateDebtChange(minutes, tag);
-    const rawNewDebt = account.currentDebt + change;
-    const newDebt = Math.max(0, rawNewDebt);
+    const newDebt = account.currentDebt + change;
     
     return {
       ...account,

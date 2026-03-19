@@ -84,8 +84,8 @@ export class DebtTracker {
     const minutes = this.calculateDebt(this.currentSession);
     const debtChange = this.calculateDebtChange(minutes, this.currentSession.tag);
 
-    // Calculate new debt (cannot go below 0)
-    const newDebt = Math.max(0, currentDebt + debtChange);
+    // Calculate new debt
+    const newDebt = currentDebt + debtChange;
 
     // Calculate watch time delta based on tag
     const entertainmentMinutes = this.currentSession.tag === 'ENTERTAINMENT' ? minutes : 0;

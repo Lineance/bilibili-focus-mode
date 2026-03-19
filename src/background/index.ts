@@ -1,6 +1,6 @@
 import { DEFAULT_GLOBAL_STATS, DEFAULT_STORAGE } from '@core/constants';
 import type { ProtocolMap } from '@core/protocol';
-import { DebtService, FuseApplicationService, FuseService, PermissionService } from '@core/services';
+import { BehaviorLoggingService, DebtService, FuseApplicationService, FuseService, PermissionService } from '@core/services';
 import { TimeWindowService } from '@core/services/TimeWindowService';
 import type { BehaviorLogState, ExtensionConfig, VideoMetadata } from '@core/types';
 import { onMessage } from 'webext-bridge/background';
@@ -125,8 +125,14 @@ onMessage('check-permission', async (message) => {
   const result = service.check(data.bvid, data.uploaderName, data.title);
   const config = storage.config || DEFAULT_STORAGE.config;
 
+  const twBreak = await chrome.storage.local.get('timeWindowBreakUntil');
+  const breakUntil = (twBreak?.timeWindowBreakUntil as number | undefined) || 0;
+  const now = Date.now();
+  const isVirtuallyInWindow = now < breakUntil;
+
   return {
     ...result,
+    inReviewWindow: result.inReviewWindow || isVirtuallyInWindow,
     config: pickConfigSnapshot(config),
   };
 });
@@ -179,16 +185,30 @@ onMessage('update-debt', async (message) => {
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
   let debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
   
-  // Migrate old field names to new field names
+  // Migrate old field names and ensure currentDebt is in sync with totals
   if ('totalAccrued' in debtAccount || 'totalRepaid' in debtAccount) {
     debtAccount = {
       ...debtAccount,
-      totalEntertainmentMinutes: (debtAccount as { totalAccrued?: number }).totalAccrued || 0,
-      totalLearningMinutes: (debtAccount as { totalRepaid?: number }).totalRepaid || 0,
+      totalEntertainmentMinutes: (debtAccount as any).totalAccrued || 0,
+      totalLearningMinutes: (debtAccount as any).totalRepaid || 0,
     };
-    // Remove old fields
-    delete (debtAccount as { totalAccrued?: number }).totalAccrued;
-    delete (debtAccount as { totalRepaid?: number }).totalRepaid;
+    delete (debtAccount as any).totalAccrued;
+    delete (debtAccount as any).totalRepaid;
+  }
+
+  // Recalculate currentDebt based on totals to fix sync issues
+  // entertainmentDebt = totalEntertainmentMinutes * config.entertainmentRatio
+  // learningRepaid = totalLearningMinutes * config.learningRepayRatio
+  // netDebt = entertainmentDebt + learningRepaid
+  const entertainmentDebt = (debtAccount.totalEntertainmentMinutes || 0) * config.entertainmentRatio;
+  const learningRepaid = (debtAccount.totalLearningMinutes || 0) * config.learningRepayRatio;
+  const recalculatedDebt = entertainmentDebt + learningRepaid;
+  
+  // If the stored currentDebt is out of sync with recalculated debt (due to past capping),
+  // we update it to match the dashboard's source of truth.
+  if (Math.abs(debtAccount.currentDebt - recalculatedDebt) > 0.1) {
+    console.log('[Background] Syncing currentDebt with totals:', debtAccount.currentDebt, '->', recalculatedDebt);
+    debtAccount.currentDebt = recalculatedDebt;
   }
   
   console.log('[Background] Current debt account:', debtAccount);
@@ -208,15 +228,23 @@ onMessage('update-debt', async (message) => {
   let bankruptcyEndTime = updatedAccount.bankruptcyEndTime;
   let bankruptcyDeclared = false;
 
-  if (debtService.isBankrupt(updatedAccount)) {
-    const now = Date.now();
-    const hasActiveBankruptcy = updatedAccount.bankruptcyEndTime && updatedAccount.bankruptcyEndTime > now;
-    if (!hasActiveBankruptcy) {
+  const now = Date.now();
+  const isCurrentlyBankrupt = debtService.isBankrupt(updatedAccount);
+  const hasActiveLock = updatedAccount.bankruptcyEndTime && updatedAccount.bankruptcyEndTime > now;
+
+  if (isCurrentlyBankrupt) {
+    if (!hasActiveLock) {
       bankruptcyEndTime = debtService.calculateBankruptcyEndTime(config.bankruptcyLockHours);
       updatedAccount.bankruptcyEndTime = bankruptcyEndTime;
       updatedAccount.bankruptcyCount = (updatedAccount.bankruptcyCount || 0) + 1;
       bankruptcyDeclared = true;
     }
+  } else if (hasActiveLock) {
+    // Recovery: If debt is repaid below threshold, clear bankruptcy lock
+    // This rewards the user for actively learning to repay their debt
+    updatedAccount.bankruptcyEndTime = null;
+    bankruptcyEndTime = null;
+    console.log('[Background] Bankruptcy lock cleared due to debt repayment');
   }
 
   const globalStats = storage.globalStats || DEFAULT_GLOBAL_STATS;
@@ -237,6 +265,45 @@ onMessage('update-debt', async (message) => {
   });
 
   return { currentDebt: updatedAccount.currentDebt, bankruptcyEndTime };
+});
+
+onMessage('sync-debt', async () => {
+  const storage = await chrome.storage.local.get();
+  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  let debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
+
+  // Perform sync logic (same as in update-debt)
+  const entertainmentDebt = (debtAccount.totalEntertainmentMinutes || 0) * config.entertainmentRatio;
+  const learningRepaid = (debtAccount.totalLearningMinutes || 0) * config.learningRepayRatio;
+  const recalculatedDebt = entertainmentDebt + learningRepaid;
+
+  let changed = false;
+  if (Math.abs(debtAccount.currentDebt - recalculatedDebt) > 0.1) {
+    debtAccount.currentDebt = recalculatedDebt;
+    changed = true;
+  }
+
+  const now = Date.now();
+  const debtService = new DebtService(
+    config.entertainmentRatio,
+    config.learningRepayRatio,
+    config.maxDebtMinutes
+  );
+
+  const isCurrentlyBankrupt = debtService.isBankrupt(debtAccount);
+  const hasActiveLock = debtAccount.bankruptcyEndTime && debtAccount.bankruptcyEndTime > now;
+
+  if (!isCurrentlyBankrupt && hasActiveLock) {
+    debtAccount.bankruptcyEndTime = null;
+    changed = true;
+    console.log('[Background] Bankruptcy lock cleared during sync');
+  }
+
+  if (changed) {
+    await chrome.storage.local.set({ debtAccount });
+  }
+
+  return { currentDebt: debtAccount.currentDebt, bankruptcyEndTime: debtAccount.bankruptcyEndTime };
 });
 
 onMessage('verify-fuse', async (message) => {
@@ -345,12 +412,19 @@ onMessage('apply-time-window-fuse', async () => {
   }
 
   const fuseService = new FuseService(config);
+  const loggingService = new BehaviorLoggingService();
   const fuseLength = fuseService.calculateFuseLength(0, false); // Base length for time window
   const timeWindowFuseCode = fuseService.generateFuseCode(fuseLength);
   const timeWindowFuseExpiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes validity
 
-  // Persist to storage for MV3 service worker persistence
-  await chrome.storage.session.set({
+  // Log the event
+  await loggingService.logEvent('fuse_applied', {
+    type: 'time_window',
+    fuseLength,
+  });
+
+  // Persist to local storage for multi-context reliability
+  await chrome.storage.local.set({
     [TIME_WINDOW_FUSE_KEY]: timeWindowFuseCode,
     [TIME_WINDOW_FUSE_EXPIRES_KEY]: timeWindowFuseExpiresAt,
   });
@@ -368,10 +442,10 @@ onMessage('verify-time-window-fuse', async (message) => {
   const storage = await chrome.storage.local.get();
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
 
-  // Retrieve from persistent storage
-  const sessionData = await chrome.storage.session.get([TIME_WINDOW_FUSE_KEY, TIME_WINDOW_FUSE_EXPIRES_KEY]);
-  let timeWindowFuseCode = sessionData[TIME_WINDOW_FUSE_KEY] as string | null;
-  let timeWindowFuseExpiresAt = sessionData[TIME_WINDOW_FUSE_EXPIRES_KEY] as number | null;
+  // Retrieve from persistent local storage
+  const storageData = await chrome.storage.local.get([TIME_WINDOW_FUSE_KEY, TIME_WINDOW_FUSE_EXPIRES_KEY]);
+  let timeWindowFuseCode = storageData[TIME_WINDOW_FUSE_KEY] as string | null;
+  let timeWindowFuseExpiresAt = storageData[TIME_WINDOW_FUSE_EXPIRES_KEY] as number | null;
 
   if (!timeWindowFuseCode || !timeWindowFuseExpiresAt) {
     return { success: false, message: '没有有效的熔断码，请先生成' };
@@ -379,19 +453,31 @@ onMessage('verify-time-window-fuse', async (message) => {
 
   if (Date.now() > timeWindowFuseExpiresAt) {
     // Clear expired fuse code
-    await chrome.storage.session.remove([TIME_WINDOW_FUSE_KEY, TIME_WINDOW_FUSE_EXPIRES_KEY]);
+    await chrome.storage.local.remove([TIME_WINDOW_FUSE_KEY, TIME_WINDOW_FUSE_EXPIRES_KEY]);
     return { success: false, message: '熔断码已过期，请重新生成' };
   }
 
   const fuseService = new FuseService(config);
   const isValid = fuseService.verifyFuseCode(data.fuseCode, timeWindowFuseCode);
+  const loggingService = new BehaviorLoggingService();
 
   if (isValid) {
+    // Log success
+    await loggingService.logEvent('fuse_verified', {
+      type: 'time_window',
+    });
     // Clear the fuse code after successful verification (one-time use)
-    await chrome.storage.session.remove([TIME_WINDOW_FUSE_KEY, TIME_WINDOW_FUSE_EXPIRES_KEY]);
-    return { success: true, message: '熔断码验证成功', expiresAt: Date.now() + 60 * 60 * 1000 }; // 1 hour break
+    await chrome.storage.local.remove([TIME_WINDOW_FUSE_KEY, TIME_WINDOW_FUSE_EXPIRES_KEY]);
+    const breakUntil = Date.now() + 60 * 60 * 1000; // 1 hour break
+    // Persist a global break for time window so content permission can honor it
+    await chrome.storage.local.set({ timeWindowBreakUntil: breakUntil });
+    return { success: true, message: '熔断码验证成功', expiresAt: breakUntil };
   }
 
+  await loggingService.logEvent('fuse_rejected', {
+    type: 'time_window',
+    reason: 'invalid_code',
+  });
   return { success: false, message: '熔断码无效' };
 });
 
