@@ -14,6 +14,7 @@ describe('DebtService', () => {
       bankruptcyEndTime: null,
       totalEntertainmentMinutes: 0,
       totalLearningMinutes: 0,
+      totalMusicMinutes: 0,
     };
   });
 
@@ -47,19 +48,28 @@ describe('DebtService', () => {
       expect(result.totalLearningMinutes).toBe(10);
     });
 
-    it('should not allow negative debt', () => {
+    it('should allow negative debt (credit storage)', () => {
       const result = service.updateDebt(account, 10, 'LEARNING');
 
-      expect(result.currentDebt).toBe(0);
+      expect(result.currentDebt).toBe(-10);
       expect(result.totalLearningMinutes).toBe(10);
     });
 
-    it('should handle partial repayment', () => {
+    it('should handle partial repayment resulting in negative debt', () => {
       account = { ...account, currentDebt: 5 };
       const result = service.updateDebt(account, 10, 'LEARNING');
 
-      expect(result.currentDebt).toBe(0);
+      expect(result.currentDebt).toBe(-5);
       expect(result.totalLearningMinutes).toBe(10);
+    });
+
+    it('should handle music tag (no debt change)', () => {
+      const result = service.updateDebt(account, 10, 'MUSIC');
+
+      expect(result.currentDebt).toBe(0);
+      expect(result.totalMusicMinutes).toBe(10);
+      expect(result.totalEntertainmentMinutes).toBe(0);
+      expect(result.totalLearningMinutes).toBe(0);
     });
 
     it('should accumulate watch time correctly', () => {

@@ -1,4 +1,4 @@
-export type VideoTag = 'LEARNING' | 'ENTERTAINMENT';
+export type VideoTag = 'LEARNING' | 'ENTERTAINMENT' | 'MUSIC';
 
 export interface VideoMetadata {
   bvid: string;
@@ -45,6 +45,7 @@ export interface DebtAccount {
   // Watch time statistics (used to calculate debt)
   totalEntertainmentMinutes: number;
   totalLearningMinutes: number;
+  totalMusicMinutes: number;
 }
 
 export interface BehaviorLogState {

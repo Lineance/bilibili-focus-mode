@@ -10,9 +10,11 @@ export class DebtService {
   calculateDebtChange(minutes: number, tag: VideoTag): number {
     if (tag === 'ENTERTAINMENT') {
       return minutes * this.entertainmentRatio;
-    } else {
+    } else if (tag === 'LEARNING') {
       return minutes * this.learningRepayRatio;
     }
+    // MUSIC tag doesn't change debt
+    return 0;
   }
 
   updateDebt(account: DebtAccount, minutes: number, tag: VideoTag): DebtAccount {
@@ -29,6 +31,9 @@ export class DebtService {
       totalLearningMinutes: tag === 'LEARNING'
         ? account.totalLearningMinutes + minutes
         : account.totalLearningMinutes,
+      totalMusicMinutes: tag === 'MUSIC'
+        ? account.totalMusicMinutes + minutes
+        : account.totalMusicMinutes,
     };
   }
 

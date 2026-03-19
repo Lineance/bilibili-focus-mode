@@ -1,4 +1,4 @@
-import type { CoolingItem, InstantItem, GhostItem } from '@core/types';
+import type { CoolingItem, InstantItem, GhostItem, VideoTag } from '@core/types';
 
 export class ExpirationService {
   constructor(
@@ -8,7 +8,7 @@ export class ExpirationService {
     private readonly ghostLifespanDays: number
   ) {}
 
-  createCoolingItem<T extends { bvid: string; title: string; uploader: string; coverUrl: string; tag: 'LEARNING' | 'ENTERTAINMENT'; addedAt: number }>(
+  createCoolingItem<T extends { bvid: string; title: string; uploader: string; coverUrl: string; tag: VideoTag; addedAt: number }>(
     metadata: T
   ): CoolingItem {
     const now = Date.now();
@@ -22,7 +22,7 @@ export class ExpirationService {
     };
   }
 
-  createInstantItem<T extends { bvid: string; title: string; uploader: string; coverUrl: string; tag: 'LEARNING' | 'ENTERTAINMENT'; addedAt: number }>(
+  createInstantItem<T extends { bvid: string; title: string; uploader: string; coverUrl: string; tag: VideoTag; addedAt: number }>(
     metadata: T,
     fuseCode: string
   ): InstantItem {
@@ -37,7 +37,7 @@ export class ExpirationService {
     };
   }
 
-  createGhostItem<T extends { bvid: string; title: string; uploader: string; coverUrl: string; tag: 'LEARNING' | 'ENTERTAINMENT'; addedAt: number }>(
+  createGhostItem<T extends { bvid: string; title: string; uploader: string; coverUrl: string; tag: VideoTag; addedAt: number }>(
     metadata: T
   ): GhostItem {
     const now = Date.now();

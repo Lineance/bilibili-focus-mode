@@ -85,14 +85,14 @@ describe('DebtTracker', () => {
       expect(lastCall.newDebt).toBeLessThan(10);
     });
 
-    it('should not allow negative debt', () => {
+    it('should allow negative debt', () => {
       tracker.startWatching('BV1xx', 'LEARNING', 0.5);
       
       // Advance 1 minute - should repay more than available
       vi.advanceTimersByTime(60000);
       
       const lastCall = onDebtUpdate.mock.calls[onDebtUpdate.mock.calls.length - 1][0];
-      expect(lastCall.newDebt).toBe(0);
+      expect(lastCall.newDebt).toBe(-0.5);
     });
 
     it('should trigger bankruptcy when debt exceeds threshold', () => {
@@ -151,6 +151,17 @@ describe('DebtTracker', () => {
       const lastCall = onDebtUpdate.mock.calls[onDebtUpdate.mock.calls.length - 1][0];
       expect(lastCall.learningMinutes).toBeGreaterThan(0);
       expect(lastCall.entertainmentMinutes).toBe(0);
+    });
+    it('should track music watch time', () => {
+      tracker.startWatching('BV1xx', 'MUSIC', 0);
+      
+      vi.advanceTimersByTime(60000);
+      
+      const lastCall = onDebtUpdate.mock.calls[onDebtUpdate.mock.calls.length - 1][0];
+      expect(lastCall.musicMinutes).toBeGreaterThan(0);
+      expect(lastCall.entertainmentMinutes).toBe(0);
+      expect(lastCall.learningMinutes).toBe(0);
+      expect(lastCall.debtChange).toBe(0);
     });
   });
 

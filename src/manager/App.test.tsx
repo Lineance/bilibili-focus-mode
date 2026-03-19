@@ -124,6 +124,7 @@ describe('Manager App', () => {
       bankruptcyEndTime: null,
       totalEntertainmentMinutes: 15,
       totalLearningMinutes: 10,
+      totalMusicMinutes: 0,
     };
 
     render(<App />);
@@ -147,6 +148,7 @@ describe('Manager App', () => {
       bankruptcyEndTime: null,
       totalEntertainmentMinutes: 35,
       totalLearningMinutes: 0,
+      totalMusicMinutes: 0,
     };
 
     render(<App />);

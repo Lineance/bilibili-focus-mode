@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { sendMessage } from 'webext-bridge/options';
 
-import type { ExtensionConfig, InstantItem } from '@core/types';
+import type { ExtensionConfig, InstantItem, VideoTag } from '@core/types';
 import type { ProtocolMap } from '@core/protocol';
 
 import { BatchToolbar, ItemCard } from './shared';
@@ -12,7 +12,7 @@ export function InstantList({ items, config }: { items: readonly InstantItem[]; 
   const [bvidInput, setBvidInput] = useState('');
   const [titleInput, setTitleInput] = useState('');
   const [uploaderInput, setUploaderInput] = useState('');
-  const [tagInput, setTagInput] = useState<'LEARNING' | 'ENTERTAINMENT'>('ENTERTAINMENT');
+  const [tagInput, setTagInput] = useState<VideoTag>('ENTERTAINMENT');
   const [fuseCode, setFuseCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const now = Date.now();
@@ -215,11 +215,12 @@ export function InstantList({ items, config }: { items: readonly InstantItem[]; 
                     <label className="block text-sm text-gray-400 mb-1">标签</label>
                     <select
                       value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value as 'LEARNING' | 'ENTERTAINMENT')}
-                      className="w-full px-3 py-2 bg-gray-700 rounded"
+                      onChange={(e) => setTagInput(e.target.value as VideoTag)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
                     >
-                      <option value="ENTERTAINMENT">🎮 娱乐</option>
                       <option value="LEARNING">📚 学习</option>
+                      <option value="MUSIC">🎵 音乐</option>
+                      <option value="ENTERTAINMENT">🎮 娱乐</option>
                     </select>
                   </div>
                 </div>

@@ -5,6 +5,7 @@ export interface DebtDelta {
   newDebt: number;
   entertainmentMinutes: number;
   learningMinutes: number;
+  musicMinutes: number;
 }
 
 export interface WatchSession {
@@ -90,6 +91,7 @@ export class DebtTracker {
     // Calculate watch time delta based on tag
     const entertainmentMinutes = this.currentSession.tag === 'ENTERTAINMENT' ? minutes : 0;
     const learningMinutes = this.currentSession.tag === 'LEARNING' ? minutes : 0;
+    const musicMinutes = this.currentSession.tag === 'MUSIC' ? minutes : 0;
 
     // Return delta values - caller is responsible for accumulating
     const delta: DebtDelta = {
@@ -97,6 +99,7 @@ export class DebtTracker {
       newDebt,
       entertainmentMinutes,
       learningMinutes,
+      musicMinutes,
     };
 
     this.onDebtUpdate(delta);
@@ -122,10 +125,12 @@ export class DebtTracker {
     if (tag === 'ENTERTAINMENT') {
       // Entertainment increases debt (positive)
       return minutes * this.entertainmentRatio;
-    } else {
+    } else if (tag === 'LEARNING') {
       // Learning decreases debt (negative ratio)
       return minutes * this.learningRepayRatio;
     }
+    // MUSIC doesn't change debt
+    return 0;
   }
 
   isWatching(): boolean {

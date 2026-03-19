@@ -545,7 +545,7 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
   }
 }
 
-function showTagSelectionDialog(metadata: VideoMetadata): Promise<'LEARNING' | 'ENTERTAINMENT' | null> {
+function showTagSelectionDialog(metadata: VideoMetadata): Promise<VideoTag | null> {
   const existing = document.querySelector('.bfm-tag-dialog');
   if (existing) existing.remove();
 
@@ -568,11 +568,14 @@ function showTagSelectionDialog(metadata: VideoMetadata): Promise<'LEARNING' | '
     <div style="background: #1a1a2e; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%;">
       <h3 style="margin: 0 0 16px 0; font-size: 18px; color: white;">选择视频类型</h3>
       <p style="margin: 0 0 20px 0; color: #aaa; font-size: 14px;">${metadata.title}</p>
-      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-        <button id="bfm-tag-learning" style="flex: 1; padding: 12px; background: #10b981; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
+      <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+        <button id="bfm-tag-learning" style="flex: 1; min-width: 100px; padding: 12px; background: #10b981; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
           📚 学习
         </button>
-        <button id="bfm-tag-entertainment" style="flex: 1; padding: 12px; background: #f59e0b; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
+        <button id="bfm-tag-music" style="flex: 1; min-width: 100px; padding: 12px; background: #3b82f6; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
+          🎵 音乐
+        </button>
+        <button id="bfm-tag-entertainment" style="flex: 1; min-width: 100px; padding: 12px; background: #f59e0b; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
           🎮 娱乐
         </button>
       </div>
@@ -584,10 +587,15 @@ function showTagSelectionDialog(metadata: VideoMetadata): Promise<'LEARNING' | '
 
   document.body.appendChild(dialog);
 
-  return new Promise<'LEARNING' | 'ENTERTAINMENT' | null>((resolve) => {
+  return new Promise<VideoTag | null>((resolve) => {
     dialog.querySelector('#bfm-tag-learning')?.addEventListener('click', () => {
       dialog.remove();
       resolve('LEARNING');
+    });
+
+    dialog.querySelector('#bfm-tag-music')?.addEventListener('click', () => {
+      dialog.remove();
+      resolve('MUSIC');
     });
 
     dialog.querySelector('#bfm-tag-entertainment')?.addEventListener('click', () => {

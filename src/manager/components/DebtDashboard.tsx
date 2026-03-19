@@ -8,6 +8,7 @@ export function DebtDashboard({
     currentDebt: number;
     totalEntertainmentMinutes?: number;
     totalLearningMinutes?: number;
+    totalMusicMinutes?: number;
     bankruptcyEndTime?: number | null;
     // Legacy field names
     totalAccrued?: number;
@@ -18,6 +19,7 @@ export function DebtDashboard({
   // Support both new and legacy field names
   const entertainmentMinutes = account?.totalEntertainmentMinutes ?? account?.totalAccrued ?? 0;
   const learningMinutes = account?.totalLearningMinutes ?? account?.totalRepaid ?? 0;
+  const musicMinutes = account?.totalMusicMinutes ?? 0;
 
   // Calculate net debt composition
   const entertainmentDebt = entertainmentMinutes * config.entertainmentRatio;
@@ -53,7 +55,7 @@ export function DebtDashboard({
       </div>
 
       {/* Watch Time Statistics */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         {/* Entertainment Stats */}
         <div className="bg-yellow-900/30 border border-yellow-700 p-4 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
@@ -65,6 +67,20 @@ export function DebtDashboard({
           </div>
           <p className="text-sm text-yellow-500/70 mt-1">
             产生债务: +{entertainmentDebt.toFixed(1)} 分钟
+          </p>
+        </div>
+
+        {/* Music Stats */}
+        <div className="bg-blue-900/30 border border-blue-700 p-4 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl">🎵</span>
+            <h3 className="font-medium text-blue-400">音乐时长</h3>
+          </div>
+          <div className="text-2xl font-bold text-blue-300">
+            {musicMinutes.toFixed(1)} 分钟
+          </div>
+          <p className="text-sm text-blue-500/70 mt-1">
+            不参与债务计算
           </p>
         </div>
 

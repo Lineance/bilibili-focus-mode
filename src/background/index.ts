@@ -191,12 +191,18 @@ onMessage('update-debt', async (message) => {
       ...debtAccount,
       totalEntertainmentMinutes: (debtAccount as any).totalAccrued || 0,
       totalLearningMinutes: (debtAccount as any).totalRepaid || 0,
+      totalMusicMinutes: (debtAccount as any).totalMusicMinutes || 0,
     };
     delete (debtAccount as any).totalAccrued;
     delete (debtAccount as any).totalRepaid;
   }
 
   // Recalculate currentDebt based on totals to fix sync issues
+  // Ensure new fields are initialized
+  if (debtAccount.totalMusicMinutes === undefined) {
+    debtAccount.totalMusicMinutes = 0;
+  }
+  
   // entertainmentDebt = totalEntertainmentMinutes * config.entertainmentRatio
   // learningRepaid = totalLearningMinutes * config.learningRepayRatio
   // netDebt = entertainmentDebt + learningRepaid
@@ -273,6 +279,10 @@ onMessage('sync-debt', async () => {
   let debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
 
   // Perform sync logic (same as in update-debt)
+  if (debtAccount.totalMusicMinutes === undefined) {
+    debtAccount.totalMusicMinutes = 0;
+  }
+  
   const entertainmentDebt = (debtAccount.totalEntertainmentMinutes || 0) * config.entertainmentRatio;
   const learningRepaid = (debtAccount.totalLearningMinutes || 0) * config.learningRepayRatio;
   const recalculatedDebt = entertainmentDebt + learningRepaid;

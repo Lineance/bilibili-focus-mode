@@ -1,8 +1,9 @@
+import { VideoTag } from '@core/types';
 import { useState } from 'react';
 
-export function UploaderAllowlist({ uploaders }: { uploaders: { id: string; name: string; tag: 'LEARNING' | 'ENTERTAINMENT'; addedAt: number }[] }) {
+export function UploaderAllowlist({ uploaders }: { uploaders: { id: string; name: string; tag: VideoTag; addedAt: number }[] }) {
   const [newUploaderName, setNewUploaderName] = useState('');
-  const [selectedTag, setSelectedTag] = useState<'LEARNING' | 'ENTERTAINMENT'>('LEARNING');
+  const [selectedTag, setSelectedTag] = useState<VideoTag>('LEARNING');
 
   const handleAdd = async () => {
     if (!newUploaderName.trim()) return;
@@ -74,10 +75,11 @@ export function UploaderAllowlist({ uploaders }: { uploaders: { id: string; name
           />
           <select
             value={selectedTag}
-            onChange={(e) => setSelectedTag(e.target.value as 'LEARNING' | 'ENTERTAINMENT')}
+            onChange={(e) => setSelectedTag(e.target.value as VideoTag)}
             className="px-3 py-2 bg-gray-700 rounded"
           >
             <option value="LEARNING">📚 学习</option>
+            <option value="MUSIC">🎵 音乐</option>
             <option value="ENTERTAINMENT">🎮 娱乐</option>
           </select>
           <button

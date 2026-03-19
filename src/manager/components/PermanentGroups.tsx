@@ -10,6 +10,7 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
   // Flatten all items from all groups and separate by tag
   const allItems = groups.flatMap(group => group.items);
   const learningItems = allItems.filter(item => item.tag === 'LEARNING');
+  const musicItems = allItems.filter(item => item.tag === 'MUSIC');
   const entertainmentItems = allItems.filter(item => item.tag === 'ENTERTAINMENT');
   const totalItems = allItems.length;
 
@@ -120,7 +121,14 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">永久分组 ({totalItems} 个视频)</h2>
+        <div>
+          <h2 className="text-xl font-semibold">永久分组 ({totalItems} 个视频)</h2>
+          <div className="flex gap-4 text-sm">
+            <span className="text-green-400">学习: {learningItems.length}</span>
+            <span className="text-blue-400">音乐: {musicItems.length}</span>
+            <span className="text-yellow-400">娱乐: {entertainmentItems.length}</span>
+          </div>
+        </div>
         {totalItems > 0 && (
           <button
             onClick={handleClearAll}

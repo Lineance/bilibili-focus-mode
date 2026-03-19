@@ -290,8 +290,8 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
                     </a>
                     <p className="text-sm text-gray-400 mb-2">{item.uploader}</p>
                     <div className="flex gap-2 flex-wrap">
-                      <span className={`px-2 py-1 rounded text-xs ${item.tag === 'LEARNING' ? 'bg-green-600' : 'bg-yellow-600'}`}>
-                        {item.tag === 'LEARNING' ? '📚 学习' : '🎮 娱乐'}
+                      <span className={`px-2 py-1 rounded text-xs ${item.tag === 'LEARNING' ? 'bg-green-600' : item.tag === 'MUSIC' ? 'bg-blue-600' : 'bg-yellow-600'}`}>
+                        {item.tag === 'LEARNING' ? '📚 学习' : item.tag === 'MUSIC' ? '🎵 音乐' : '🎮 娱乐'}
                       </span>
                       <button
                         onClick={() => handleAction(item, 'permanent')}
