@@ -186,15 +186,24 @@ onMessage('update-debt', async (message) => {
   let debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
   
   // Migrate old field names and ensure currentDebt is in sync with totals
+  interface LegacyDebtAccount {
+    totalAccrued?: number;
+    totalRepaid?: number;
+    totalMusicMinutes?: number;
+  }
+  
   if ('totalAccrued' in debtAccount || 'totalRepaid' in debtAccount) {
+    const legacyDebt = debtAccount as LegacyDebtAccount & typeof debtAccount;
     debtAccount = {
       ...debtAccount,
-      totalEntertainmentMinutes: (debtAccount as any).totalAccrued || 0,
-      totalLearningMinutes: (debtAccount as any).totalRepaid || 0,
-      totalMusicMinutes: (debtAccount as any).totalMusicMinutes || 0,
+      totalEntertainmentMinutes: legacyDebt.totalAccrued || 0,
+      totalLearningMinutes: legacyDebt.totalRepaid || 0,
+      totalMusicMinutes: legacyDebt.totalMusicMinutes || 0,
     };
-    delete (debtAccount as any).totalAccrued;
-    delete (debtAccount as any).totalRepaid;
+    // Delete legacy fields - using type assertion since we know these fields exist
+    const mutableDebt = debtAccount as Record<string, unknown>;
+    delete mutableDebt.totalAccrued;
+    delete mutableDebt.totalRepaid;
   }
 
   // Recalculate currentDebt based on totals to fix sync issues

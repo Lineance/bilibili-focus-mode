@@ -1,6 +1,6 @@
 {
   "name": "bilibili-focus-mode",
-  "version": "1.0.0",
+  "version": "0.0.3",
   "description": "Bilibili Focus Mode - Intentional time management extension for Bilibili",
   "type": "module",
   "scripts": {

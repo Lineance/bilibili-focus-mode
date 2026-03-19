@@ -74,7 +74,7 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
         await fetchStats(); // Refresh stats after application
       } else {
         const errorMsg = (response && typeof response === 'object' && 'message' in response)
-          ? (response as any).message
+          ? (response as ProtocolMap['apply-time-window-fuse']['res']).message
           : '生成失败';
         setMessage(errorMsg);
         console.error('[TimeWindowFusePanel] Apply failed:', errorMsg);
@@ -107,7 +107,7 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
         setInputCode('');
       } else {
         const errorMsg = (response && typeof response === 'object' && 'message' in response)
-          ? (response as any).message
+          ? (response as ProtocolMap['verify-time-window-fuse']['res']).message
           : '验证失败';
         setMessage(errorMsg);
       }

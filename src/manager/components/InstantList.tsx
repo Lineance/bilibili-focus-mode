@@ -83,7 +83,7 @@ export function InstantList({ items, config }: { items: readonly InstantItem[]; 
           addedAt: Date.now(),
         },
         isBankruptcy: false,
-      } as ProtocolMap['apply-fuse']['req'], 'background') as any;
+      } as ProtocolMap['apply-fuse']['req'], 'background') as ProtocolMap['apply-fuse']['res'];
 
       if (response?.success && response.fuseCode) {
         setFuseCode(response.fuseCode);

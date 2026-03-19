@@ -66,6 +66,7 @@ describe('SmartPermissionChecker', () => {
 
     it('should build prompt correctly', () => {
       const service = new MockAIService(mockConfig);
+      // Use type assertion to access protected methods for testing
       const prompt = (service as any).buildPrompt('测试标题', '测试描述');
 
       expect(prompt).toContain('测试标题');
@@ -76,6 +77,7 @@ describe('SmartPermissionChecker', () => {
 
     it('should build prompt without description', () => {
       const service = new MockAIService(mockConfig);
+      // Use type assertion to access protected methods for testing
       const prompt = (service as any).buildPrompt('测试标题');
 
       expect(prompt).toContain('测试标题');
@@ -90,6 +92,7 @@ describe('SmartPermissionChecker', () => {
         reason: '这是一个学习视频',
       });
 
+      // Use type assertion to access protected methods for testing
       const result = (service as any).parseResponse(response);
 
       expect(result.allowed).toBe(true);
@@ -102,6 +105,7 @@ describe('SmartPermissionChecker', () => {
       const service = new MockAIService(mockConfig);
       const response = 'invalid json';
 
+      // Use type assertion to access protected methods for testing
       const result = (service as any).parseResponse(response);
 
       expect(result.allowed).toBe(false);
@@ -117,6 +121,7 @@ describe('SmartPermissionChecker', () => {
         confidence: 0.5,
       });
 
+      // Use type assertion to access protected methods for testing
       const result = (service as any).parseResponse(response);
 
       expect(result.allowed).toBe(false);

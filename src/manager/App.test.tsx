@@ -1,12 +1,36 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { App } from './App';
-import type { ExtensionStorage } from '@core/types';
+// Mock webext-bridge before any imports
+import { vi } from 'vitest';
 
-// Mock chrome.storage
+// Mock webext-bridge/options module to avoid loading webextension-polyfill
+vi.mock('webext-bridge/options', () => ({
+  sendMessage: vi.fn(() => Promise.resolve({})),
+}));
+
+// Mock chrome object
+vi.stubGlobal('chrome', {
+  storage: {
+    local: {
+      get: vi.fn(),
+      set: vi.fn(),
+    },
+    onChanged: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    },
+  },
+});
+
+// Now import modules
+import { describe, it, expect, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import type { ExtensionStorage } from '@core/types';
+import { App } from './App';
+
+// Mock storage for testing
 const mockStorage: Partial<ExtensionStorage> = {};
 const mockListeners: Array<(changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => void> = [];
 
+// Override chrome.storage with our mock implementation
 vi.stubGlobal('chrome', {
   storage: {
     local: {

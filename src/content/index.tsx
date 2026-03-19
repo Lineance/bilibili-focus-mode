@@ -723,6 +723,9 @@ async function applyStyleSimplification(): Promise<void> {
 
 // Check if current page is a live streaming page
 function isLivePage(): boolean {
+  if (typeof window === 'undefined' || !window.location) {
+    return false;
+  }
   return window.location.pathname.startsWith('/live/') ||
          window.location.host === 'live.bilibili.com' ||
          /^\/\d+$/.test(window.location.pathname);
@@ -730,6 +733,9 @@ function isLivePage(): boolean {
 
 // Check if current page is search page
 function isSearchPage(): boolean {
+  if (typeof window === 'undefined' || !window.location) {
+    return false;
+  }
   return window.location.pathname.startsWith('/search') ||
          window.location.host === 'search.bilibili.com';
 }
@@ -760,16 +766,18 @@ async function checkHomepageRedirect(): Promise<void> {
 }
 
 // Watch for navigation changes (SPA)
-let lastUrl = location.href;
-new MutationObserver(() => {
-  const url = location.href;
-  if (url !== lastUrl) {
-    lastUrl = url;
-    checkHomepageRedirect();
-    applyStyleSimplification();
-    setTimeout(checkPermission, 1000);
-  }
-}).observe(document, { subtree: true, childList: true });
+if (typeof window !== 'undefined' && window.location) {
+  let lastUrl = window.location.href;
+  new MutationObserver(() => {
+    const url = window.location.href;
+    if (url !== lastUrl) {
+      lastUrl = url;
+      checkHomepageRedirect();
+      applyStyleSimplification();
+      setTimeout(checkPermission, 1000);
+    }
+  }).observe(document, { subtree: true, childList: true });
+}
 
 // Initial check
 if (document.readyState === 'loading') {
