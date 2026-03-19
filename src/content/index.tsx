@@ -493,7 +493,7 @@ function showBlockOverlay(
   });
 
   overlay.querySelector('#bfm-use-fuse')?.addEventListener('click', () => {
-    showFuseInputDialog(metadata, fuseInfo.isBankruptcy);
+    showFuseInputDialog(metadata);
   });
 
   overlay.querySelector('#bfm-open-manager')?.addEventListener('click', (e) => {
@@ -504,7 +504,7 @@ function showBlockOverlay(
 }
 
 // Show fuse code input dialog
-async function showFuseInputDialog(metadata: VideoMetadata, isBankruptcy: boolean): Promise<void> {
+async function showFuseInputDialog(metadata: VideoMetadata): Promise<void> {
   // Remove existing dialog
   const existing = document.querySelector('.bfm-fuse-dialog');
   if (existing) existing.remove();
@@ -529,7 +529,7 @@ async function showFuseInputDialog(metadata: VideoMetadata, isBankruptcy: boolea
       <h3 style="margin: 0 0 16px 0; font-size: 18px; color: white;">输入熔断码</h3>
       <p style="margin: 0 0 20px 0; color: #aaa; font-size: 14px;">
         使用熔断码临时观看将产生额外债务<br>
-        <span style="color: #f59e0b;">提示: 熔断码可在管理页申请</span>
+        <span style="color: #f59e0b;">请先在管理页申请熔断码，然后在此处输入</span>
       </p>
       
       <input 
@@ -544,8 +544,8 @@ async function showFuseInputDialog(metadata: VideoMetadata, isBankruptcy: boolea
       </div>
       
       <div style="display: flex; gap: 12px; margin-bottom: 12px;">
-        <button id="bfm-fuse-apply" style="flex: 1; padding: 10px; background: #2563eb; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
-          申请熔断码
+        <button id="bfm-fuse-open-manager" style="flex: 1; padding: 10px; background: #2563eb; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
+          前往管理页申请熔断码
         </button>
       </div>
       <div style="display: flex; gap: 12px;">
@@ -574,35 +574,10 @@ async function showFuseInputDialog(metadata: VideoMetadata, isBankruptcy: boolea
 
     dialog.querySelector('#bfm-fuse-cancel')?.addEventListener('click', closeDialog);
 
-    dialog.querySelector('#bfm-fuse-apply')?.addEventListener('click', async () => {
-      try {
-        const response = await safeSendMessage<ProtocolMap['apply-fuse']['res']>('apply-fuse', {
-          metadata: {
-            bvid: metadata.bvid,
-            title: metadata.title,
-            uploader: metadata.uploader,
-            coverUrl: metadata.coverUrl,
-            tag: metadata.tag,
-            addedAt: metadata.addedAt,
-          },
-          isBankruptcy,
-        } as ProtocolMap['apply-fuse']['req']);
-
-        if (!response || !response.success || !response.fuseCode) {
-          errorDiv.style.display = 'block';
-          errorDiv.textContent = response?.message || '申请失败';
-          return;
-        }
-
-        input.value = response.fuseCode;
-        errorDiv.style.display = 'block';
-        errorDiv.style.color = '#10b981';
-        errorDiv.textContent = '熔断码已生成，请确认使用';
-      } catch (error) {
-        console.error('[Content] Failed to apply fuse:', error);
-        errorDiv.style.display = 'block';
-        errorDiv.textContent = '申请失败，请重试';
-      }
+    dialog.querySelector('#bfm-fuse-open-manager')?.addEventListener('click', () => {
+      // Open manager page for fuse application
+      chrome.runtime.sendMessage({ type: 'open-options-page' });
+      closeDialog();
     });
 
     dialog.querySelector('#bfm-fuse-submit')?.addEventListener('click', async () => {
