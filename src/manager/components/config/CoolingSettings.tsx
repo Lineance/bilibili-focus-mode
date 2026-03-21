@@ -1,9 +1,14 @@
 import type { ExtensionConfig } from '@core/types';
 
+interface FieldDescription {
+  label: string;
+  description: string;
+}
+
 interface CoolingSettingsProps {
   config: ExtensionConfig;
   updateConfig: (field: keyof ExtensionConfig, value: unknown) => void;
-  descriptions: any;
+  descriptions: Record<string, FieldDescription>;
 }
 
 export function CoolingSettings({ config, updateConfig, descriptions }: CoolingSettingsProps) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 import { DEFAULT_CONFIG } from '@core/constants';
 import { ConfigService } from '@core/services';
@@ -19,7 +19,7 @@ import { StyleSimplificationSettings } from './config/StyleSimplificationSetting
 export function ConfigPanel() {
   const [config, setConfig] = useState<ExtensionConfig>(DEFAULT_CONFIG);
   const [saved, setSaved] = useState(false);
-  const configService = new ConfigService();
+  const configService = useMemo(() => new ConfigService(), []);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -27,7 +27,7 @@ export function ConfigPanel() {
       setConfig(loaded);
     };
     loadConfig();
-  }, []);
+  }, [configService]);
 
   const handleSave = async () => {
     const result = await configService.saveConfig(config);
