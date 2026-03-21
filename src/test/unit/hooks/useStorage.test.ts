@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { useStorage } from './useStorage';
+import { useStorage } from '@hooks/useStorage';
 import type { ExtensionStorage } from '@core/types';
 import { DEFAULT_STORAGE } from '@core/constants';
 

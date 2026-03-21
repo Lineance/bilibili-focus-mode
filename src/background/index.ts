@@ -2,7 +2,7 @@ import { DEFAULT_GLOBAL_STATS, DEFAULT_STORAGE } from '@core/constants';
 import type { ProtocolMap } from '@core/protocol';
 import { BehaviorLoggingService, DebtService, FuseApplicationService, FuseService, PermissionService } from '@core/services';
 import { TimeWindowService } from '@core/services/TimeWindowService';
-import type { BehaviorLogState, ExtensionConfig, VideoMetadata } from '@core/types';
+import type { BehaviorLogState, DebtAccount, ExtensionConfig, ExtensionStorage, GlobalStats, VideoMetadata } from '@core/types';
 import { onMessage } from 'webext-bridge/background';
 
 console.log('[Background] Service worker started');
@@ -181,9 +181,9 @@ onMessage('update-debt', async (message) => {
   const data = message.data as unknown as ProtocolMap['update-debt']['req'];
   console.log('[Background] Updating debt:', data);
 
-  const storage = await chrome.storage.local.get();
+  const storage = await chrome.storage.local.get() as ExtensionStorage;
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
-  let debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
+  let debtAccount: DebtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
   
   // Migrate old field names and ensure currentDebt is in sync with totals
   interface LegacyDebtAccount {
@@ -201,7 +201,7 @@ onMessage('update-debt', async (message) => {
       totalMusicMinutes: legacyDebt.totalMusicMinutes || 0,
     };
     // Delete legacy fields - using type assertion since we know these fields exist
-    const mutableDebt = debtAccount as Record<string, unknown>;
+    const mutableDebt = debtAccount as unknown as Record<string, unknown>;
     delete mutableDebt.totalAccrued;
     delete mutableDebt.totalRepaid;
   }
@@ -262,7 +262,7 @@ onMessage('update-debt', async (message) => {
     console.log('[Background] Bankruptcy lock cleared due to debt repayment');
   }
 
-  const globalStats = storage.globalStats || DEFAULT_GLOBAL_STATS;
+  const globalStats: GlobalStats = storage.globalStats || DEFAULT_GLOBAL_STATS;
   if (bankruptcyDeclared) {
     globalStats.bankruptcyHistory = [
       ...globalStats.bankruptcyHistory,
@@ -283,9 +283,9 @@ onMessage('update-debt', async (message) => {
 });
 
 onMessage('sync-debt', async () => {
-  const storage = await chrome.storage.local.get();
+  const storage = await chrome.storage.local.get() as ExtensionStorage;
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
-  let debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
+  let debtAccount: DebtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
 
   // Perform sync logic (same as in update-debt)
   if (debtAccount.totalMusicMinutes === undefined) {
@@ -327,7 +327,7 @@ onMessage('sync-debt', async () => {
 
 onMessage('verify-fuse', async (message) => {
   const data = message.data as unknown as ProtocolMap['verify-fuse']['req'];
-  const storage = await chrome.storage.local.get();
+  const storage = await chrome.storage.local.get() as ExtensionStorage;
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
   const service = new FuseApplicationService(config);
   return service.verifyFuse(data.bvid, data.fuseCode);
@@ -335,7 +335,7 @@ onMessage('verify-fuse', async (message) => {
 
 onMessage('apply-fuse', async (message) => {
   const data = message.data as unknown as ProtocolMap['apply-fuse']['req'];
-  const storage = await chrome.storage.local.get();
+  const storage = await chrome.storage.local.get() as ExtensionStorage;
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
   const behaviorLog = resetQuotaIfNeeded(normalizeBehaviorLog(storage.behaviorLog));
 
@@ -374,7 +374,7 @@ onMessage('apply-fuse', async (message) => {
     return { success: false, message: result.reason };
   }
 
-  const globalStats = storage.globalStats || DEFAULT_GLOBAL_STATS;
+  const globalStats: GlobalStats = storage.globalStats || DEFAULT_GLOBAL_STATS;
   globalStats.fuseApplicationsTotal++;
 
   await chrome.storage.local.set({
@@ -391,7 +391,7 @@ onMessage('apply-fuse', async (message) => {
 
 onMessage('watch-ended', async (message) => {
   const data = message.data as unknown as ProtocolMap['watch-ended']['req'];
-  const storage = await chrome.storage.local.get();
+  const storage = await chrome.storage.local.get() as ExtensionStorage;
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
   const behaviorLog = normalizeBehaviorLog(storage.behaviorLog);
 
@@ -412,7 +412,7 @@ onMessage('watch-ended', async (message) => {
 });
 
 onMessage('get-full-config', async () => {
-  const storage = await chrome.storage.local.get();
+  const storage = await chrome.storage.local.get() as ExtensionStorage;
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
   const debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
   return { config, debtAccount };
@@ -423,7 +423,7 @@ const TIME_WINDOW_FUSE_KEY = 'timeWindowFuse';
 const TIME_WINDOW_FUSE_EXPIRES_KEY = 'timeWindowFuseExpiresAt';
 
 onMessage('apply-time-window-fuse', async () => {
-  const storage = await chrome.storage.local.get();
+  const storage = await chrome.storage.local.get() as ExtensionStorage;
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
 
   if (!config.instantBreakFuse) {
@@ -458,7 +458,7 @@ onMessage('apply-time-window-fuse', async () => {
 
 onMessage('verify-time-window-fuse', async (message) => {
   const data = message.data as unknown as ProtocolMap['verify-time-window-fuse']['req'];
-  const storage = await chrome.storage.local.get();
+  const storage = await chrome.storage.local.get() as ExtensionStorage;
   const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
 
   // Retrieve from persistent local storage
@@ -501,8 +501,9 @@ onMessage('verify-time-window-fuse', async (message) => {
 });
 
 chrome.storage.local.get('config').then((storage) => {
-  const limboReviewTime = storage.config?.limboReviewTime || DEFAULT_STORAGE.config.limboReviewTime;
-  const limboAutoPurgeHours = storage.config?.limboAutoPurgeHours ?? DEFAULT_STORAGE.config.limboAutoPurgeHours;
+  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  const limboReviewTime = config.limboReviewTime || DEFAULT_STORAGE.config.limboReviewTime;
+  const limboAutoPurgeHours = config.limboAutoPurgeHours ?? DEFAULT_STORAGE.config.limboAutoPurgeHours;
   scheduleLimboReviewReminder(limboReviewTime);
   scheduleLimboAutoPurge(limboAutoPurgeHours);
 });

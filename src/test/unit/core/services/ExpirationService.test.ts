@@ -1,4 +1,4 @@
-import { ExpirationService } from './ExpirationService';
+import { ExpirationService } from '@core/services/';
 import type { CoolingItem, InstantItem, GhostItem } from '@core/types';
 
 describe('ExpirationService', () => {

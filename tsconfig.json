@@ -21,7 +21,11 @@
       "@core/*": ["src/core/*"],
       "@hooks/*": ["src/hooks/*"],
       "@components/*": ["src/components/*"],
-      "@adapters/*": ["src/adapters/*"]
+      "@adapters/*": ["src/adapters/*"],
+      "@content/*": ["src/content/*"],
+      "@background/*": ["src/background/*"],
+      "@manager/*": ["src/manager/*"],
+      "@popup/*": ["src/popup/*"]
     },
     "types": ["chrome", "vitest/globals"]
   },

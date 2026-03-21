@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { VisualDecayService } from './VisualDecayService';
+import { VisualDecayService } from '@core/services/';
 import type { VideoMetadata, VisualDecayState } from '@core/types';
 
 // Mock chrome.storage

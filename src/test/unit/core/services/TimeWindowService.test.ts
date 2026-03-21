@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TimeWindowService } from './TimeWindowService';
+import { TimeWindowService } from '@core/services/';
 import type { ExtensionConfig } from '@core/types';
 import { DEFAULT_CONFIG } from '@core/constants';
 

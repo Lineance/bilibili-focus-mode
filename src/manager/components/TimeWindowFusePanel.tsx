@@ -15,36 +15,36 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState<FuseStats>({ week: 0, month: 0 });
-  const [nowTs, setNowTs] = useState<number>(Date.now());
-
-  const fetchStats = async () => {
-    try {
-      const loggingService = new BehaviorLoggingService();
-      const now = Date.now();
-      const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
-      const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
-
-      const weekLogs = await loggingService.getLogs({
-        startTime: weekAgo,
-        actions: ['fuse_applied'],
-      });
-      const monthLogs = await loggingService.getLogs({
-        startTime: monthAgo,
-        actions: ['fuse_applied'],
-      });
-
-      // Filter for time_window type if details exist
-      const weekCount = weekLogs.filter(l => l.details?.type === 'time_window').length;
-      const monthCount = monthLogs.filter(l => l.details?.type === 'time_window').length;
-
-      setStats({ week: weekCount, month: monthCount });
-    } catch (error) {
-      console.error('[TimeWindowFusePanel] Failed to fetch stats:', error);
-    }
-  };
+  const [nowTs, setNowTs] = useState<number>(() => Date.now());
 
   useEffect(() => {
-    fetchStats();
+    const loadStats = async () => {
+      try {
+        const loggingService = new BehaviorLoggingService();
+        const now = Date.now();
+        const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+        const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
+
+        const weekLogs = await loggingService.getLogs({
+          startTime: weekAgo,
+          actions: ['fuse_applied'],
+        });
+        const monthLogs = await loggingService.getLogs({
+          startTime: monthAgo,
+          actions: ['fuse_applied'],
+        });
+
+        // Filter for time_window type if details exist
+        const weekCount = weekLogs.filter(l => l.details?.type === 'time_window').length;
+        const monthCount = monthLogs.filter(l => l.details?.type === 'time_window').length;
+
+        setStats({ week: weekCount, month: monthCount });
+      } catch (error) {
+        console.error('[TimeWindowFusePanel] Failed to fetch stats:', error);
+      }
+    };
+
+    loadStats();
   }, []);
 
   useEffect(() => {
@@ -71,7 +71,22 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
         setFuseCode(res.fuseCode ?? null);
         setExpiresAt(res.expiresAt ?? null);
         setMessage('熔断码已生成，请输入以确认。这是一项破坏规则的操作，请谨慎对待。');
-        await fetchStats(); // Refresh stats after application
+        // Refresh stats after application
+        (async () => {
+          try {
+            const loggingService = new BehaviorLoggingService();
+            const now = Date.now();
+            const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+            const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
+            const weekLogs = await loggingService.getLogs({ startTime: weekAgo, actions: ['fuse_applied'] });
+            const monthLogs = await loggingService.getLogs({ startTime: monthAgo, actions: ['fuse_applied'] });
+            const weekCount = weekLogs.filter(l => l.details?.type === 'time_window').length;
+            const monthCount = monthLogs.filter(l => l.details?.type === 'time_window').length;
+            setStats({ week: weekCount, month: monthCount });
+          } catch (error) {
+            console.error('[TimeWindowFusePanel] Failed to refresh stats:', error);
+          }
+        })();
       } else {
         const errorMsg = (response && typeof response === 'object' && 'message' in response)
           ? (response as ProtocolMap['apply-time-window-fuse']['res']).message

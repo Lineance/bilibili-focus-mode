@@ -1,7 +1,7 @@
 import { DEFAULT_CONFIG } from '@core/constants';
 import type { BehaviorLogState, ExtensionConfig, VideoMetadata } from '@core/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { FuseApplicationService } from './FuseApplicationService';
+import { FuseApplicationService } from '@core/services/';
 
 // Mock chrome.storage
 const mockStorage: Record<string, unknown> = {};

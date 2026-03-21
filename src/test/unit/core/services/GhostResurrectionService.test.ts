@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GhostResurrectionService } from './GhostResurrectionService';
+import { GhostResurrectionService } from '@core/services/';
 import type { GhostItem, ExtensionConfig } from '@core/types';
 import { DEFAULT_CONFIG } from '@core/constants';
 

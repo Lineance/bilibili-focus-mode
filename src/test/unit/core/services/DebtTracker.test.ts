@@ -1,15 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { DebtTracker } from './DebtTracker';
+import { DebtTracker } from '@core/services/';
+import type { DebtDelta } from '@core/services/';
 
 describe('DebtTracker', () => {
   let tracker: DebtTracker;
-  let onDebtUpdate: ReturnType<typeof vi.fn>;
-  let onBankruptcy: ReturnType<typeof vi.fn>;
+  let onDebtUpdate: ReturnType<typeof vi.fn<(delta: DebtDelta) => void>>;
+  let onBankruptcy: ReturnType<typeof vi.fn<() => void>>;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    onDebtUpdate = vi.fn();
-    onBankruptcy = vi.fn();
+    onDebtUpdate = vi.fn<(delta: DebtDelta) => void>();
+    onBankruptcy = vi.fn<() => void>();
     tracker = new DebtTracker(2.0, -1.0, 60, onDebtUpdate, onBankruptcy);
   });
 

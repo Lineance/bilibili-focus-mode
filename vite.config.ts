@@ -16,15 +16,15 @@ export default defineConfig({
       '@hooks': resolve(__dirname, 'src/hooks'),
       '@components': resolve(__dirname, 'src/components'),
       '@adapters': resolve(__dirname, 'src/adapters'),
+      '@content': resolve(__dirname, 'src/content'),
+      '@background': resolve(__dirname, 'src/background'),
+      '@manager': resolve(__dirname, 'src/manager'),
+      '@popup': resolve(__dirname, 'src/popup'),
     },
   },
   base: './',
   build: {
-    rollupOptions: {
-      output: {
-        inlineDynamicImports: false,
-      },
-    },
+    target: 'esnext',
   },
   server: {
     port: 5173,

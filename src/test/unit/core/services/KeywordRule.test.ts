@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { KeywordRule } from './KeywordRule';
-import type { KeywordRuleConfig } from './KeywordRule';
+import { KeywordRule } from '@core/services/KeywordRule';
+import type { KeywordRuleConfig } from '@core/services/KeywordRule';
 
 describe('KeywordRule', () => {
   const createRule = (config: Partial<KeywordRuleConfig> = {}) => {

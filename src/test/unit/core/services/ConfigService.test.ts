@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ConfigService } from './ConfigService';
+import { ConfigService } from '@core/services/';
 import type { ExtensionConfig } from '@core/types';
 import { DEFAULT_CONFIG } from '@core/constants';
 

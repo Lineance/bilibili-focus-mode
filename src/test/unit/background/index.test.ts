@@ -110,7 +110,7 @@ describe('Background Script', () => {
   describe('Storage Initialization', () => {
     it('should initialize storage on install', async () => {
       // Import the background script to trigger initialization
-      await import('./index');
+      await import('@background/index');
 
       // Get the onInstalled listener
       const onInstalledListener = vi.mocked(chrome.runtime.onInstalled.addListener).mock.calls[0]?.[0];
@@ -127,7 +127,7 @@ describe('Background Script', () => {
     });
 
     it('should not reinitialize on update', async () => {
-      await import('./index');
+      await import('@background/index');
 
       const onInstalledListener = vi.mocked(chrome.runtime.onInstalled.addListener).mock.calls[0]?.[0];
       
@@ -143,7 +143,7 @@ describe('Background Script', () => {
 
   describe('Alarm Handling', () => {
     it('should create daily reminder alarm', async () => {
-      await import('./index');
+      await import('@background/index');
 
       expect(chrome.alarms.create).toHaveBeenCalledWith(
         'limbo-review-reminder',
@@ -154,7 +154,7 @@ describe('Background Script', () => {
     });
 
     it('should show notification on alarm', async () => {
-      await import('./index');
+      await import('@background/index');
 
       const onAlarmListener = vi.mocked(chrome.alarms.onAlarm.addListener).mock.calls[0]?.[0];
       expect(onAlarmListener).toBeDefined();
@@ -174,7 +174,7 @@ describe('Background Script', () => {
 
   describe('Open Options Page', () => {
     it('should open options page in new tab', async () => {
-      await import('./index');
+      await import('@background/index');
 
       const onMessageListener = vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0]?.[0];
       expect(onMessageListener).toBeDefined();
@@ -208,7 +208,7 @@ describe('Background Script', () => {
         return Promise.resolve(undefined as unknown as chrome.tabs.Tab);
       });
 
-      await import('./index');
+      await import('@background/index');
 
       const onMessageListener = vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0]?.[0];
       const sendResponse = vi.fn();

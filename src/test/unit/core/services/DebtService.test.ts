@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { DebtService } from './DebtService';
+import { DebtService } from '@core/services/';
 import type { DebtAccount } from '@core/types';
 
 describe('DebtService', () => {

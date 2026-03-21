@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PermissionService } from './PermissionService';
+import { PermissionService } from '@core/services/PermissionService';
 import type { ExtensionStorage } from '@core/types';
 import { DEFAULT_STORAGE } from '@core/constants';
 

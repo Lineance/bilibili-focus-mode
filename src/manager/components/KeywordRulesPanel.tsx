@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import type { ExtensionConfig } from '@core/types';
+import { DEFAULT_STORAGE } from '@core/constants';
 
 export function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
   const [keywords, setKeywords] = useState(config.keywordRules?.keywords || []);
@@ -11,8 +12,8 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
   const saveToStorage = async (newKeywords: string[], newEnabled: boolean) => {
     try {
       const storage = await chrome.storage.local.get();
-      const newConfig = {
-        ...storage.config,
+      const newConfig: ExtensionConfig = {
+        ...(storage.config as ExtensionConfig) || DEFAULT_STORAGE.config,
         keywordRules: {
           enabled: newEnabled,
           keywords: newKeywords,

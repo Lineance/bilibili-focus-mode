@@ -1,4 +1,4 @@
-import type { GhostItem, CoolingItem, VideoMetadata, ExtensionConfig } from '@core/types';
+import type { GhostItem, CoolingItem, VideoMetadata, ExtensionConfig, GlobalStats } from '@core/types';
 import { ExpirationService } from './ExpirationService';
 import { FuseService } from './FuseService';
 
@@ -130,7 +130,7 @@ export class GhostResurrectionService {
     coolingList.push(coolingItem);
 
     // Update global stats
-    const globalStats = storage.globalStats || { ghostResurrectionsTotal: 0 };
+    const globalStats: GlobalStats = (storage.globalStats as GlobalStats) || { ghostResurrectionsTotal: 0, fuseApplicationsTotal: 0, fuseOverridesTotal: 0, bankruptcyHistory: [], lifecycleTransitions: {} };
     globalStats.ghostResurrectionsTotal++;
 
     await chrome.storage.local.set({

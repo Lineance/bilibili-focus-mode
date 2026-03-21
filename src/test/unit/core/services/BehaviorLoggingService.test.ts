@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { BehaviorLoggingService } from './BehaviorLoggingService';
+import { BehaviorLoggingService } from '@core/services/';
 import type { TimeRange } from '@core/types';
 
 // Mock chrome.storage

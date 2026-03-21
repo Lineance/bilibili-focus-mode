@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { FuseService } from './FuseService';
+import { FuseService } from '@core/services/';
 import { DEFAULT_CONFIG } from '@core/constants';
 import type { ExtensionConfig } from '@core/types';
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import type { CoolingItem } from '@core/types';
 
@@ -6,7 +6,14 @@ import { BatchToolbar, ItemCard } from './shared';
 
 export function CoolingList({ items }: { items: readonly CoolingItem[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const now = Date.now();
+  const [now, setNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   const toggleSelection = (bvid: string) => {
     const newSelected = new Set(selected);

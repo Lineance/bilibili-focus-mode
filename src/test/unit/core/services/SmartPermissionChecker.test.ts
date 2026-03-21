@@ -5,7 +5,7 @@ import {
   type AICheckResult,
   type AIServiceConfig,
   type CheckContext,
-} from './SmartPermissionChecker';
+} from '@core/services/SmartPermissionChecker';
 
 // Mock implementation for testing
 class MockAIService extends BaseAIService {
@@ -67,7 +67,7 @@ describe('SmartPermissionChecker', () => {
     it('should build prompt correctly', () => {
       const service = new MockAIService(mockConfig);
       // Use type assertion to access protected methods for testing
-      const prompt = (service as any).buildPrompt('测试标题', '测试描述');
+      const prompt = (service as unknown as { buildPrompt: (title: string, description?: string) => string }).buildPrompt('测试标题', '测试描述');
 
       expect(prompt).toContain('测试标题');
       expect(prompt).toContain('测试描述');
@@ -78,7 +78,7 @@ describe('SmartPermissionChecker', () => {
     it('should build prompt without description', () => {
       const service = new MockAIService(mockConfig);
       // Use type assertion to access protected methods for testing
-      const prompt = (service as any).buildPrompt('测试标题');
+      const prompt = (service as unknown as { buildPrompt: (title: string, description?: string) => string }).buildPrompt('测试标题');
 
       expect(prompt).toContain('测试标题');
       expect(prompt).not.toContain('简介：');
@@ -93,7 +93,7 @@ describe('SmartPermissionChecker', () => {
       });
 
       // Use type assertion to access protected methods for testing
-      const result = (service as any).parseResponse(response);
+      const result = (service as unknown as { parseResponse: (response: string) => { allowed: boolean; confidence: number; category: string; reason?: string } }).parseResponse(response);
 
       expect(result.allowed).toBe(true);
       expect(result.confidence).toBe(0.95);
@@ -106,7 +106,7 @@ describe('SmartPermissionChecker', () => {
       const response = 'invalid json';
 
       // Use type assertion to access protected methods for testing
-      const result = (service as any).parseResponse(response);
+      const result = (service as unknown as { parseResponse: (response: string) => { allowed: boolean; confidence: number; category: string; reason?: string } }).parseResponse(response);
 
       expect(result.allowed).toBe(false);
       expect(result.confidence).toBe(0);
@@ -122,7 +122,7 @@ describe('SmartPermissionChecker', () => {
       });
 
       // Use type assertion to access protected methods for testing
-      const result = (service as any).parseResponse(response);
+      const result = (service as unknown as { parseResponse: (response: string) => { allowed: boolean; confidence: number; category: string; reason?: string } }).parseResponse(response);
 
       expect(result.allowed).toBe(false);
       expect(result.confidence).toBe(0.5);

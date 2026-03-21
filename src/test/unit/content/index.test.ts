@@ -58,7 +58,7 @@ describe('Content Script', () => {
       mockSendMessage.mockResolvedValueOnce({ allowed: true, reason: 'PERMANENT' } as PermissionResult);
 
       // Import content script
-      await import('./index');
+      await import('@content/index');
 
       // Wait for async operations
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -88,7 +88,7 @@ describe('Content Script', () => {
         },
       });
 
-      await import('./index');
+      await import('@content/index');
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -122,7 +122,7 @@ describe('Content Script', () => {
           reason: 'NO_PERMISSION' 
         } as PermissionResult);
 
-      await import('./index');
+      await import('@content/index');
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -160,7 +160,7 @@ describe('Content Script', () => {
           reason: 'PERMANENT' 
         } as PermissionResult);
 
-      await import('./index');
+      await import('@content/index');
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -193,7 +193,7 @@ describe('Content Script', () => {
           timeUntilWindow: 0
         } as PermissionResult);
 
-      await import('./index');
+      await import('@content/index');
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -227,7 +227,7 @@ describe('Content Script', () => {
           timeUntilWindow: 0
         } as PermissionResult);
 
-      await import('./index');
+      await import('@content/index');
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -269,7 +269,7 @@ describe('Content Script', () => {
         } as PermissionResult);
 
       vi.resetModules();
-      await import('./index');
+      await import('@content/index');
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -307,7 +307,7 @@ describe('Content Script', () => {
         } as PermissionResult);
 
       vi.resetModules();
-      await import('./index');
+      await import('@content/index');
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -345,7 +345,7 @@ describe('Content Script', () => {
         } as PermissionResult);
 
       vi.resetModules();
-      await import('./index');
+      await import('@content/index');
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 

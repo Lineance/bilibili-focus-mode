@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 import type { ExtensionConfig } from '@core/types';
 
 export function DebtDashboard({
@@ -16,6 +18,15 @@ export function DebtDashboard({
   };
   config: ExtensionConfig;
 }) {
+  const [now, setNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Support both new and legacy field names
   const entertainmentMinutes = account?.totalEntertainmentMinutes ?? account?.totalAccrued ?? 0;
   const learningMinutes = account?.totalLearningMinutes ?? account?.totalRepaid ?? 0;
@@ -31,7 +42,7 @@ export function DebtDashboard({
   
   // Real-time bankruptcy status from storage, but also from recalculated debt
   const isBankrupt = debt >= config.maxDebtMinutes;
-  const isLocked = account?.bankruptcyEndTime && Date.now() < account.bankruptcyEndTime;
+  const isLocked = account?.bankruptcyEndTime && now < account.bankruptcyEndTime;
   const effectiveBankrupt = isBankrupt || isLocked;
 
   return (

@@ -7,10 +7,13 @@ export function useStorage(): ExtensionStorage {
 
   useEffect(() => {
     // Load initial value
-    chrome.storage.local.get().then((result) => {
+    chrome.storage.local.get().then((result: Partial<ExtensionStorage>) => {
       console.log('[useStorage] Loaded storage:', result);
       if (Object.keys(result).length > 0) {
-        setStorage(result as ExtensionStorage);
+        setStorage({
+          ...DEFAULT_STORAGE,
+          ...result,
+        });
       }
     });
 

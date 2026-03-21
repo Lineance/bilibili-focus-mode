@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { CoolingTransitionService } from './CoolingTransitionService';
+import { CoolingTransitionService } from '@core/services/';
 import type { CoolingItem } from '@core/types';
 
 describe('CoolingTransitionService', () => {

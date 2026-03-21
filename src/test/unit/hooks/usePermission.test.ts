@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { usePermission } from './usePermission';
+import { usePermission } from '@hooks/usePermission';
 import type { PermissionResult } from '@core/types';
 
 // Mock webext-bridge

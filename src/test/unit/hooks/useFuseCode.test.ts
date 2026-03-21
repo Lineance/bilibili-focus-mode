@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useFuseCode } from './useFuseCode';
+import { useFuseCode } from '@hooks/useFuseCode';
 
 // Mock crypto.getRandomValues
 Object.defineProperty(globalThis, 'crypto', {

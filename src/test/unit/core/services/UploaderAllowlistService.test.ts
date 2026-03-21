@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { UploaderAllowlistService } from './UploaderAllowlistService';
+import { UploaderAllowlistService } from '@core/services/';
 
 // Mock chrome.storage
 const mockStorage: Record<string, unknown> = {};

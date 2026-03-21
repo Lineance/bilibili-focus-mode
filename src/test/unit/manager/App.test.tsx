@@ -24,7 +24,7 @@ vi.stubGlobal('chrome', {
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { ExtensionStorage } from '@core/types';
-import { App } from './App';
+import { App } from '@manager/App';
 
 // Mock storage for testing
 const mockStorage: Partial<ExtensionStorage> = {};

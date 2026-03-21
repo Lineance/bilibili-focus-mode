@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { GhostResurrectionService } from '@core/services';
 import type { ExtensionConfig, GhostItem } from '@core/types';
@@ -7,6 +7,14 @@ import { BatchToolbar, ItemCard } from './shared';
 
 export function GhostList({ items, config }: { items: readonly GhostItem[]; config: ExtensionConfig }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [now, setNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   const toggleSelection = (bvid: string) => {
     const newSelected = new Set(selected);
@@ -72,8 +80,6 @@ export function GhostList({ items, config }: { items: readonly GhostItem[]; conf
 
     alert(result.message);
   };
-
-  const now = Date.now();
 
   return (
     <div>

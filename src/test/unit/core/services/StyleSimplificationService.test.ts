@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { StyleSimplificationService } from './StyleSimplificationService';
+import { StyleSimplificationService } from '@core/services/';
 import type { ExtensionConfig } from '@core/types';
 
 describe('StyleSimplificationService', () => {

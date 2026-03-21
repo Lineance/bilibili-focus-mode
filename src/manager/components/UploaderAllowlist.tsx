@@ -1,7 +1,7 @@
-import { VideoTag } from '@core/types';
+import { VideoTag, type AllowedUploader } from '@core/types';
 import { useState } from 'react';
 
-export function UploaderAllowlist({ uploaders }: { uploaders: { id: string; name: string; tag: VideoTag; addedAt: number }[] }) {
+export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] }) {
   const [newUploaderName, setNewUploaderName] = useState('');
   const [selectedTag, setSelectedTag] = useState<VideoTag>('LEARNING');
 
@@ -9,15 +9,15 @@ export function UploaderAllowlist({ uploaders }: { uploaders: { id: string; name
     if (!newUploaderName.trim()) return;
 
     const storage = await chrome.storage.local.get();
-    const currentUploaders = storage.allowedUploaders || [];
+    const currentUploaders = (storage.allowedUploaders || []) as AllowedUploader[];
 
     // Check if already exists
-    if (currentUploaders.some((u: { name: string }) => u.name === newUploaderName.trim())) {
-      alert('该UP主已在白名单中');
+    if (currentUploaders.some((u) => u.name === newUploaderName.trim())) {
+      alert('该 UP 主已在白名单中');
       return;
     }
 
-    const newUploader = {
+    const newUploader: AllowedUploader = {
       id: `uploader_${Date.now()}`,
       name: newUploaderName.trim(),
       tag: selectedTag,
@@ -33,13 +33,13 @@ export function UploaderAllowlist({ uploaders }: { uploaders: { id: string; name
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('确定要移除这个UP主吗？')) return;
+    if (!confirm('确定要移除这个 UP 主吗？')) return;
 
     const storage = await chrome.storage.local.get();
-    const currentUploaders = storage.allowedUploaders || [];
+    const currentUploaders = (storage.allowedUploaders || []) as AllowedUploader[];
 
     await chrome.storage.local.set({
-      allowedUploaders: currentUploaders.filter((u: { id: string }) => u.id !== id),
+      allowedUploaders: currentUploaders.filter((u) => u.id !== id),
     });
   };
 
