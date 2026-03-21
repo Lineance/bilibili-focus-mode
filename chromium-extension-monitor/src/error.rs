@@ -15,9 +15,6 @@ pub enum AppError {
     #[error("监控服务错误：{0}")]
     Monitor(#[from] MonitorError),
 
-    #[error("系统托盘错误：{0}")]
-    Tray(#[from] TrayError),
-
     #[error("IO 错误：{0}")]
     Io(#[from] std::io::Error),
 
@@ -78,19 +75,6 @@ pub enum MonitorError {
 
     #[error("监控循环错误：{0}")]
     LoopError(String),
-}
-
-/// 系统托盘错误类型
-#[derive(Error, Debug)]
-pub enum TrayError {
-    #[error("托盘图标创建失败：{0}")]
-    IconCreateFailed(String),
-
-    #[error("托盘菜单创建失败：{0}")]
-    MenuCreateFailed(String),
-
-    #[error("托盘通知发送失败：{0}")]
-    NotificationFailed(String),
 }
 
 impl AppError {

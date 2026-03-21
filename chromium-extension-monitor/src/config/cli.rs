@@ -28,10 +28,6 @@ pub struct CliArgs {
     #[arg(short, long, value_name = "EXT_ID")]
     pub extension: Option<String>,
 
-    /// 禁用系统托盘
-    #[arg(long)]
-    pub no_tray: bool,
-
     /// 详细日志输出
     #[arg(short, long)]
     pub verbose: bool,
@@ -67,10 +63,6 @@ impl CliArgs {
 
         if let Some(ext_id) = self.extension {
             config.extension.target_extensions = vec![ext_id];
-        }
-
-        if self.no_tray {
-            config.tray.enabled = false;
         }
 
         // 根据 verbose/quiet 调整日志级别

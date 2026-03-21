@@ -27,10 +27,6 @@ tracing-appender = "0.2"
 anyhow = "1.0"
 thiserror = "1.0"
 
-# 系统托盘
-tray-icon = "0.20"
-tauri-utils = "2.0"
-
 # 目录处理
 dirs = "6.0"
 pathdiff = "0.2"

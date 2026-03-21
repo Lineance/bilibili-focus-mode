@@ -8,7 +8,6 @@ pub use file::ExtensionConfig;
 pub use file::LoggingConfig;
 pub use file::MonitorConfig;
 pub use file::PerformanceConfig;
-pub use file::TrayConfig;
 
 use std::path::PathBuf;
 

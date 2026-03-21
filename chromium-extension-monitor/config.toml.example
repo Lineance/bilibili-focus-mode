@@ -29,12 +29,6 @@ user_data_dirs = []
 # 要监控的进程名称
 process_names = ["chromium.exe", "chrome.exe"]
 
-[tray]
-# 是否显示系统托盘
-enabled = true
-# 托盘图标路径（可选，留空使用内置图标）
-icon_path = ""
-
 [logging]
 # 日志级别：trace, debug, info, warn, error
 level = "info"

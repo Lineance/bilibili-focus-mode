@@ -16,10 +16,6 @@ pub struct Config {
     #[serde(default)]
     pub chromium: ChromiumConfig,
 
-    /// 系统托盘配置
-    #[serde(default)]
-    pub tray: TrayConfig,
-
     /// 日志配置
     #[serde(default)]
     pub logging: LoggingConfig,
@@ -35,7 +31,6 @@ impl Default for Config {
             monitor: MonitorConfig::default(),
             extension: ExtensionConfig::default(),
             chromium: ChromiumConfig::default(),
-            tray: TrayConfig::default(),
             logging: LoggingConfig::default(),
             performance: PerformanceConfig::default(),
         }
@@ -129,27 +124,6 @@ impl Default for ChromiumConfig {
 
 fn default_process_names() -> Vec<String> {
     vec!["chromium.exe".to_string(), "chrome.exe".to_string()]
-}
-
-/// 系统托盘配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TrayConfig {
-    /// 是否显示系统托盘
-    #[serde(default = "default_true")]
-    pub enabled: bool,
-
-    /// 托盘图标路径（可选）
-    #[serde(default)]
-    pub icon_path: Option<PathBuf>,
-}
-
-impl Default for TrayConfig {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            icon_path: None,
-        }
-    }
 }
 
 /// 日志配置
