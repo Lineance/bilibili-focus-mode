@@ -74,6 +74,8 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
   };
 
   const renderItemCard = (item: VideoMetadata) => {
+    // Skip items with undefined bvid
+    if (!item.bvid) return null;
     const videoUrl = item.bvid.startsWith('LIVE_')
       ? `https://live.bilibili.com/${item.bvid.replace('LIVE_', '')}`
       : `https://www.bilibili.com/video/${item.bvid}`;

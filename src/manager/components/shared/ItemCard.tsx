@@ -13,8 +13,8 @@ export function ItemCard({
   onDelete: () => void;
   children?: React.ReactNode;
 }) {
-  // Generate video URL
-  const videoUrl = item.bvid.startsWith('LIVE_')
+  // Generate video URL with defensive check for undefined bvid
+  const videoUrl = item.bvid?.startsWith('LIVE_')
     ? `https://live.bilibili.com/${item.bvid.replace('LIVE_', '')}`
     : `https://www.bilibili.com/video/${item.bvid}`;
 

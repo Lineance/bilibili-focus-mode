@@ -129,7 +129,7 @@ describe('Content Script', () => {
       // Check overlay was created
       const overlay = document.querySelector('.bilibili-focus-mode-block-overlay');
       expect(overlay).toBeTruthy();
-      expect(overlay?.textContent).toContain('视频未审批');
+      expect(overlay?.textContent).toContain('🔒 视频未审批');
       expect(overlay?.textContent).toContain('加入待审池');
     });
 
@@ -198,7 +198,7 @@ describe('Content Script', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Check that add to limbo button exists
-      const addButton = document.querySelector('#bfm-add-limbo') as HTMLButtonElement;
+      const addButton = document.querySelector('#bfm-add-limbo') as HTMLElement;
       expect(addButton).toBeTruthy();
       expect(addButton?.textContent).toContain('加入待审池');
     });
@@ -232,7 +232,7 @@ describe('Content Script', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Check that open manager button exists
-      const managerButton = document.querySelector('#bfm-open-manager') as HTMLButtonElement;
+      const managerButton = document.querySelector('#bfm-open-manager') as HTMLElement;
       expect(managerButton).toBeTruthy();
       expect(managerButton?.textContent).toContain('打开管理页');
     });

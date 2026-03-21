@@ -89,7 +89,7 @@ describe('StyleSimplificationService', () => {
         minimalPlayer: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement).toBeTruthy();
       expect(styleElement?.tagName).toBe('STYLE');
     });
@@ -109,7 +109,7 @@ describe('StyleSimplificationService', () => {
         minimalPlayer: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement).toBeFalsy();
     });
 
@@ -123,7 +123,7 @@ describe('StyleSimplificationService', () => {
         minimalPlayer: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('#comment');
       expect(styleElement?.textContent).toContain('.comment-area');
     });
@@ -138,7 +138,7 @@ describe('StyleSimplificationService', () => {
         minimalPlayer: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.recommend-list');
       expect(styleElement?.textContent).toContain('.next-play');
     });
@@ -153,7 +153,7 @@ describe('StyleSimplificationService', () => {
         minimalPlayer: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('#danmakuBox');
       expect(styleElement?.textContent).toContain('.danmaku-box');
     });
@@ -168,7 +168,7 @@ describe('StyleSimplificationService', () => {
         minimalPlayer: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.right-container');
       expect(styleElement?.textContent).toContain('.video-sections');
     });
@@ -183,7 +183,7 @@ describe('StyleSimplificationService', () => {
         minimalPlayer: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.ad-report');
       expect(styleElement?.textContent).toContain('.strip-ad');
     });
@@ -198,7 +198,7 @@ describe('StyleSimplificationService', () => {
         minimalPlayer: true,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.player-wrap');
       expect(styleElement?.textContent).toContain('max-width: 100%');
       // Should keep controls visible
@@ -217,7 +217,7 @@ describe('StyleSimplificationService', () => {
         minimalPlayer: false,
       });
 
-      const firstStyleElement = document.getElementById('bilibili-focus-mode-styles');
+      const firstStyleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(firstStyleElement).toBeTruthy();
 
       // Second application with different options
@@ -230,7 +230,7 @@ describe('StyleSimplificationService', () => {
         minimalPlayer: false,
       });
 
-      const styleElements = document.querySelectorAll('#bilibili-focus-mode-styles');
+      const styleElements = document.querySelectorAll('#bilibili-focus-mode-page-styles');
       expect(styleElements.length).toBe(1);
 
       const secondStyleElement = styleElements[0];
@@ -255,11 +255,11 @@ describe('StyleSimplificationService', () => {
         minimalPlayer: false,
       });
 
-      expect(document.getElementById('bilibili-focus-mode-styles')).toBeTruthy();
+      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeTruthy();
 
       service.removeStyles();
 
-      expect(document.getElementById('bilibili-focus-mode-styles')).toBeFalsy();
+      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeFalsy();
     });
 
     it('should not throw when no styles are applied', () => {
@@ -290,7 +290,7 @@ describe('StyleSimplificationService', () => {
 
       await service.applyFromConfig(config);
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement).toBeTruthy();
       expect(styleElement?.textContent).toContain('#comment');
     });
@@ -310,7 +310,7 @@ describe('StyleSimplificationService', () => {
 
       await service.applyFromConfig(config);
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement).toBeFalsy();
     });
 
@@ -329,7 +329,7 @@ describe('StyleSimplificationService', () => {
       } as ExtensionConfig;
 
       await service.applyFromConfig(config);
-      expect(document.getElementById('bilibili-focus-mode-styles')).toBeTruthy();
+      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeTruthy();
 
       // Change to non-video page
       Object.defineProperty(window, 'location', {
@@ -339,14 +339,14 @@ describe('StyleSimplificationService', () => {
 
       // Re-apply (should remove)
       await service.applyFromConfig(config);
-      expect(document.getElementById('bilibili-focus-mode-styles')).toBeFalsy();
+      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeFalsy();
     });
 
     it('should handle missing videoPlayerSimplification config', async () => {
       const config: ExtensionConfig = {} as ExtensionConfig;
 
       await expect(service.applyFromConfig(config)).resolves.not.toThrow();
-      expect(document.getElementById('bilibili-focus-mode-styles')).toBeFalsy();
+      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeFalsy();
     });
 
     it('should apply homepage simplification when on homepage', async () => {
@@ -368,7 +368,7 @@ describe('StyleSimplificationService', () => {
 
       await service.applyFromConfig(config);
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement).toBeTruthy();
       expect(styleElement?.textContent).toContain('.recommended-container');
     });
@@ -392,7 +392,7 @@ describe('StyleSimplificationService', () => {
 
       await service.applyFromConfig(config);
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement).toBeFalsy();
     });
   });
@@ -414,7 +414,7 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement).toBeTruthy();
       expect(styleElement?.tagName).toBe('STYLE');
     });
@@ -433,7 +433,7 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement).toBeFalsy();
     });
 
@@ -446,7 +446,7 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.recommended-container');
       expect(styleElement?.textContent).toContain('.feed-card');
     });
@@ -460,7 +460,7 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.rank-list');
       expect(styleElement?.textContent).toContain('.popular-videos');
     });
@@ -474,7 +474,7 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.ad-report');
       expect(styleElement?.textContent).toContain('.banner-ad');
     });
@@ -488,7 +488,7 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.live-card');
       expect(styleElement?.textContent).toContain('.live-box');
     });
@@ -502,7 +502,7 @@ describe('StyleSimplificationService', () => {
         compactLayout: true,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.header-channel');
       expect(styleElement?.textContent).toContain('padding: 4px');
       expect(styleElement?.textContent).toContain('.header-banner');
@@ -554,12 +554,14 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement).toBeTruthy();
       expect(styleElement?.tagName).toBe('STYLE');
     });
 
     it('should not inject styles when not on dynamic page', () => {
+      // Temporarily change location to non-dynamic page
+      const originalLocation = { host: window.location.host, pathname: window.location.pathname };
       Object.defineProperty(window, 'location', {
         value: { host: 'www.bilibili.com', pathname: '/video/BV1xx' },
         writable: true,
@@ -573,8 +575,14 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement).toBeFalsy();
+
+      // Restore location for subsequent tests
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
+      });
     });
 
     it('should hide recommendations when hideRecommendations is true', () => {
@@ -586,7 +594,7 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.rcmd-box');
       expect(styleElement?.textContent).toContain('.bili-dyn-item[data-type="recommend"]');
     });
@@ -600,7 +608,7 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.bili-dyn-item[data-type="live"]');
       expect(styleElement?.textContent).toContain('.live-card');
     });
@@ -614,7 +622,7 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.bili-dyn-item[data-type="ad"]');
       expect(styleElement?.textContent).toContain('.ad-report');
     });
@@ -628,7 +636,7 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.bili-dyn-item:not([data-type="following"])');
     });
 
@@ -641,7 +649,7 @@ describe('StyleSimplificationService', () => {
         compactLayout: true,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement?.textContent).toContain('.bili-dyn-item');
       expect(styleElement?.textContent).toContain('padding: 8px 0');
     });
@@ -667,7 +675,7 @@ describe('StyleSimplificationService', () => {
 
       await service.applyFromConfig(config);
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement).toBeTruthy();
       expect(styleElement?.textContent).toContain('.rcmd-box');
     });
@@ -691,7 +699,7 @@ describe('StyleSimplificationService', () => {
 
       await service.applyFromConfig(config);
 
-      const styleElement = document.getElementById('bilibili-focus-mode-styles');
+      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
       expect(styleElement).toBeFalsy();
     });
 
@@ -714,7 +722,7 @@ describe('StyleSimplificationService', () => {
       } as ExtensionConfig;
 
       await service.applyFromConfig(config);
-      expect(document.getElementById('bilibili-focus-mode-styles')).toBeTruthy();
+      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeTruthy();
 
       // Change to non-dynamic page
       Object.defineProperty(window, 'location', {
@@ -724,7 +732,7 @@ describe('StyleSimplificationService', () => {
 
       // Re-apply (should remove)
       await service.applyFromConfig(config);
-      expect(document.getElementById('bilibili-focus-mode-styles')).toBeFalsy();
+      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeFalsy();
     });
 
     it('should handle missing dynamicSimplification config', async () => {
@@ -736,7 +744,7 @@ describe('StyleSimplificationService', () => {
       const config: ExtensionConfig = {} as ExtensionConfig;
 
       await expect(service.applyFromConfig(config)).resolves.not.toThrow();
-      expect(document.getElementById('bilibili-focus-mode-styles')).toBeFalsy();
+      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeFalsy();
     });
   });
 });

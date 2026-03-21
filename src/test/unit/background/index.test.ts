@@ -1,14 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DEFAULT_STORAGE } from '@core/constants';
 
-// Mock webext-bridge before importing background script
-vi.mock('webext-bridge/background', () => ({
-  onMessage: vi.fn(),
-}));
-
-// Mock webextension-polyfill
-vi.mock('webextension-polyfill', () => ({
-  default: {
+// Mock webextension-polyfill before webext-bridge imports it
+// This MUST be before any imports that use webext-bridge
+vi.mock('webextension-polyfill', async () => {
+  // Create a mock implementation
+  const mockImplementation = {
     runtime: {
       onInstalled: { addListener: vi.fn() },
       onMessage: { addListener: vi.fn() },
@@ -35,7 +32,16 @@ vi.mock('webextension-polyfill', () => ({
     tabs: {
       create: vi.fn(),
     },
-  },
+  };
+  
+  return {
+    default: mockImplementation,
+  };
+});
+
+// Mock webext-bridge after polyfill is mocked
+vi.mock('webext-bridge/background', () => ({
+  onMessage: vi.fn(),
 }));
 
 // Mock chrome APIs
@@ -73,6 +79,9 @@ vi.stubGlobal('chrome', {
     },
     onMessage: {
       addListener: vi.fn((listener) => mockListeners.push(listener)),
+    },
+    onMessageExternal: {
+      addListener: vi.fn(),
     },
     getURL: vi.fn((path: string) => `chrome-extension://test-id/${path}`),
     lastError: null,

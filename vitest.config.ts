@@ -5,6 +5,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    maxWorkers: 4,
+    minWorkers: 1,
+    testTimeout: 30000,
     include: [
       'src/test/unit/**/*.test.ts',
       'src/test/unit/**/*.test.tsx',

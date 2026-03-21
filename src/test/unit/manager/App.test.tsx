@@ -117,10 +117,10 @@ describe('Manager App', () => {
     // Check for tag display and action buttons
     expect(screen.getByText('🎮 娱乐')).toBeTruthy();
     // Use getAllByText for buttons that also appear in nav
-    expect(screen.getAllByText('永久').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('冷静期').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('立即').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('删除').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('永久').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('冷静期').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('立即').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('删除').length).toBeGreaterThan(0);
   });
 
   it('should show clear button when limbo has items', () => {
@@ -300,6 +300,8 @@ describe('Manager App', () => {
       expect(screen.getByText('娱乐 (1)')).toBeTruthy();
       expect(screen.getByText('Learning Video')).toBeTruthy();
       expect(screen.getByText('Entertainment Video')).toBeTruthy();
+      expect(screen.getByText('Uploader')).toBeTruthy();
+      expect(screen.getByText('Uploader2')).toBeTruthy();
     });
   });
 });
