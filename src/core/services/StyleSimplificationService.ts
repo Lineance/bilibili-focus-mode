@@ -39,7 +39,8 @@ export interface LiveSimplificationOptions {
 }
 
 export class StyleSimplificationService {
-  private styleElement: HTMLStyleElement | null = null;
+  private globalStyleElement: HTMLStyleElement | null = null;
+  private pageStyleElement: HTMLStyleElement | null = null;
   private videoPlayerCSSGenerator = new VideoPlayerCSSGenerator();
   private homepageCSSGenerator = new HomepageCSSGenerator();
   private dynamicCSSGenerator = new DynamicCSSGenerator();
@@ -67,50 +68,69 @@ export class StyleSimplificationService {
 
   applyVideoPlayerSimplification(options: VideoPlayerSimplificationOptions): void {
     if (!this.isVideoPlayerPage()) return;
-    this.removeStyles();
+    this.removePageStyles();
     const css = this.videoPlayerCSSGenerator.generate(options);
-    this.injectStyles(css);
+    this.injectPageStyles(css);
   }
 
   applyHomepageSimplification(options: HomepageSimplificationOptions): void {
     if (!this.isHomepage()) return;
-    this.removeStyles();
+    this.removePageStyles();
     const css = this.homepageCSSGenerator.generate(options);
-    this.injectStyles(css);
+    this.injectPageStyles(css);
   }
 
   applyDynamicSimplification(options: DynamicSimplificationOptions): void {
     if (!this.isDynamicPage()) return;
-    this.removeStyles();
+    this.removePageStyles();
     const css = this.dynamicCSSGenerator.generate(options);
-    this.injectStyles(css);
+    this.injectPageStyles(css);
   }
 
   applyLiveSimplification(options: LiveSimplificationOptions): void {
     if (!this.isLivePage()) return;
-    this.removeStyles();
+    this.removePageStyles();
     const css = this.liveCSSGenerator.generate(options);
-    this.injectStyles(css);
+    this.injectPageStyles(css);
   }
 
-  removeStyles(): void {
-    if (this.styleElement) {
-      this.styleElement.remove();
-      this.styleElement = null;
+  removePageStyles(): void {
+    if (this.pageStyleElement) {
+      this.pageStyleElement.remove();
+      this.pageStyleElement = null;
     }
   }
 
-  applyGlobalStyles(): void {
-    this.removeStyles();
-    const css = this.globalCSSGenerator.generate();
-    this.injectStyles(css);
+  removeGlobalStyles(): void {
+    if (this.globalStyleElement) {
+      this.globalStyleElement.remove();
+      this.globalStyleElement = null;
+    }
   }
 
-  private injectStyles(css: string): void {
-    this.styleElement = document.createElement('style');
-    this.styleElement.id = 'bilibili-focus-mode-styles';
-    this.styleElement.textContent = css;
-    document.head.appendChild(this.styleElement);
+  removeStyles(): void {
+    this.removePageStyles();
+    this.removeGlobalStyles();
+  }
+
+  applyGlobalStyles(): void {
+    this.removeGlobalStyles();
+    const css = this.globalCSSGenerator.generate();
+    this.injectGlobalStyles(css);
+  }
+
+  private injectGlobalStyles(css: string): void {
+    this.globalStyleElement = document.createElement('style');
+    this.globalStyleElement.id = 'bilibili-focus-mode-global-styles';
+    this.globalStyleElement.textContent = css;
+    document.head.appendChild(this.globalStyleElement);
+  }
+
+  private injectPageStyles(css: string): void {
+    this.pageStyleElement = document.createElement('style');
+    this.pageStyleElement.id = 'bilibili-focus-mode-page-styles';
+    this.pageStyleElement.textContent = css;
+    document.head.appendChild(this.pageStyleElement);
   }
 
   async applyFromConfig(config: ExtensionConfig): Promise<void> {

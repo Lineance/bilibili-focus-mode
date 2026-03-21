@@ -107,7 +107,9 @@ try {
 
 ### Testing
 
-- Unit tests in `src/**/*.test.ts`
+- Unit tests in `src/test/unit/**/*.test.{ts,tsx}`
+- Integration tests in `src/test/integration/**/*.test.ts`
+- E2E tests in `src/test/e2e/**/*.spec.ts`
 - Test pure logic in `core/` layer
 - Mock Chrome APIs in tests
 - Use descriptive test names: `should calculate debt correctly when watching entertainment`
@@ -128,6 +130,24 @@ describe('PermissionService', () => {
     });
   });
 });
+```
+
+**Test File Organization**:
+
+```
+src/test/
+├── unit/                    # Unit tests
+│   ├── core/
+│   │   └── services/        # Service unit tests
+│   ├── content/             # Content Script tests
+│   ├── background/          # Background tests
+│   ├── hooks/               # React hooks tests
+│   ├── manager/             # Manager component tests
+│   └── popup/               # Popup component tests
+├── integration/             # Integration tests
+│   └── PermissionFlow.test.ts
+└── e2e/                     # E2E tests
+    └── video-blocking.spec.ts
 ```
 
 ### Extension-Specific Rules
