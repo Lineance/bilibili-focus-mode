@@ -88,7 +88,7 @@ export function GhostList({ items, config }: { items: readonly GhostItem[]; conf
         {items.length > 0 && (
           <button
             onClick={handleClearAll}
-            className="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-700"
+            className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
           >
             清空档案
           </button>

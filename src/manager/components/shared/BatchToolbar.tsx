@@ -31,7 +31,7 @@ export function BatchToolbar({
         </button>
         <button
           onClick={onDeleteSelected}
-          className="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-700"
+          className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
         >
           批量删除
         </button>

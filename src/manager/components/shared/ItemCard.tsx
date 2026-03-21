@@ -48,7 +48,7 @@ export function ItemCard({
       </div>
       <button
         onClick={onDelete}
-        className="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-700"
+        className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
         title="删除"
       >
         删除

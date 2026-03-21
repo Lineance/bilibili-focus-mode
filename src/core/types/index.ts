@@ -234,3 +234,6 @@ export interface VisualDecayState {
   threshold: number;
   lastPurgeCheck: number;
 }
+
+// Export theme types
+export * from './theme';

@@ -180,7 +180,7 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
               <span className="font-mono text-green-400">{keyword}</span>
               <button
                 onClick={() => handleDelete(keyword)}
-                className="px-2 py-1 bg-red-600 rounded text-sm hover:bg-red-700"
+                className="px-2 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
               >
                 删除
               </button>

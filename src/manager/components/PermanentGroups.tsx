@@ -110,7 +110,7 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
         </div>
         <button
           onClick={() => handleDeleteItem(item.bvid)}
-          className="px-2 py-1 bg-red-600 rounded text-xs hover:bg-red-700 flex-shrink-0"
+          className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 flex-shrink-0 transition-colors"
         >
           删除
         </button>
@@ -132,7 +132,7 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
         {totalItems > 0 && (
           <button
             onClick={handleClearAll}
-            className="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-700"
+            className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
           >
             清空所有
           </button>

@@ -1,5 +1,6 @@
 import { DEFAULT_CONFIG } from '@core/constants';
 import { useStorage } from '@hooks/useStorage';
+import { ThemeService } from '@core/services';
 import { useEffect, useState } from 'react';
 import { sendMessage } from 'webext-bridge/options';
 
@@ -12,6 +13,7 @@ import {
   KeywordRulesPanel,
   LimboReview,
   PermanentGroups,
+  ThemePanel,
   UploaderAllowlist,
 } from './components';
 
@@ -24,11 +26,18 @@ type ActiveTab =
   | 'debt'
   | 'uploaders'
   | 'keywords'
-  | 'config';
+  | 'config'
+  | 'theme';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('limbo');
   const storage = useStorage();
+
+  // Initialize theme service on app mount
+  useEffect(() => {
+    const themeService = new ThemeService();
+    themeService.initialize();
+  }, []);
 
   useEffect(() => {
     // Sync debt and bankruptcy status on mount
@@ -106,24 +115,24 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
+    <div className="min-h-screen bg-primary text-primary transition-colors duration-300 p-6">
       <header className="mb-8 flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold mb-2">Bilibili Focus Mode</h1>
-          <p className="text-gray-400">意图性娱乐时间管理工具</p>
+          <p className="text-secondary">意图性娱乐时间管理工具</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleExport} className="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-700">
+          <button onClick={handleExport} className="px-3 py-1 bg-accent-primary text-white rounded text-sm hover:bg-accent-hover transition-colors">
             导出备份
           </button>
-          <label className="px-3 py-1 bg-green-600 rounded text-sm hover:bg-green-700 cursor-pointer">
+          <label className="px-3 py-1 bg-success text-white rounded text-sm hover:bg-success/80 cursor-pointer transition-colors">
             导入备份
             <input type="file" accept=".json" onChange={handleImport} className="hidden" />
           </label>
         </div>
       </header>
 
-      <nav className="flex gap-4 mb-6 border-b border-gray-700 pb-4 flex-wrap">
+      <nav className="flex gap-4 mb-6 border-b border-secondary pb-4 flex-wrap">
         {[
           { id: 'limbo', label: '待审池', count: storage.limboList?.length || 0 },
           { id: 'cooling', label: '冷静期', count: storage.coolingList?.length || 0 },
@@ -135,18 +144,22 @@ export function App() {
           },
           { id: 'ghost', label: '幽灵档案', count: storage.ghostList?.length || 0 },
           { id: 'debt', label: '债务', count: null },
-          { id: 'uploaders', label: 'UP主白名单', count: storage.allowedUploaders?.length || 0 },
+          { id: 'uploaders', label: 'UP 主白名单', count: storage.allowedUploaders?.length || 0 },
           { id: 'keywords', label: '关键词规则', count: storage.config?.keywordRules?.keywords?.length || 0 },
           { id: 'config', label: '配置', count: null },
+          { id: 'theme', label: '主题', count: null },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as ActiveTab)}
-            className={`px-4 py-2 rounded-lg transition-colors ${activeTab === tab.id ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-              }`}
+            className={`px-4 py-2 rounded-lg transition-all duration-300 ${
+              activeTab === tab.id 
+                ? 'bg-accent-primary text-white' 
+                : 'bg-secondary text-secondary hover:bg-accent-hover/50'
+            }`}
           >
             {tab.label}
-            {tab.count !== null && <span className="ml-2 px-2 py-0.5 text-xs bg-gray-700 rounded-full">{tab.count}</span>}
+            {tab.count !== null && <span className="ml-2 px-2 py-0.5 text-xs bg-secondary/50 text-primary rounded-full">{tab.count}</span>}
           </button>
         ))}
       </nav>
@@ -161,6 +174,7 @@ export function App() {
         {activeTab === 'uploaders' && <UploaderAllowlist uploaders={storage.allowedUploaders || []} />}
         {activeTab === 'keywords' && <KeywordRulesPanel config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'config' && <ConfigPanel />}
+        {activeTab === 'theme' && <ThemePanel />}
       </main>
     </div>
   );

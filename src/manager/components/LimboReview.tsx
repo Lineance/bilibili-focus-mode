@@ -246,11 +246,11 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
         <h2 className="text-xl font-semibold">待审池 ({items.length})</h2>
         {items.length > 0 && (
           <button
-            onClick={handleClearAll}
-            className="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-700"
-          >
-            清空待审池
-          </button>
+          onClick={handleClearAll}
+          className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
+        >
+          清空待审池
+        </button>
         )}
       </div>
 
@@ -328,7 +328,7 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
                       </button>
                       <button
                         onClick={() => handleDelete(item.bvid)}
-                        className="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-700"
+                        className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
                       >
                         删除
                       </button>

@@ -12,3 +12,4 @@ export * from './FuseApplicationService';
 export * from './DebtTracker';
 export * from './UploaderAllowlistService';
 export * from './StyleSimplificationService';
+export * from './ThemeService';

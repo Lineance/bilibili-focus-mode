@@ -55,7 +55,7 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
         {uploaders.length > 0 && (
           <button
             onClick={handleClearAll}
-            className="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-700"
+            className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
           >
             清空所有
           </button>
@@ -117,7 +117,7 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
               </div>
               <button
                 onClick={() => handleDelete(uploader.id)}
-                className="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-700"
+                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
               >
                 移除
               </button>

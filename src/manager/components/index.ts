@@ -7,3 +7,5 @@ export { KeywordRulesPanel } from './KeywordRulesPanel';
 export { LimboReview } from './LimboReview';
 export { PermanentGroups } from './PermanentGroups';
 export { UploaderAllowlist } from './UploaderAllowlist';
+export { ThemeSwitcher } from './ThemeSwitcher';
+export { ThemePanel } from './ThemePanel';
