@@ -1,0 +1,64 @@
+# Rust
+/target/
+**/target/
+**/*.rs.bk
+Cargo.lock
+
+# Build output
+**/*.exe
+**/*.dll
+**/*.so
+**/*.dylib
+
+# Debug
+**/*.pdb
+
+# Documentation
+**/doc/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Configuration (keep example files)
+config.toml
+!config.toml.example
+
+# Testing
+**/tests/fixtures/
+**/tests/mocks/
+
+# Benchmark results
+**/criterion/
+
+# Coverage
+**/gcov/
+**/coverage/
+*.gcno
+*.gcda
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Environment
+.env
+.env.local
+
+# Release artifacts
+**/release/
+**/debug/
+
+# Profiling
+**/perf.data
+**/flamegraph.svg

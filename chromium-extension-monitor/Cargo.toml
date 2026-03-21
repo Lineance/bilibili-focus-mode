@@ -1,0 +1,83 @@
+[package]
+name = "chromium-extension-monitor"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name"]
+description = "Monitor Chromium extensions and enforce compliance"
+license = "MIT"
+
+[dependencies]
+# 系统信息
+sysinfo = "0.37.2"
+
+# 配置管理
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# CLI 参数解析
+clap = { version = "4.5", features = ["derive", "env"] }
+
+# 日志和追踪
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-appender = "0.2"
+
+# 错误处理
+anyhow = "1.0"
+thiserror = "1.0"
+
+# 系统托盘
+tray-icon = "0.20"
+tauri-utils = "2.0"
+
+# 目录处理
+dirs = "6.0"
+pathdiff = "0.2"
+
+# Ctrl+C 处理
+ctrlc = "3.4"
+
+# 时间处理
+chrono = "0.4"
+
+# 系统调用（Unix）
+[target.'cfg(not(windows))'.dependencies]
+libc = "0.2"
+
+# 异步运行时（可选，用于性能优化）
+tokio = { version = "1.40", features = ["full"], optional = true }
+
+# Windows 特定 API（仅 Windows）
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_UI_Shell",
+    "Win32_Security",
+    "Win32_System_Console",
+    "Win32_UI_WindowsAndMessaging"
+]}
+
+[dev-dependencies]
+# 测试框架
+tempfile = "3.14"
+assert_fs = "1.1"
+
+# 基准测试
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[features]
+default = []
+async = ["tokio"]
+
+[[bench]]
+name = "performance"
+harness = false
+
+# 编译优化
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true
