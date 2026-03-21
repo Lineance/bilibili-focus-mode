@@ -148,6 +148,19 @@ impl ProcessManager {
         Ok(result)
     }
 
+    /// 检查是否有运行中的目标进程
+    pub fn has_running_processes(&mut self) -> bool {
+        self.refresh();
+
+        for process in self.system.processes().values() {
+            if self.is_target_process(process) {
+                return true;
+            }
+        }
+
+        false
+    }
+
 
 
     /// 获取进程数量

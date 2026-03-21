@@ -11,11 +11,28 @@ enabled = true
 show_console = true
 
 [extension]
-# 要监控的扩展 ID 列表
+# 要监控的扩展 ID 列表（精确匹配）
 # 注意：需要替换为实际的 bilibili-blocker 扩展 ID
 target_extensions = ["your-bilibili-blocker-extension-id-here"]
+
+# 扩展名称关键字（模糊匹配）
+# 对于未打包扩展，主要依靠名称匹配
+extension_name_keywords = ["bilibili", "focus"]
+
+# 匹配模式："exact" (精确) | "fuzzy" (模糊) | "mixed" (混合)
+# 对于未打包扩展，建议使用 "fuzzy" 或 "mixed"
+match_mode = "mixed"
+
+# 要扫描的 Profile 列表（留空则扫描所有）
+profiles = []
+
 # 扩展名称（用于日志）
 extension_name = "bilibili-blocker"
+
+# 未打包扩展的路径列表（手动指定加载的扩展）
+# 如果你的扩展是未打包加载的，在这里指定路径
+unpacked_extensions_paths = [
+]
 
 [chromium]
 # Chromium 用户数据目录路径（支持多个）
@@ -28,6 +45,10 @@ extension_name = "bilibili-blocker"
 user_data_dirs = []
 # 要监控的进程名称
 process_names = ["chromium.exe", "chrome.exe"]
+# 只在 Chrome 运行时扫描
+scan_only_when_running = true
+# Chrome 未运行时的检查间隔（秒）
+idle_check_interval = 5
 
 [logging]
 # 日志级别：trace, debug, info, warn, error

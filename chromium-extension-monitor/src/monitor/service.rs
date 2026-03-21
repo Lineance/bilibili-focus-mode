@@ -87,6 +87,10 @@ impl MonitorService {
         let detector = ExtensionDetector::new(
             config.chromium.user_data_dirs.clone(),
             config.extension.target_extensions.clone(),
+            config.extension.extension_name_keywords.clone(),
+            config.extension.match_mode.clone(),
+            config.extension.profiles.clone(),
+            config.extension.unpacked_extensions_paths.clone(),
         );
 
         let process_manager = ProcessManager::new(config.chromium.process_names.clone());
@@ -164,14 +168,30 @@ impl MonitorService {
 
         let check_interval = Duration::from_secs(self.config.monitor.check_interval);
         let kill_delay = Duration::from_secs(self.config.monitor.kill_delay);
+        let idle_check_interval = Duration::from_secs(self.config.chromium.idle_check_interval);
 
-        info!("监控循环启动，检查间隔：{:?}, 终止延迟：{:?}", check_interval, kill_delay);
+        info!(
+            "监控循环启动，检查间隔：{:?}, 终止延迟：{:?}, 空闲检查间隔：{:?}",
+            check_interval, kill_delay, idle_check_interval
+        );
 
         while self.running.load(Ordering::SeqCst) {
             // 检查是否暂停
             if self.paused.load(Ordering::SeqCst) {
                 std::thread::sleep(Duration::from_millis(100));
                 continue;
+            }
+
+            // 如果配置为只在 Chrome 运行时扫描，先检测进程
+            if self.config.chromium.scan_only_when_running {
+                let chrome_running = self.process_manager.has_running_processes();
+
+                if !chrome_running {
+                    debug!("Chrome 未运行，进入休眠模式");
+                    self.state = MonitorState::Idle;
+                    std::thread::sleep(idle_check_interval);
+                    continue;
+                }
             }
 
             // 执行检测
@@ -181,16 +201,19 @@ impl MonitorService {
                     self.stats.last_detection = Some(Instant::now());
 
                     if result.all_installed() {
-                        // 扩展已安装，重置警告
+                        // 扩展已安装并启用，重置警告
                         self.warning_start_time = None;
                         self.state = MonitorState::Monitoring;
-                        debug!("扩展已安装，继续监控");
-                    } else {
-                        // 扩展缺失，启动警告
+                        debug!("扩展已安装并启用，继续监控");
+                    } else if result.has_disabled() {
+                        // 扩展已安装但被禁用
                         if self.warning_start_time.is_none() {
                             self.warning_start_time = Some(Instant::now());
                             self.stats.warning_count += 1;
-                            warn!("检测到扩展缺失，启动 {} 秒倒计时", self.config.monitor.kill_delay);
+                            warn!(
+                                "检测到扩展已安装但未启用，启动 {} 秒倒计时",
+                                self.config.monitor.kill_delay
+                            );
                         }
 
                         // 检查倒计时
@@ -221,8 +244,56 @@ impl MonitorService {
                                 self.state = MonitorState::Monitoring;
                             } else {
                                 // 更新状态
-                                let remaining = self.config.monitor.kill_delay
-                                    - elapsed.as_secs();
+                                let remaining =
+                                    self.config.monitor.kill_delay - elapsed.as_secs();
+                                self.state = MonitorState::Warning {
+                                    remaining_seconds: remaining,
+                                };
+
+                                info!("警告倒计时：剩余 {} 秒", remaining);
+                            }
+                        }
+                    } else {
+                        // 扩展未安装
+                        if self.warning_start_time.is_none() {
+                            self.warning_start_time = Some(Instant::now());
+                            self.stats.warning_count += 1;
+                            warn!(
+                                "检测到扩展未安装，启动 {} 秒倒计时",
+                                self.config.monitor.kill_delay
+                            );
+                        }
+
+                        // 检查倒计时
+                        if let Some(warning_start) = self.warning_start_time {
+                            let elapsed = warning_start.elapsed();
+
+                            if elapsed >= kill_delay {
+                                // 倒计时结束，执行终止
+                                info!("倒计时结束，开始终止进程");
+                                self.state = MonitorState::Terminating;
+
+                                match self.terminate_processes() {
+                                    Ok(term_result) => {
+                                        self.stats.termination_count += 1;
+                                        info!(
+                                            "终止完成，成功：{}, 失败：{}",
+                                            term_result.terminated_count(),
+                                            term_result.failed.len()
+                                        );
+                                    }
+                                    Err(e) => {
+                                        error!("终止进程失败：{}", e);
+                                    }
+                                }
+
+                                // 重置警告
+                                self.warning_start_time = None;
+                                self.state = MonitorState::Monitoring;
+                            } else {
+                                // 更新状态
+                                let remaining =
+                                    self.config.monitor.kill_delay - elapsed.as_secs();
                                 self.state = MonitorState::Warning {
                                     remaining_seconds: remaining,
                                 };

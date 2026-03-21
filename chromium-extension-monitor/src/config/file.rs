@@ -79,26 +79,50 @@ fn default_kill_delay() -> u64 {
 /// 扩展配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExtensionConfig {
-    /// 要监控的扩展 ID 列表
+    /// 要监控的扩展 ID 列表（精确匹配）
     #[serde(default)]
     pub target_extensions: Vec<String>,
+
+    /// 扩展名称关键字（模糊匹配）
+    #[serde(default)]
+    pub extension_name_keywords: Vec<String>,
+
+    /// 匹配模式："exact" (精确) | "fuzzy" (模糊) | "mixed" (混合)
+    #[serde(default = "default_match_mode")]
+    pub match_mode: String,
+
+    /// 要扫描的 Profile 列表（留空则扫描所有）
+    #[serde(default)]
+    pub profiles: Vec<String>,
 
     /// 扩展名称（用于日志）
     #[serde(default = "default_extension_name")]
     pub extension_name: String,
+
+    /// 未打包扩展的路径列表（手动指定）
+    #[serde(default)]
+    pub unpacked_extensions_paths: Vec<PathBuf>,
 }
 
 impl Default for ExtensionConfig {
     fn default() -> Self {
         Self {
             target_extensions: vec![],
+            extension_name_keywords: vec![],
+            match_mode: default_match_mode(),
+            profiles: vec![],
             extension_name: default_extension_name(),
+            unpacked_extensions_paths: vec![],
         }
     }
 }
 
 fn default_extension_name() -> String {
     "bilibili-blocker".to_string()
+}
+
+fn default_match_mode() -> String {
+    "mixed".to_string()
 }
 
 /// Chromium 配置
@@ -111,6 +135,14 @@ pub struct ChromiumConfig {
     /// 要监控的进程名称
     #[serde(default = "default_process_names")]
     pub process_names: Vec<String>,
+
+    /// 只在 Chrome 运行时扫描
+    #[serde(default = "default_true")]
+    pub scan_only_when_running: bool,
+
+    /// Chrome 未运行时的检查间隔（秒）
+    #[serde(default = "default_idle_check_interval")]
+    pub idle_check_interval: u64,
 }
 
 impl Default for ChromiumConfig {
@@ -118,12 +150,18 @@ impl Default for ChromiumConfig {
         Self {
             user_data_dirs: vec![],
             process_names: default_process_names(),
+            scan_only_when_running: true,
+            idle_check_interval: default_idle_check_interval(),
         }
     }
 }
 
 fn default_process_names() -> Vec<String> {
     vec!["chromium.exe".to_string(), "chrome.exe".to_string()]
+}
+
+fn default_idle_check_interval() -> u64 {
+    5
 }
 
 /// 日志配置
