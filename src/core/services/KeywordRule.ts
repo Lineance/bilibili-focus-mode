@@ -4,15 +4,17 @@ export interface KeywordRuleConfig {
   enabled: boolean;
   keywords: string[];
   tag: VideoTag;
+  items?: Array<{
+    keyword: string;
+    tag: VideoTag;
+  }>;
 }
 
 export class KeywordRule {
   constructor(private config: KeywordRuleConfig) {}
 
   /**
-   * Check if title matches any keyword
-   * @param title Video title to check
-   * @returns Matched tag if found, null otherwise
+   * Check if title matches any keyword and return the corresponding tag
    */
   check(title: string): VideoTag | null {
     if (!this.config.enabled || this.config.keywords.length === 0) {
@@ -20,7 +22,18 @@ export class KeywordRule {
     }
 
     const lowerTitle = title.toLowerCase();
-    
+
+    // 优先使用 items 配置（每个关键词独立标签）
+    if (this.config.items && this.config.items.length > 0) {
+      for (const item of this.config.items) {
+        if (lowerTitle.includes(item.keyword.toLowerCase())) {
+          return item.tag;
+        }
+      }
+      return null;
+    }
+
+    // 向后兼容：使用旧的统一标签配置
     for (const keyword of this.config.keywords) {
       if (lowerTitle.includes(keyword.toLowerCase())) {
         return this.config.tag;

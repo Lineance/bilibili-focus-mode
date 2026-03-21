@@ -533,3 +533,25 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     return true; // Keep message channel open for async response
   }
 });
+
+// External message handler for extension detection
+chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
+  console.log('[Background] External message received:', request, 'from:', sender.id);
+  
+  if (request.message === 'version' || request.message === 'ping') {
+    const manifest = chrome.runtime.getManifest();
+    sendResponse({
+      type: 'success',
+      version: manifest.version,
+      enabled: true,
+      id: chrome.runtime.id,
+    });
+  } else {
+    sendResponse({
+      type: 'error',
+      message: 'Unknown request type',
+    });
+  }
+  
+  return true; // Keep message channel open
+});

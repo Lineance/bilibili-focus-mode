@@ -206,6 +206,10 @@ export interface ExtensionConfig {
     enabled: boolean;
     keywords: string[];
     tag: VideoTag;
+    items?: Array<{
+      keyword: string;
+      tag: VideoTag;
+    }>;
   };
 }
 

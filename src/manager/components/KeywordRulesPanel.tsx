@@ -1,23 +1,34 @@
 import { useState } from 'react';
 
-import type { ExtensionConfig } from '@core/types';
+import type { ExtensionConfig, VideoTag } from '@core/types';
 import { DEFAULT_STORAGE } from '@core/constants';
 
+interface KeywordItem {
+  keyword: string;
+  tag: VideoTag;
+}
+
 export function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
-  const [keywords, setKeywords] = useState(config.keywordRules?.keywords || []);
+  const [keywordItems, setKeywordItems] = useState<KeywordItem[]>(
+    config.keywordRules?.keywords?.map((k: string) => ({
+      keyword: k,
+      tag: config.keywordRules?.tag || 'LEARNING',
+    })) || []
+  );
   const [newKeyword, setNewKeyword] = useState('');
+  const [newTag, setNewTag] = useState<VideoTag>('LEARNING');
   const [enabled, setEnabled] = useState(config.keywordRules?.enabled ?? true);
   const [message, setMessage] = useState('');
 
-  const saveToStorage = async (newKeywords: string[], newEnabled: boolean) => {
+  const saveToStorage = async (items: KeywordItem[], newEnabled: boolean) => {
     try {
       const storage = await chrome.storage.local.get();
       const newConfig: ExtensionConfig = {
         ...(storage.config as ExtensionConfig) || DEFAULT_STORAGE.config,
         keywordRules: {
           enabled: newEnabled,
-          keywords: newKeywords,
-          tag: 'LEARNING' as const,
+          keywords: items.map(item => item.keyword),
+          tag: 'LEARNING', // 保留字段以兼容旧版本
         },
       };
       await chrome.storage.local.set({ config: newConfig });
@@ -32,26 +43,34 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
   const handleAdd = async () => {
     const trimmed = newKeyword.trim();
     if (!trimmed) return;
-    if (keywords.includes(trimmed)) {
+    if (keywordItems.some(item => item.keyword === trimmed)) {
       setMessage('关键词已存在');
       return;
     }
-    const newKeywords = [...keywords, trimmed];
-    setKeywords(newKeywords);
+    const newItems = [...keywordItems, { keyword: trimmed, tag: newTag }];
+    setKeywordItems(newItems);
     setNewKeyword('');
-    await saveToStorage(newKeywords, enabled);
+    await saveToStorage(newItems, enabled);
   };
 
   const handleDelete = async (keyword: string) => {
-    const newKeywords = keywords.filter(k => k !== keyword);
-    setKeywords(newKeywords);
-    await saveToStorage(newKeywords, enabled);
+    const newItems = keywordItems.filter(item => item.keyword !== keyword);
+    setKeywordItems(newItems);
+    await saveToStorage(newItems, enabled);
+  };
+
+  const handleTagChange = async (keyword: string, newTag: VideoTag) => {
+    const newItems = keywordItems.map(item =>
+      item.keyword === keyword ? { ...item, tag: newTag } : item
+    );
+    setKeywordItems(newItems);
+    await saveToStorage(newItems, enabled);
   };
 
   const handleToggleEnabled = async () => {
     const newEnabled = !enabled;
     setEnabled(newEnabled);
-    await saveToStorage(keywords, newEnabled);
+    await saveToStorage(keywordItems, newEnabled);
   };
 
   const handleExport = () => {
@@ -61,8 +80,8 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
       exportDate: new Date().toISOString(),
       keywordRules: {
         enabled,
-        keywords,
-        tag: 'LEARNING' as const,
+        keywords: keywordItems.map(item => item.keyword),
+        items: keywordItems, // 新增：包含每个关键词的标签信息
       },
     };
 
@@ -92,17 +111,28 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
         return;
       }
 
-      if (!confirm(`导入将覆盖现有的 ${keywords.length} 个关键词，确定要继续吗？`)) {
+      if (!confirm(`导入将覆盖现有的 ${keywordItems.length} 个关键词，确定要继续吗？`)) {
         return;
       }
 
-      const importedKeywords = data.keywordRules?.keywords || [];
+      // 支持新旧两种格式
+      let importedItems: KeywordItem[] = [];
+      if (data.keywordRules?.items) {
+        // 新格式：包含每个关键词的标签
+        importedItems = data.keywordRules.items;
+      } else {
+        // 旧格式：统一使用默认标签
+        const importedKeywords = data.keywordRules?.keywords || [];
+        const importedTag = data.keywordRules?.tag || 'LEARNING';
+        importedItems = importedKeywords.map((k: string) => ({ keyword: k, tag: importedTag }));
+      }
+
       const importedEnabled = data.keywordRules?.enabled ?? true;
 
-      setKeywords(importedKeywords);
+      setKeywordItems(importedItems);
       setEnabled(importedEnabled);
-      await saveToStorage(importedKeywords, importedEnabled);
-      setMessage(`导入成功：${importedKeywords.length} 个关键词`);
+      await saveToStorage(importedItems, importedEnabled);
+      setMessage(`导入成功：${importedItems.length} 个关键词`);
     } catch (error) {
       console.error('Import error:', error);
       setMessage('导入失败：文件格式错误');
@@ -148,7 +178,7 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
       </div>
 
       <p className="text-gray-400 mb-4 text-sm">
-        当视频标题包含以下关键词时，将自动放行并标记为学习类视频
+        当视频标题包含以下关键词时，将自动放行并标记为对应类型
       </p>
 
       <div className="flex gap-2 mb-4">
@@ -160,6 +190,14 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
           className="flex-1 px-3 py-2 bg-gray-800 rounded border border-gray-700"
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
         />
+        <select
+          value={newTag}
+          onChange={(e) => setNewTag(e.target.value as VideoTag)}
+          className="px-3 py-2 bg-gray-800 rounded border border-gray-700"
+        >
+          <option value="LEARNING">学习</option>
+          <option value="MUSIC">音乐</option>
+        </select>
         <button
           onClick={handleAdd}
           className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
@@ -168,18 +206,28 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
         </button>
       </div>
 
-      {keywords.length === 0 ? (
+      {keywordItems.length === 0 ? (
         <p className="text-gray-500">暂无关键词规则</p>
       ) : (
         <div className="grid gap-2">
-          {keywords.map((keyword) => (
+          {keywordItems.map((item) => (
             <div
-              key={keyword}
+              key={item.keyword}
               className="flex justify-between items-center bg-gray-800 p-3 rounded"
             >
-              <span className="font-mono text-green-400">{keyword}</span>
+              <div className="flex items-center gap-4 flex-1">
+                <span className="font-mono text-green-400">{item.keyword}</span>
+                <select
+                  value={item.tag}
+                  onChange={(e) => handleTagChange(item.keyword, e.target.value as VideoTag)}
+                  className="px-2 py-1 bg-gray-700 rounded border border-gray-600 text-sm"
+                >
+                  <option value="LEARNING">学习</option>
+                  <option value="MUSIC">音乐</option>
+                </select>
+              </div>
               <button
-                onClick={() => handleDelete(keyword)}
+                onClick={() => handleDelete(item.keyword)}
                 className="px-2 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
               >
                 删除
