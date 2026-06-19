@@ -1,3 +1,4 @@
+import { MS_PER_MINUTE } from '@core/constants';
 import { useState, useEffect } from 'react';
 
 import type { ExtensionConfig } from '@core/types';
@@ -23,7 +24,7 @@ export function DebtDashboard({
   useEffect(() => {
     const timer = setInterval(() => {
       setNow(Date.now());
-    }, 60000);
+    }, MS_PER_MINUTE);
     return () => clearInterval(timer);
   }, []);
 

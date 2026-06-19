@@ -1,3 +1,4 @@
+import { MIN_REPENTANCE_LENGTH } from '@core/constants';
 import type { GhostItem, CoolingItem, VideoMetadata, ExtensionConfig, GlobalStats } from '@core/types';
 import { ExpirationService } from './ExpirationService';
 import { FuseService } from './FuseService';
@@ -58,7 +59,7 @@ export class GhostResurrectionService {
     return {
       fuseLength: this.config.ghostResurrectFuseLength,
       requiresRepentance: true,
-      minRepentanceLength: 20,
+      minRepentanceLength: MIN_REPENTANCE_LENGTH,
     };
   }
 
@@ -80,7 +81,7 @@ export class GhostResurrectionService {
     }
 
     // Validate repentance reason
-    if (!repentanceReason || repentanceReason.trim().length < 20) {
+    if (!repentanceReason || repentanceReason.trim().length < MIN_REPENTANCE_LENGTH) {
       return {
         success: false,
         message: '忏悔理由至少需要20个字',
@@ -144,51 +145,5 @@ export class GhostResurrectionService {
       message: `招魂成功！视频已进入冷静期${this.config.ghostDoublePenalty ? '（双倍冷静期惩罚）' : ''}`,
       coolingItem,
     };
-  }
-
-  /**
-   * Get remaining days for resurrection
-   */
-  getRemainingDays(ghostItem: GhostItem): number {
-    const now = Date.now();
-    const remainingMs = ghostItem.canResurrectUntil - now;
-    return Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
-  }
-
-  /**
-   * Check if ghost item is expired (can no longer be resurrected)
-   */
-  isExpired(ghostItem: GhostItem): boolean {
-    return Date.now() >= ghostItem.canResurrectUntil;
-  }
-
-  /**
-   * Get all resurrectable ghosts
-   */
-  async getResurrectableGhosts(): Promise<GhostItem[]> {
-    const storage = await chrome.storage.local.get();
-    const ghostList = (storage.ghostList || []) as GhostItem[];
-
-    return ghostList.filter((ghost) => {
-      const check = this.canResurrect(ghost);
-      return check.canResurrect;
-    });
-  }
-
-  /**
-   * Clean up expired ghosts (optional, can be called periodically)
-   */
-  async cleanupExpiredGhosts(): Promise<number> {
-    const storage = await chrome.storage.local.get();
-    const ghostList = (storage.ghostList || []) as GhostItem[];
-
-    const validGhosts = ghostList.filter((ghost) => !this.isExpired(ghost));
-    const removedCount = ghostList.length - validGhosts.length;
-
-    if (removedCount > 0) {
-      await chrome.storage.local.set({ ghostList: validGhosts });
-    }
-
-    return removedCount;
   }
 }

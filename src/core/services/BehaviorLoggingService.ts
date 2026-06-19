@@ -1,11 +1,10 @@
+import { MAX_LOG_ENTRIES, MS_PER_DAY, MS_PER_HOUR, MS_PER_SECOND } from '@core/constants';
 import type { BehaviorLog, BehaviorStats, TimeRange, LogFilter } from '@core/types';
 
 
-export type LogEntry = BehaviorLog;
-
 export class BehaviorLoggingService {
   private readonly STORAGE_KEY = 'behaviorLogs';
-  private readonly MAX_LOGS = 1000;
+  private readonly MAX_LOGS = MAX_LOG_ENTRIES;
 
   /**
    * Log a behavior event
@@ -103,7 +102,7 @@ export class BehaviorLoggingService {
       } else if (log.action === 'video_end' && log.bvid) {
         const startTime = watchStartTimes.get(log.bvid);
         if (startTime) {
-          const duration = (log.timestamp - startTime) / 1000 / 60; // minutes
+          const duration = (log.timestamp - startTime) / MS_PER_SECOND / 60; // minutes
           stats.totalWatchTimeMinutes += duration;
           watchStartTimes.delete(log.bvid);
         }
@@ -144,7 +143,7 @@ export class BehaviorLoggingService {
     uniqueVideos: number;
     topActions: [string, number][];
   }> {
-    const cutoff = Date.now() - hours * 60 * 60 * 1000;
+    const cutoff = Date.now() - hours * MS_PER_HOUR;
     const logs = await this.getLogs({ startTime: cutoff });
 
     const uniqueVideos = new Set(logs.filter((l) => l.bvid).map((l) => l.bvid!)).size;
@@ -189,7 +188,7 @@ export class BehaviorLoggingService {
     averageLength: number;
     byDay: Record<string, number>;
   }> {
-    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - days * MS_PER_DAY;
     const logs = await this.getLogs({
       startTime: cutoff,
       actions: ['fuse_applied', 'fuse_verified'],
@@ -201,7 +200,7 @@ export class BehaviorLoggingService {
 
     for (const log of logs) {
       if (log.action === 'fuse_applied' && log.details?.length) {
-        totalLength += log.details.length as number;
+        totalLength += typeof log.details.length === 'number' ? log.details.length : 0;
       }
       if (log.action === 'fuse_verified') {
         verifiedCount++;
@@ -230,7 +229,7 @@ export class BehaviorLoggingService {
     averageDailyDebt: number;
     bankruptcyCount: number;
   }> {
-    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - days * MS_PER_DAY;
     const logs = await this.getLogs({
       startTime: cutoff,
       actions: ['debt_incurred', 'debt_repaid', 'bankruptcy_declared'],
@@ -242,9 +241,9 @@ export class BehaviorLoggingService {
 
     for (const log of logs) {
       if (log.action === 'debt_incurred' && log.details?.amount) {
-        totalIncurred += log.details.amount as number;
+        totalIncurred += typeof log.details.amount === 'number' ? log.details.amount : 0;
       } else if (log.action === 'debt_repaid' && log.details?.amount) {
-        totalRepaid += log.details.amount as number;
+        totalRepaid += typeof log.details.amount === 'number' ? log.details.amount : 0;
       } else if (log.action === 'bankruptcy_declared') {
         bankruptcyCount++;
       }

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 
 import type { CoolingItem } from '@core/types';
+import { useSelection } from '@hooks/useSelection';
 
 import { BatchToolbar, ItemCard } from './shared';
 
 export function CoolingList({ items }: { items: readonly CoolingItem[] }) {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const allBvids = items.map((item) => item.bvid);
+  const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
   const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
@@ -15,24 +17,6 @@ export function CoolingList({ items }: { items: readonly CoolingItem[] }) {
     return () => clearInterval(timer);
   }, []);
 
-  const toggleSelection = (bvid: string) => {
-    const newSelected = new Set(selected);
-    if (newSelected.has(bvid)) {
-      newSelected.delete(bvid);
-    } else {
-      newSelected.add(bvid);
-    }
-    setSelected(newSelected);
-  };
-
-  const selectAll = () => {
-    setSelected(new Set(items.map((item) => item.bvid)));
-  };
-
-  const clearSelection = () => {
-    setSelected(new Set());
-  };
-
   const handleDelete = async (bvid: string) => {
     if (!confirm('确定要删除这个视频吗？')) return;
 
@@ -41,9 +25,9 @@ export function CoolingList({ items }: { items: readonly CoolingItem[] }) {
     const newCoolingList = coolingList.filter((item) => item.bvid !== bvid);
     await chrome.storage.local.set({ coolingList: newCoolingList });
 
-    const newSelected = new Set(selected);
-    newSelected.delete(bvid);
-    setSelected(newSelected);
+    if (isSelected(bvid)) {
+      toggleSelection(bvid);
+    }
   };
 
   const handleBatchDelete = async () => {
@@ -54,13 +38,13 @@ export function CoolingList({ items }: { items: readonly CoolingItem[] }) {
     const coolingList = (storage.coolingList || []) as CoolingItem[];
     const newCoolingList = coolingList.filter((item) => !selected.has(item.bvid));
     await chrome.storage.local.set({ coolingList: newCoolingList });
-    setSelected(new Set());
+    clearSelection();
   };
 
   const handleClearAll = async () => {
     if (!confirm('确定要清空冷静期列表吗？')) return;
     await chrome.storage.local.set({ coolingList: [] });
-    setSelected(new Set());
+    clearSelection();
   };
 
   return (

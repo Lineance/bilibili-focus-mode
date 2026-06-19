@@ -1,13 +1,16 @@
 import { useState } from 'react';
+import { logger } from '@core/utils/logger';
 import { sendMessage } from 'webext-bridge/options';
 
 import type { ExtensionConfig, InstantItem, VideoTag } from '@core/types';
 import type { ProtocolMap } from '@core/protocol';
+import { useSelection } from '@hooks/useSelection';
 
 import { BatchToolbar, ItemCard } from './shared';
 
 export function InstantList({ items, config }: { items: readonly InstantItem[]; config: ExtensionConfig }) {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const allBvids = items.map((item) => item.bvid);
+  const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [bvidInput, setBvidInput] = useState('');
   const [titleInput, setTitleInput] = useState('');
@@ -17,24 +20,6 @@ export function InstantList({ items, config }: { items: readonly InstantItem[]; 
   const [isLoading, setIsLoading] = useState(false);
   const now = Date.now();
 
-  const toggleSelection = (bvid: string) => {
-    const newSelected = new Set(selected);
-    if (newSelected.has(bvid)) {
-      newSelected.delete(bvid);
-    } else {
-      newSelected.add(bvid);
-    }
-    setSelected(newSelected);
-  };
-
-  const selectAll = () => {
-    setSelected(new Set(items.map((item) => item.bvid)));
-  };
-
-  const clearSelection = () => {
-    setSelected(new Set());
-  };
-
   const handleDelete = async (bvid: string) => {
     if (!confirm('确定要删除这个视频吗？')) return;
 
@@ -43,9 +28,9 @@ export function InstantList({ items, config }: { items: readonly InstantItem[]; 
     const newInstantList = instantList.filter((item) => item.bvid !== bvid);
     await chrome.storage.local.set({ instantList: newInstantList });
 
-    const newSelected = new Set(selected);
-    newSelected.delete(bvid);
-    setSelected(newSelected);
+    if (isSelected(bvid)) {
+      toggleSelection(bvid);
+    }
   };
 
   const handleBatchDelete = async () => {
@@ -56,13 +41,13 @@ export function InstantList({ items, config }: { items: readonly InstantItem[]; 
     const instantList = (storage.instantList || []) as InstantItem[];
     const newInstantList = instantList.filter((item) => !selected.has(item.bvid));
     await chrome.storage.local.set({ instantList: newInstantList });
-    setSelected(new Set());
+    clearSelection();
   };
 
   const handleClearAll = async () => {
     if (!confirm('确定要清空即时许可列表吗？')) return;
     await chrome.storage.local.set({ instantList: [] });
-    setSelected(new Set());
+    clearSelection();
   };
 
   const handleApplyFuse = async () => {
@@ -95,7 +80,7 @@ export function InstantList({ items, config }: { items: readonly InstantItem[]; 
         alert(response?.message || '申请失败');
       }
     } catch (error) {
-      console.error('Failed to apply for fuse:', error);
+      logger.error('InstantList', 'Failed to apply for fuse:', error);
       alert('申请失败，请重试');
     } finally {
       setIsLoading(false);

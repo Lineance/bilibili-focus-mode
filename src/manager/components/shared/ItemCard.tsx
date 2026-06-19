@@ -1,3 +1,5 @@
+import { getVideoUrl } from '@core/utils/videoUrl';
+
 import { VideoCover } from './VideoCover';
 
 export function ItemCard({
@@ -13,10 +15,7 @@ export function ItemCard({
   onDelete: () => void;
   children?: React.ReactNode;
 }) {
-  // Generate video URL with defensive check for undefined bvid
-  const videoUrl = item.bvid?.startsWith('LIVE_')
-    ? `https://live.bilibili.com/${item.bvid.replace('LIVE_', '')}`
-    : `https://www.bilibili.com/video/${item.bvid}`;
+  const videoUrl = getVideoUrl(item.bvid);
 
   return (
     <div className={`bg-gray-800 p-4 rounded-lg flex gap-4 items-center ${selected ? 'ring-2 ring-blue-500' : ''}`}>

@@ -1,4 +1,6 @@
+import { MS_PER_DAY, MS_PER_SECOND } from '@core/constants';
 import { useState, useEffect } from 'react';
+import { logger } from '@core/utils/logger';
 import { sendMessage } from 'webext-bridge/options';
 import { BehaviorLoggingService } from '@core/services';
 import type { ProtocolMap } from '@core/protocol';
@@ -22,8 +24,8 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
       try {
         const loggingService = new BehaviorLoggingService();
         const now = Date.now();
-        const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
-        const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
+        const weekAgo = now - 7 * MS_PER_DAY;
+        const monthAgo = now - 30 * MS_PER_DAY;
 
         const weekLogs = await loggingService.getLogs({
           startTime: weekAgo,
@@ -49,12 +51,12 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
 
   useEffect(() => {
     if (!expiresAt) return;
-    const id = window.setInterval(() => setNowTs(Date.now()), 1000);
+    const id = window.setInterval(() => setNowTs(Date.now()), MS_PER_SECOND);
     return () => window.clearInterval(id);
   }, [expiresAt]);
 
   const handleApplyFuse = async () => {
-    console.log('[TimeWindowFusePanel] Applying fuse (v2-robust)');
+    logger.debug('TimeWindowFusePanel', 'Applying fuse (v2-robust)');
     setIsLoading(true);
     try {
       const response = await sendMessage(
@@ -63,7 +65,7 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
         'background'
       );
 
-      console.log('[TimeWindowFusePanel] Received response:', response);
+      logger.debug('TimeWindowFusePanel', 'Received response:', response);
 
       // Robust check for response existence and success property
       if (response && typeof response === 'object' && 'success' in response && response.success) {
@@ -76,8 +78,8 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
           try {
             const loggingService = new BehaviorLoggingService();
             const now = Date.now();
-            const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
-            const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
+            const weekAgo = now - 7 * MS_PER_DAY;
+            const monthAgo = now - 30 * MS_PER_DAY;
             const weekLogs = await loggingService.getLogs({ startTime: weekAgo, actions: ['fuse_applied'] });
             const monthLogs = await loggingService.getLogs({ startTime: monthAgo, actions: ['fuse_applied'] });
             const weekCount = weekLogs.filter(l => l.details?.type === 'time_window').length;
@@ -134,7 +136,7 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
     setIsLoading(false);
   };
 
-  const timeLeft = expiresAt ? Math.max(0, Math.floor((expiresAt - nowTs) / 1000)) : 0;
+  const timeLeft = expiresAt ? Math.max(0, Math.floor((expiresAt - nowTs) / MS_PER_SECOND)) : 0;
 
   return (
     <div className="bg-gray-800 border border-orange-900/50 rounded-lg p-4 shadow-xl">

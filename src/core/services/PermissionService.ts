@@ -2,8 +2,6 @@ import { DEFAULT_STORAGE } from '@core/constants';
 import type { ExtensionStorage, PermissionResult, VideoTag } from '@core/types';
 import { KeywordRule } from './KeywordRule';
 import { TimeWindowService } from './TimeWindowService';
-// 预留：未来AI检查器接口
-// import type { SmartPermissionChecker, CheckContext } from './SmartPermissionChecker';
 
 export class PermissionError extends Error {
   constructor(
@@ -18,21 +16,11 @@ export class PermissionError extends Error {
 export class PermissionService {
   private storage: ExtensionStorage;
   private timeWindowService: TimeWindowService;
-  // 预留：未来可以注入AI检查器
-  // private aiChecker?: SmartPermissionChecker;
 
   constructor(storage: ExtensionStorage = DEFAULT_STORAGE) {
     this.storage = storage;
     this.timeWindowService = new TimeWindowService(storage.config);
   }
-
-  /**
-   * 预留：设置AI检查器
-   * 用于未来接入AI模型进行智能权限判断
-   */
-  // setAIChecker(checker: SmartPermissionChecker): void {
-  //   this.aiChecker = checker;
-  // }
 
   /**
    * Check if video can be watched
@@ -79,22 +67,6 @@ export class PermissionService {
           };
         }
       }
-
-      // 预留：AI智能检查
-      // 未来可以在这里接入AI模型进行智能视频分类
-      // if (this.aiChecker && title) {
-      //   const context: CheckContext = { bvid, title, uploader: uploaderName || '' };
-      //   const aiResult = await this.aiChecker.check(context);
-      //   if (aiResult.allowed) {
-      //     return {
-      //       allowed: true,
-      //       reason: 'AI_CLASSIFIED',
-      //       inReviewWindow,
-      //       timeUntilWindow,
-      //       videoTag: aiResult.videoTag || 'LEARNING'
-      //     };
-      //   }
-      // }
 
       // Check if uploader is in allowlist
       if (uploaderName && this.storage.allowedUploaders) {
@@ -202,27 +174,5 @@ export class PermissionService {
 
     const fromGhost = this.storage.ghostList.find(item => item.bvid === bvid)?.tag;
     return fromGhost;
-  }
-
-  /**
-   * Check if current time is in review window
-   */
-  isInReviewWindow(): boolean {
-    return this.timeWindowService.checkTimeWindow().isInWindow;
-  }
-
-  /**
-   * Get time until next review window
-   */
-  getTimeUntilReviewWindow(): number {
-    return this.timeWindowService.checkTimeWindow().timeUntilWindow;
-  }
-
-  isInLimbo(bvid: string): boolean {
-    return this.storage.limboList.some(item => item.bvid === bvid);
-  }
-
-  isInGhost(bvid: string): boolean {
-    return this.storage.ghostList.some(item => item.bvid === bvid);
   }
 }

@@ -1,9 +1,4 @@
-import type { ExtensionConfig } from '@core/types';
-
-interface FieldDescription {
-  label: string;
-  description: string;
-}
+import type { ExtensionConfig, FieldDescription } from '@core/types';
 
 interface GhostSettingsProps {
   config: ExtensionConfig;
@@ -11,7 +6,7 @@ interface GhostSettingsProps {
   descriptions: Record<string, FieldDescription>;
 }
 
-export function GhostSettings({ config, updateConfig, descriptions }: GhostSettingsProps) {
+export function GhostSettings({ config, updateConfig, descriptions }: GhostSettingsProps): React.JSX.Element {
   return (
     <div className="bg-gray-800 p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">👻 幽灵档案</h3>

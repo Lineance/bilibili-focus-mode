@@ -1,4 +1,5 @@
 import { DEFAULT_CONFIG } from '@core/constants';
+import { logger } from '@core/utils/logger';
 import { useStorage } from '@hooks/useStorage';
 import { ThemeService } from '@core/services';
 import { useEffect, useState } from 'react';
@@ -107,7 +108,7 @@ export function App() {
       alert('导入成功！');
       window.location.reload();
     } catch (error) {
-      console.error('Import error:', error);
+      logger.error('Manager', 'Import error:', error);
       alert('导入失败：文件格式错误');
     }
 

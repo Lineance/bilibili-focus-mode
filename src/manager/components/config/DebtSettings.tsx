@@ -1,9 +1,4 @@
-import type { ExtensionConfig } from '@core/types';
-
-interface FieldDescription {
-  label: string;
-  description: string;
-}
+import type { ExtensionConfig, FieldDescription } from '@core/types';
 
 interface DebtSettingsProps {
   config: ExtensionConfig;
@@ -11,7 +6,7 @@ interface DebtSettingsProps {
   descriptions: Record<string, FieldDescription>;
 }
 
-export function DebtSettings({ config, updateConfig, descriptions }: DebtSettingsProps) {
+export function DebtSettings({ config, updateConfig, descriptions }: DebtSettingsProps): React.JSX.Element {
   return (
     <div className="bg-gray-800 p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">💰 债务系统</h3>

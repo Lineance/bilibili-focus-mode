@@ -1,4 +1,6 @@
+import { MS_PER_HOUR, MS_PER_MINUTE } from '@core/constants';
 import type { BehaviorLogState, ExtensionConfig, InstantItem, VideoMetadata } from '@core/types';
+import { getTodayKey, resetQuotaIfNeeded } from '@core/utils/dateUtils';
 import { ExpirationService } from './ExpirationService';
 import { FuseService } from './FuseService';
 
@@ -35,9 +37,9 @@ export class FuseApplicationService {
     isBankruptcy: boolean,
     remainingBankruptcyMinutes: number = 0
   ): Promise<{ success: true; item: InstantItem } | { success: false; reason: string }> {
-    const normalizedBehaviorLog = this.resetQuotaIfNeeded({
+    const normalizedBehaviorLog = this.resetBehaviorLogQuotaIfNeeded({
       ...behaviorLog,
-      lastQuotaResetDate: behaviorLog.lastQuotaResetDate || this.getTodayKey(),
+      lastQuotaResetDate: behaviorLog.lastQuotaResetDate || getTodayKey(),
       coolingApplicationsToday: behaviorLog.coolingApplicationsToday || 0,
     });
 
@@ -79,7 +81,7 @@ export class FuseApplicationService {
     // Calculate fuse length based on recent applications
     const recentApps = this.countRecentApplications(behaviorLog);
     const lastAppTime = behaviorLog.lastInstantApplication;
-    const within10Minutes = lastAppTime > 0 && Date.now() - lastAppTime < 10 * 60 * 1000;
+    const within10Minutes = lastAppTime > 0 && Date.now() - lastAppTime < 10 * MS_PER_MINUTE;
 
     let fuseLength: number;
     if (isBankruptcy) {
@@ -198,7 +200,7 @@ export class FuseApplicationService {
 
   private countRecentApplications(behaviorLog: BehaviorLogState): number {
     const now = Date.now();
-    const oneHourAgo = now - 60 * 60 * 1000;
+    const oneHourAgo = now - MS_PER_HOUR;
 
     // If last application was within 1 hour, count it
     if (behaviorLog.lastInstantApplication > oneHourAgo) {
@@ -208,19 +210,14 @@ export class FuseApplicationService {
     return 0;
   }
 
-  private getTodayKey(): string {
-    return new Date().toISOString().slice(0, 10);
-  }
-
-  private resetQuotaIfNeeded(behaviorLog: BehaviorLogState): BehaviorLogState {
-    const today = this.getTodayKey();
-    if (behaviorLog.lastQuotaResetDate === today) {
+  private resetBehaviorLogQuotaIfNeeded(behaviorLog: BehaviorLogState): BehaviorLogState {
+    if (!resetQuotaIfNeeded(behaviorLog.lastQuotaResetDate, getTodayKey())) {
       return behaviorLog;
     }
 
     return {
       ...behaviorLog,
-      lastQuotaResetDate: today,
+      lastQuotaResetDate: getTodayKey(),
       instantApplicationsToday: 0,
       coolingApplicationsToday: 0,
     };

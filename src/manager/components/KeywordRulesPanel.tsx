@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { logger } from '@core/utils/logger';
 
 import type { ExtensionConfig, VideoTag } from '@core/types';
 import { DEFAULT_STORAGE } from '@core/constants';
@@ -35,7 +36,7 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
       setMessage('保存成功');
       setTimeout(() => setMessage(''), 2000);
     } catch (error) {
-      console.error('Failed to save keyword rules:', error);
+      logger.error('KeywordRulesPanel', 'Failed to save keyword rules:', error);
       setMessage('保存失败');
     }
   };
@@ -134,7 +135,7 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
       await saveToStorage(importedItems, importedEnabled);
       setMessage(`导入成功：${importedItems.length} 个关键词`);
     } catch (error) {
-      console.error('Import error:', error);
+      logger.error('KeywordRulesPanel', 'Import error:', error);
       setMessage('导入失败：文件格式错误');
     }
 

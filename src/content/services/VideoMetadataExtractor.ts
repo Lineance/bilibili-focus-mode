@@ -1,4 +1,6 @@
+import { BILIBILI_CDN_LIVE_COVER, TITLE_MAX_LENGTH } from '@core/constants';
 import type { VideoMetadata } from '@core/types';
+import { logger } from '@core/utils/logger';
 
 export class VideoMetadataExtractor {
   /**
@@ -12,12 +14,12 @@ export class VideoMetadataExtractor {
     const titleEl = document.querySelector('h1.video-title, .video-title, h1.title');
     const uploaderEl = document.querySelector('.up-name, .username, .up-info__name, a.up-name');
 
-    let titleText = titleEl?.textContent?.trim().slice(0, 50) || 'Unknown';
+    let titleText = titleEl?.textContent?.trim().slice(0, TITLE_MAX_LENGTH) || 'Unknown';
 
     if (collectionDetectionEnabled) {
       const collectionTitleEl = document.querySelector('.video-collection-title, .collection-title, .multi-page-title');
       if (collectionTitleEl?.textContent) {
-        titleText = collectionTitleEl.textContent.trim().slice(0, 50);
+        titleText = collectionTitleEl.textContent.trim().slice(0, TITLE_MAX_LENGTH);
       }
     }
 
@@ -39,7 +41,7 @@ export class VideoMetadataExtractor {
   async extractLiveMetadataWithRetry(maxRetries = 5, delay = 1000): Promise<VideoMetadata | null> {
     const roomIdMatch = window.location.pathname.match(/(?:\/live\/)?(\d+)/);
     if (!roomIdMatch) {
-      console.log('[Content] No room ID found in pathname');
+      logger.warn('Content', 'No room ID found in pathname');
       return null;
     }
 
@@ -50,7 +52,7 @@ export class VideoMetadataExtractor {
       const uploaderEl = this.findLiveUploaderElement();
 
       if (titleEl?.textContent?.trim() && uploaderEl?.textContent?.trim()) {
-        const titleText = titleEl.textContent.trim().slice(0, 50);
+        const titleText = titleEl.textContent.trim().slice(0, TITLE_MAX_LENGTH);
         const uploaderName = uploaderEl.textContent.trim();
 
         const coverUrl = this.extractLiveCoverUrl(roomId);
@@ -120,7 +122,7 @@ export class VideoMetadataExtractor {
           return el;
         }
       } catch (e) {
-        console.log('[Content] Error with selector:', selector, e);
+        logger.warn('Content', 'Error with selector:', selector, e);
       }
     }
     return null;
@@ -148,7 +150,7 @@ export class VideoMetadataExtractor {
           return el;
         }
       } catch (e) {
-        console.log('[Content] Error with selector:', selector, e);
+        logger.warn('Content', 'Error with selector:', selector, e);
       }
     }
     return null;
@@ -208,6 +210,6 @@ export class VideoMetadataExtractor {
       }
     }
 
-    return `https://i0.hdslb.com/bfs/live/${roomId}.jpg`;
+    return `${BILIBILI_CDN_LIVE_COVER}/${roomId}.jpg`;
   }
 }

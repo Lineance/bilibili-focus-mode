@@ -1,5 +1,8 @@
+import { MS_PER_SECOND, PERMISSION_CHECK_INTERVAL_MS } from '@core/constants';
+import { logger } from '@core/utils/logger';
 import type { ProtocolMap } from '@core/protocol';
 import type { VideoMetadata } from '@core/types';
+import { BILIBILI_SEARCH_URL } from '@core/constants';
 import { StyleSimplificationService } from '@core/services';
 import { sendMessage } from 'webext-bridge/content-script';
 import { VideoMetadataExtractor } from './services/VideoMetadataExtractor';
@@ -8,18 +11,18 @@ import { VideoTracker } from './services/VideoTracker';
 import { PermissionChecker } from './services/PermissionChecker';
 import './purify.css';
 
-console.log('[Content] Script loaded');
+logger.debug('Content', 'Script loaded');
 
 async function safeSendMessage<T>(type: string, data?: unknown): Promise<T | null> {
   try {
     return await sendMessage(type as never, data as never) as T;
   } catch (error) {
     if (error instanceof Error && error.message?.includes('back/forward cache')) {
-      console.log('[Content] Ignoring bfcache error for:', type);
+      logger.debug('Content', 'Ignoring bfcache error for:', type);
       return null;
     }
     if (error instanceof Error && error.message?.includes('Extension context invalidated')) {
-      console.log('[Content] Extension context invalidated, reloading page...');
+      logger.debug('Content', 'Extension context invalidated, reloading page...');
       window.location.reload();
       return null;
     }
@@ -89,19 +92,19 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
 }
 
 async function checkPermission(): Promise<void> {
-  console.log('[Content] Checking permission...');
+  logger.debug('Content', 'Checking permission...');
   
   const configForExtraction = permissionChecker.getLatestConfig() || DEFAULT_CONTENT_CONFIG;
   
   let metadata = metadataExtractor.extractVideoMetadata(configForExtraction.collectionDetectionEnabled);
   
   if (!metadata && metadataExtractor.isLivePage()) {
-    console.log('[Content] Extracting live metadata with retry...');
-    metadata = await metadataExtractor.extractLiveMetadataWithRetry(10, 1000);
+    logger.debug('Content', 'Extracting live metadata with retry...');
+    metadata = await metadataExtractor.extractLiveMetadataWithRetry(10, MS_PER_SECOND);
   }
   
   if (!metadata) {
-    console.log('[Content] No metadata found, removing block');
+    logger.debug('Content', 'No metadata found, removing block');
     blockOverlayManager.remove();
     return;
   }
@@ -109,7 +112,7 @@ async function checkPermission(): Promise<void> {
   const result = await permissionChecker.checkPermission(metadata, DEFAULT_CONTENT_CONFIG);
 
   if (!result) {
-    console.log('[Content] Failed to get permission result, allowing video');
+    logger.debug('Content', 'Failed to get permission result, allowing video');
     blockOverlayManager.remove();
     return;
   }
@@ -119,13 +122,13 @@ async function checkPermission(): Promise<void> {
   videoTracker.setupVideoTracking();
 
   if (result.uploaderAllowed) {
-    console.log('[Content] Uploader is in allowlist, allowing video');
+    logger.debug('Content', 'Uploader is in allowlist, allowing video');
     blockOverlayManager.remove();
     return;
   }
 
   if (!result.allowed) {
-    console.log('[Content] Permission denied, showing block overlay');
+    logger.debug('Content', 'Permission denied, showing block overlay');
     const allowFuseOutsideWindow = Boolean(result.config?.instantBreakFuse);
     const inReviewWindow = result.inReviewWindow;
     blockOverlayManager.show(
@@ -143,22 +146,22 @@ async function checkPermission(): Promise<void> {
       () => blockOverlayManager.openManagerPage()
     );
   } else {
-    console.log('[Content] Permission granted, removing block');
+    logger.debug('Content', 'Permission granted, removing block');
     blockOverlayManager.remove();
   }
 }
 
 async function applyStyleSimplification(): Promise<void> {
-  console.log('[Content] Applying style simplification...');
+  logger.debug('Content', 'Applying style simplification...');
 
   try {
     const config = await permissionChecker.getFullConfig();
     if (!config) {
-      console.log('[Content] No config found');
+      logger.debug('Content', 'No config found');
       return;
     }
 
-    console.log('[Content] Config loaded:', {
+    logger.debug('Content', 'Config loaded:', {
       homepageSimplification: config.homepageSimplification,
       dynamicSimplification: config.dynamicSimplification,
       videoPlayerSimplification: config.videoPlayerSimplification,
@@ -199,7 +202,7 @@ async function applyStyleSimplification(): Promise<void> {
       });
     }
   } catch (error) {
-    console.log('[Content] Failed to apply style simplification:', error);
+    logger.error('Content', 'Failed to apply style simplification:', error);
   }
 }
 
@@ -209,12 +212,12 @@ async function checkHomepageRedirect(): Promise<void> {
     if (config?.homepageSimplification?.redirectToSearch) {
       const styleService = new StyleSimplificationService();
       if (styleService.isVideoPlayerPage() || styleService.isDynamicPage() || metadataExtractor.isLivePage() || metadataExtractor.isSearchPage()) {
-        console.log('[Content] Not redirecting - on video/dynamic/live/search page');
+        logger.debug('Content', 'Not redirecting - on video/dynamic/live/search page');
         return;
       }
       
-      console.log('[Content] Redirecting to search page');
-      window.location.replace('https://search.bilibili.com/');
+      logger.debug('Content', 'Redirecting to search page');
+      window.location.replace(`${BILIBILI_SEARCH_URL}/`);
     }
   } catch (error) {
     console.error('[Content] Failed to check homepage redirect:', error);
@@ -229,7 +232,7 @@ if (typeof window !== 'undefined' && window.location) {
       lastUrl = url;
       checkHomepageRedirect();
       applyStyleSimplification();
-      setTimeout(checkPermission, 1000);
+      setTimeout(checkPermission, MS_PER_SECOND);
     }
   }).observe(document, { subtree: true, childList: true });
 }
@@ -250,8 +253,8 @@ setInterval(() => {
   if (permissionChecker.getCurrentBvid()) {
     checkPermission();
   }
-}, 60000);
+}, PERMISSION_CHECK_INTERVAL_MS);
 
 if (!isExtensionContextValid()) {
-  console.log('[Content] Extension context not available, skipping initialization');
+  logger.debug('Content', 'Extension context not available, skipping initialization');
 }

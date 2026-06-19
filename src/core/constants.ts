@@ -6,6 +6,21 @@ import type {
   GlobalStats,
 } from '@core/types';
 
+// Time conversion constants
+export const MS_PER_SECOND = 1000;
+export const MS_PER_MINUTE = 60 * 1000;
+export const MS_PER_HOUR = 60 * 60 * 1000;
+export const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+// Business logic constants
+export const MIN_FUSE_LENGTH = 8;
+export const MAX_LOG_ENTRIES = 1000;
+export const MIN_REPENTANCE_LENGTH = 20;
+export const TITLE_MAX_LENGTH = 50;
+export const PERMISSION_CHECK_INTERVAL_MS = 60000;
+export const FUSE_VALIDITY_MS = 5 * MS_PER_MINUTE;
+export const TIME_WINDOW_BREAK_MS = MS_PER_HOUR;
+
 export const DEFAULT_CONFIG: ExtensionConfig = {
   timeWindowEnabled: true,
   windowStart: '20:00',
@@ -107,6 +122,16 @@ export const DEFAULT_GLOBAL_STATS: GlobalStats = {
   bankruptcyHistory: [],
   lifecycleTransitions: {},
 };
+
+// Bilibili URLs
+export const BILIBILI_BASE_URL = 'https://www.bilibili.com';
+export const BILIBILI_LIVE_URL = 'https://live.bilibili.com';
+export const BILIBILI_SEARCH_URL = 'https://search.bilibili.com';
+export const BILIBILI_CDN_LIVE_COVER = 'https://i0.hdslb.com/bfs/live';
+
+// Extension paths
+export const MANAGER_PAGE_PATH = 'src/manager/index.html';
+export const ICON_PATH = 'icon128.png';
 
 export const DEFAULT_STORAGE: ExtensionStorage = {
   version: 3,

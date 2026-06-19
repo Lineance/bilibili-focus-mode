@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { BILIBILI_BASE_URL } from '@core/constants';
 import './index.css';
 
 export function Popup(): ReactNode {
@@ -14,7 +15,7 @@ export function Popup(): ReactNode {
         </button>
         
         <button
-          onClick={() => chrome.tabs.create({ url: 'https://www.bilibili.com' })}
+          onClick={() => chrome.tabs.create({ url: BILIBILI_BASE_URL })}
           className="w-full px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
         >
           前往B站

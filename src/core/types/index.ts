@@ -1,3 +1,9 @@
+export interface FieldDescription {
+  label: string;
+  description: string;
+  type: 'boolean' | 'number' | 'string' | 'time';
+}
+
 export type VideoTag = 'LEARNING' | 'ENTERTAINMENT' | 'MUSIC';
 
 export interface VideoMetadata {

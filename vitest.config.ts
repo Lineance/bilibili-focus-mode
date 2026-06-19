@@ -33,11 +33,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
       '@core': resolve(__dirname, 'src/core'),
       '@hooks': resolve(__dirname, 'src/hooks'),
-      '@components': resolve(__dirname, 'src/components'),
-      '@adapters': resolve(__dirname, 'src/adapters'),
       '@content': resolve(__dirname, 'src/content'),
       '@background': resolve(__dirname, 'src/background'),
       '@manager': resolve(__dirname, 'src/manager'),

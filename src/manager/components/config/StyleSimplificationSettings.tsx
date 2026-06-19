@@ -5,7 +5,7 @@ interface StyleSimplificationSettingsProps {
   updateConfig: (field: keyof ExtensionConfig, value: unknown) => void;
 }
 
-export function StyleSimplificationSettings({ config, updateConfig }: StyleSimplificationSettingsProps) {
+export function StyleSimplificationSettings({ config, updateConfig }: StyleSimplificationSettingsProps): React.JSX.Element {
   const updateVideoPlayerSimplification = (updates: Partial<typeof config.videoPlayerSimplification>) => {
     updateConfig('videoPlayerSimplification', {
       ...config.videoPlayerSimplification,

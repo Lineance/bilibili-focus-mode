@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 
 import { GhostResurrectionService } from '@core/services';
 import type { ExtensionConfig, GhostItem } from '@core/types';
+import { useSelection } from '@hooks/useSelection';
 
 import { BatchToolbar, ItemCard } from './shared';
 
 export function GhostList({ items, config }: { items: readonly GhostItem[]; config: ExtensionConfig }) {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const allBvids = items.map((item) => item.bvid);
+  const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
   const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
@@ -16,24 +18,6 @@ export function GhostList({ items, config }: { items: readonly GhostItem[]; conf
     return () => clearInterval(timer);
   }, []);
 
-  const toggleSelection = (bvid: string) => {
-    const newSelected = new Set(selected);
-    if (newSelected.has(bvid)) {
-      newSelected.delete(bvid);
-    } else {
-      newSelected.add(bvid);
-    }
-    setSelected(newSelected);
-  };
-
-  const selectAll = () => {
-    setSelected(new Set(items.map((item) => item.bvid)));
-  };
-
-  const clearSelection = () => {
-    setSelected(new Set());
-  };
-
   const handleDelete = async (bvid: string) => {
     if (!confirm('确定要彻底删除这个视频吗？（无法恢复）')) return;
 
@@ -42,9 +26,9 @@ export function GhostList({ items, config }: { items: readonly GhostItem[]; conf
     const newGhostList = ghostList.filter((item) => item.bvid !== bvid);
     await chrome.storage.local.set({ ghostList: newGhostList });
 
-    const newSelected = new Set(selected);
-    newSelected.delete(bvid);
-    setSelected(newSelected);
+    if (isSelected(bvid)) {
+      toggleSelection(bvid);
+    }
   };
 
   const handleBatchDelete = async () => {
@@ -55,13 +39,13 @@ export function GhostList({ items, config }: { items: readonly GhostItem[]; conf
     const ghostList = (storage.ghostList || []) as GhostItem[];
     const newGhostList = ghostList.filter((item) => !selected.has(item.bvid));
     await chrome.storage.local.set({ ghostList: newGhostList });
-    setSelected(new Set());
+    clearSelection();
   };
 
   const handleClearAll = async () => {
     if (!confirm('确定要清空幽灵档案吗？（无法恢复）')) return;
     await chrome.storage.local.set({ ghostList: [] });
-    setSelected(new Set());
+    clearSelection();
   };
 
   const handleResurrect = async (item: GhostItem) => {

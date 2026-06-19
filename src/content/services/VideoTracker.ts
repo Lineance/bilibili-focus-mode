@@ -1,3 +1,4 @@
+import { MS_PER_MINUTE } from '@core/constants';
 import type { ProtocolMap } from '@core/protocol';
 import type { VideoTag } from '@core/types';
 
@@ -92,7 +93,7 @@ export class VideoTracker {
     this.lastWatchTick = Date.now();
     this.watchIntervalId = window.setInterval(() => {
       this.sendDebtDelta();
-    }, 60000);
+    }, MS_PER_MINUTE);
   }
 
   /**
@@ -113,7 +114,7 @@ export class VideoTracker {
   private sendDebtDelta(): void {
     if (!this.latestConfig?.debtEnabled) return;
     const now = Date.now();
-    const minutes = (now - this.lastWatchTick) / 60000;
+    const minutes = (now - this.lastWatchTick) / MS_PER_MINUTE;
     if (minutes <= 0) return;
     this.lastWatchTick = now;
 

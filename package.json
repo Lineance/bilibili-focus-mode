@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "test": "vitest",
@@ -14,12 +13,9 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "date-fns": "^4.1.0",
-    "idb-keyval": "^6.2.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "webext-bridge": "^6.0.1",
-    "zustand": "^5.0.12"
+    "webext-bridge": "^6.0.1"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.4.0",
@@ -44,9 +40,5 @@
     "typescript-eslint": "^8.57.1",
     "vite": "^8.0.1",
     "vitest": "^4.1.0"
-  },
-  "overrides": {
-    "glob": "^11.0.1",
-    "rimraf": "^6.0.1"
   }
 }

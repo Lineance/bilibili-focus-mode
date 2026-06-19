@@ -1,3 +1,4 @@
+import { MANAGER_PAGE_PATH } from '@core/constants';
 import type { VideoMetadata, VideoTag } from '@core/types';
 
 interface BlockOverlayOptions {
@@ -244,7 +245,7 @@ export class BlockOverlayManager {
    * Open manager page
    */
   openManagerPage(): void {
-    const optionsUrl = chrome.runtime.getURL('src/manager/index.html');
+    const optionsUrl = chrome.runtime.getURL(MANAGER_PAGE_PATH);
 
     if (!chrome.runtime?.id) {
       console.error('[Bilibili Focus Mode] Extension context invalidated');

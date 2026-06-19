@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ExtensionStorage } from '@core/types';
 import { DEFAULT_STORAGE } from '@core/constants';
+import { logger } from '@core/utils/logger';
 
 export function useStorage(): ExtensionStorage {
   const [storage, setStorage] = useState<ExtensionStorage>(DEFAULT_STORAGE);
@@ -8,7 +9,7 @@ export function useStorage(): ExtensionStorage {
   useEffect(() => {
     // Load initial value
     chrome.storage.local.get().then((result: Partial<ExtensionStorage>) => {
-      console.log('[useStorage] Loaded storage:', result);
+      logger.debug('useStorage', 'Loaded storage:', result);
       if (Object.keys(result).length > 0) {
         setStorage({
           ...DEFAULT_STORAGE,

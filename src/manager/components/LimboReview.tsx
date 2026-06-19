@@ -3,12 +3,16 @@ import { useState } from 'react';
 import { DEFAULT_BEHAVIOR_LOG } from '@core/constants';
 import { ExpirationService } from '@core/services';
 import type { CoolingItem, ExtensionConfig, InstantItem, LimboItem, PermanentGroup, VideoMetadata } from '@core/types';
+import { getTodayKey, resetQuotaIfNeeded } from '@core/utils/dateUtils';
+import { getVideoUrl } from '@core/utils/videoUrl';
+import { useSelection } from '@hooks/useSelection';
 
 import { TimeWindowFusePanel } from './TimeWindowFusePanel';
 import { BatchToolbar, VideoCover } from './shared';
 
 export function LimboReview({ items, config }: { items: readonly LimboItem[]; config: ExtensionConfig }) {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const allBvids = items.map((item) => item.bvid);
+  const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
 
   // Check if currently in review window
   const now = new Date();
@@ -30,40 +34,19 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
 
   const [isInReviewWindow, setIsInReviewWindow] = useState(calculateIsInReviewWindow);
 
-  const getTodayKey = () => new Date().toISOString().slice(0, 10);
-
   const normalizeBehaviorLog = (raw: unknown) => ({
     ...DEFAULT_BEHAVIOR_LOG,
     ...(raw as typeof DEFAULT_BEHAVIOR_LOG | undefined),
   });
 
-  const resetQuotaIfNeeded = (behaviorLog: typeof DEFAULT_BEHAVIOR_LOG) => {
-    const today = getTodayKey();
-    if (behaviorLog.lastQuotaResetDate === today) return behaviorLog;
+  const resetBehaviorLogQuotaIfNeeded = (behaviorLog: typeof DEFAULT_BEHAVIOR_LOG) => {
+    if (!resetQuotaIfNeeded(behaviorLog.lastQuotaResetDate, getTodayKey())) return behaviorLog;
     return {
       ...behaviorLog,
-      lastQuotaResetDate: today,
+      lastQuotaResetDate: getTodayKey(),
       instantApplicationsToday: 0,
       coolingApplicationsToday: 0,
     };
-  };
-
-  const toggleSelection = (bvid: string) => {
-    const newSelected = new Set(selected);
-    if (newSelected.has(bvid)) {
-      newSelected.delete(bvid);
-    } else {
-      newSelected.add(bvid);
-    }
-    setSelected(newSelected);
-  };
-
-  const selectAll = () => {
-    setSelected(new Set(items.map((item) => item.bvid)));
-  };
-
-  const clearSelection = () => {
-    setSelected(new Set());
   };
 
   const handleDelete = async (bvid: string) => {
@@ -75,9 +58,9 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
     await chrome.storage.local.set({ limboList: newLimboList });
 
     // Remove from selection if selected
-    const newSelected = new Set(selected);
-    newSelected.delete(bvid);
-    setSelected(newSelected);
+    if (isSelected(bvid)) {
+      toggleSelection(bvid);
+    }
   };
 
   const handleBatchDelete = async () => {
@@ -88,13 +71,13 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
     const limboList = (storage.limboList || []) as LimboItem[];
     const newLimboList = limboList.filter((item) => !selected.has(item.bvid));
     await chrome.storage.local.set({ limboList: newLimboList });
-    setSelected(new Set());
+    clearSelection();
   };
 
   const handleClearAll = async () => {
     if (!confirm('确定要清空待审池吗？')) return;
     await chrome.storage.local.set({ limboList: [] });
-    setSelected(new Set());
+    clearSelection();
   };
 
   const handleAction = async (item: LimboItem, action: 'permanent' | 'cooling' | 'instant') => {
@@ -105,7 +88,7 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
     }
 
     const storage = await chrome.storage.local.get();
-    const behaviorLog = resetQuotaIfNeeded(normalizeBehaviorLog(storage.behaviorLog));
+    const behaviorLog = resetBehaviorLogQuotaIfNeeded(normalizeBehaviorLog(storage.behaviorLog));
     const limboList = (storage.limboList || []) as LimboItem[];
     const newLimboList = limboList.filter((i) => i.bvid !== item.bvid);
 
@@ -214,9 +197,9 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
     }
 
     // Remove from selection
-    const newSelected = new Set(selected);
-    newSelected.delete(item.bvid);
-    setSelected(newSelected);
+    if (isSelected(item.bvid)) {
+      toggleSelection(item.bvid);
+    }
   };
 
   return (
@@ -261,9 +244,7 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
           {items.map((item) => {
             // Skip items with undefined bvid
             if (!item.bvid) return null;
-            const videoUrl = item.bvid.startsWith('LIVE_')
-              ? `https://live.bilibili.com/${item.bvid.replace('LIVE_', '')}`
-              : `https://www.bilibili.com/video/${item.bvid}`;
+            const videoUrl = getVideoUrl(item.bvid);
             return (
               <div key={item.bvid} className={`bg-gray-800 p-4 rounded-lg ${selected.has(item.bvid) ? 'ring-2 ring-blue-500' : ''}`}>
                 <div className="flex gap-4 items-start">

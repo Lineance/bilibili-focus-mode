@@ -1,3 +1,4 @@
+import { MIN_FUSE_LENGTH } from '@core/constants';
 import type { ExtensionConfig } from '@core/types';
 
 export class FuseService {
@@ -5,7 +6,7 @@ export class FuseService {
 
   generateFuseCode(length: number): string {
     // Ensure length is at least 8 and even number
-    const safeLength = Math.max(8, Math.ceil(length / 2) * 2);
+    const safeLength = Math.max(MIN_FUSE_LENGTH, Math.ceil(length / 2) * 2);
     const bytes = new Uint8Array(safeLength / 2);
     crypto.getRandomValues(bytes);
     const hex = Array.from(bytes)

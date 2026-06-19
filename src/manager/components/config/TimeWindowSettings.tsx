@@ -1,9 +1,4 @@
-import type { ExtensionConfig } from '@core/types';
-
-interface FieldDescription {
-  label: string;
-  description: string;
-}
+import type { ExtensionConfig, FieldDescription } from '@core/types';
 
 interface TimeWindowSettingsProps {
   config: ExtensionConfig;
@@ -11,7 +6,7 @@ interface TimeWindowSettingsProps {
   descriptions: Record<string, FieldDescription>;
 }
 
-export function TimeWindowSettings({ config, updateConfig, descriptions }: TimeWindowSettingsProps) {
+export function TimeWindowSettings({ config, updateConfig, descriptions }: TimeWindowSettingsProps): React.JSX.Element {
   return (
     <div className="bg-gray-800 p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">⏰ 时间窗口</h3>

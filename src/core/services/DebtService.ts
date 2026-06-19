@@ -1,3 +1,4 @@
+import { MS_PER_HOUR } from '@core/constants';
 import type { DebtAccount, VideoTag } from '@core/types';
 
 export class DebtService {
@@ -42,6 +43,6 @@ export class DebtService {
   }
 
   calculateBankruptcyEndTime(lockHours: number): number {
-    return Date.now() + lockHours * 60 * 60 * 1000;
+    return Date.now() + lockHours * MS_PER_HOUR;
   }
 }

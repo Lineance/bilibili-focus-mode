@@ -3,9 +3,14 @@ import type { ProtocolMap } from '@core/protocol';
 import { BehaviorLoggingService, DebtService, FuseApplicationService, FuseService, PermissionService } from '@core/services';
 import { TimeWindowService } from '@core/services/TimeWindowService';
 import type { BehaviorLogState, DebtAccount, ExtensionConfig, ExtensionStorage, GlobalStats, VideoMetadata } from '@core/types';
+import { logger } from '@core/utils/logger';
 import { onMessage } from 'webext-bridge/background';
 
-console.log('[Background] Service worker started');
+logger.debug('Background', 'Service worker started');
+
+function ensureStorageDefaults(data: Partial<ExtensionStorage>): ExtensionStorage {
+  return { ...DEFAULT_STORAGE, ...data };
+}
 
 function scheduleLimboReviewReminder(timeString: string) {
   const [hour, minute] = timeString.split(':').map(Number);
@@ -75,11 +80,11 @@ function pickConfigSnapshot(config: ExtensionConfig) {
 
 // Initialize storage on install
 chrome.runtime.onInstalled.addListener((details) => {
-  console.log('[Background] Extension installed:', details.reason);
+  logger.debug('Background', 'Extension installed:', details.reason);
 
   if (details.reason === 'install') {
     chrome.storage.local.set(DEFAULT_STORAGE).then(() => {
-      console.log('[Background] Default storage initialized');
+      logger.debug('Background', 'Default storage initialized');
       scheduleLimboReviewReminder(DEFAULT_STORAGE.config.limboReviewTime);
       scheduleLimboAutoPurge(DEFAULT_STORAGE.config.limboAutoPurgeHours);
     });
@@ -88,7 +93,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 // Handle alarms for scheduled tasks
 chrome.alarms.onAlarm.addListener((alarm) => {
-  console.log('[Background] Alarm triggered:', alarm.name);
+  logger.debug('Background', 'Alarm triggered:', alarm.name);
 
   if (alarm.name === 'limbo-review-reminder') {
     chrome.notifications.create({
@@ -118,12 +123,12 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 // Message handlers
 onMessage('check-permission', async (message) => {
   const data = message.data as unknown as ProtocolMap['check-permission']['req'];
-  console.log('[Background] Checking permission for:', data.bvid, 'uploader:', data.uploaderName);
+  logger.debug('Background', 'Checking permission for:', data.bvid, 'uploader:', data.uploaderName);
 
-  const storage = await chrome.storage.local.get() as typeof DEFAULT_STORAGE;
+  const storage = ensureStorageDefaults(await chrome.storage.local.get());
   const service = new PermissionService(storage);
   const result = service.check(data.bvid, data.uploaderName, data.title);
-  const config = storage.config || DEFAULT_STORAGE.config;
+  const config = storage.config;
 
   const twBreak = await chrome.storage.local.get('timeWindowBreakUntil');
   const breakUntil = (twBreak?.timeWindowBreakUntil as number | undefined) || 0;
@@ -139,10 +144,10 @@ onMessage('check-permission', async (message) => {
 
 onMessage('add-to-limbo', async (message) => {
   const data = message.data as unknown as ProtocolMap['add-to-limbo']['req'];
-  console.log('[Background] Adding to limbo:', data.metadata.bvid);
+  logger.debug('Background', 'Adding to limbo:', data.metadata.bvid);
 
-  const storage = await chrome.storage.local.get() as typeof DEFAULT_STORAGE;
-  console.log('[Background] Current storage:', {
+  const storage = ensureStorageDefaults(await chrome.storage.local.get());
+  logger.debug('Background', 'Current storage:', {
     limboListLength: storage.limboList?.length || 0,
     limboCapacity: storage.config?.limboCapacity
   });
@@ -152,13 +157,13 @@ onMessage('add-to-limbo', async (message) => {
 
   // Check capacity
   if (limboList.length >= capacity) {
-    console.log('[Background] Limbo is full:', limboList.length, '>=', capacity);
+    logger.debug('Background', 'Limbo is full:', limboList.length, '>=', capacity);
     return { success: false, limboCount: limboList.length };
   }
 
   // Check if already exists
   if (limboList.some((item) => item.bvid === data.metadata.bvid)) {
-    console.log('[Background] Video already in limbo:', data.metadata.bvid);
+    logger.debug('Background', 'Video already in limbo:', data.metadata.bvid);
     return { success: true, limboCount: limboList.length };
   }
 
@@ -172,17 +177,17 @@ onMessage('add-to-limbo', async (message) => {
     limboList: newLimboList,
   });
 
-  console.log('[Background] Video added to limbo. New count:', newLimboList.length);
+  logger.debug('Background', 'Video added to limbo. New count:', newLimboList.length);
 
   return { success: true, limboCount: newLimboList.length };
 });
 
 onMessage('update-debt', async (message) => {
   const data = message.data as unknown as ProtocolMap['update-debt']['req'];
-  console.log('[Background] Updating debt:', data);
+  logger.debug('Background', 'Updating debt:', data);
 
-  const storage = await chrome.storage.local.get() as ExtensionStorage;
-  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  const storage = ensureStorageDefaults(await chrome.storage.local.get());
+  const config = storage.config;
   let debtAccount: DebtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
   
   // Migrate old field names and ensure currentDebt is in sync with totals
@@ -200,10 +205,10 @@ onMessage('update-debt', async (message) => {
       totalLearningMinutes: legacyDebt.totalRepaid || 0,
       totalMusicMinutes: legacyDebt.totalMusicMinutes || 0,
     };
-    // Delete legacy fields - using type assertion since we know these fields exist
-    const mutableDebt = debtAccount as unknown as Record<string, unknown>;
-    delete mutableDebt.totalAccrued;
-    delete mutableDebt.totalRepaid;
+    // Delete legacy fields by rebuilding without them
+    debtAccount = Object.fromEntries(
+      Object.entries(debtAccount).filter(([k]) => k !== 'totalAccrued' && k !== 'totalRepaid')
+    ) as DebtAccount;
   }
 
   // Recalculate currentDebt based on totals to fix sync issues
@@ -222,11 +227,11 @@ onMessage('update-debt', async (message) => {
   // If the stored currentDebt is out of sync with recalculated debt (due to past capping),
   // we update it to match the dashboard's source of truth.
   if (Math.abs(debtAccount.currentDebt - recalculatedDebt) > 0.1) {
-    console.log('[Background] Syncing currentDebt with totals:', debtAccount.currentDebt, '->', recalculatedDebt);
+    logger.debug('Background', 'Syncing currentDebt with totals:', debtAccount.currentDebt, '->', recalculatedDebt);
     debtAccount.currentDebt = recalculatedDebt;
   }
   
-  console.log('[Background] Current debt account:', debtAccount);
+  logger.debug('Background', 'Current debt account:', debtAccount);
 
   if (!config.debtEnabled) {
     return { currentDebt: debtAccount.currentDebt, bankruptcyEndTime: debtAccount.bankruptcyEndTime };
@@ -239,7 +244,7 @@ onMessage('update-debt', async (message) => {
   );
 
   const updatedAccount = debtService.updateDebt(debtAccount, data.minutes, data.tag);
-  console.log('[Background] Updated account:', updatedAccount);
+  logger.debug('Background', 'Updated account:', updatedAccount);
   let bankruptcyEndTime = updatedAccount.bankruptcyEndTime;
   let bankruptcyDeclared = false;
 
@@ -259,7 +264,7 @@ onMessage('update-debt', async (message) => {
     // This rewards the user for actively learning to repay their debt
     updatedAccount.bankruptcyEndTime = null;
     bankruptcyEndTime = null;
-    console.log('[Background] Bankruptcy lock cleared due to debt repayment');
+    logger.debug('Background', 'Bankruptcy lock cleared due to debt repayment');
   }
 
   const globalStats: GlobalStats = storage.globalStats || DEFAULT_GLOBAL_STATS;
@@ -283,8 +288,8 @@ onMessage('update-debt', async (message) => {
 });
 
 onMessage('sync-debt', async () => {
-  const storage = await chrome.storage.local.get() as ExtensionStorage;
-  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  const storage = ensureStorageDefaults(await chrome.storage.local.get());
+  const config = storage.config;
   let debtAccount: DebtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
 
   // Perform sync logic (same as in update-debt)
@@ -315,7 +320,7 @@ onMessage('sync-debt', async () => {
   if (!isCurrentlyBankrupt && hasActiveLock) {
     debtAccount.bankruptcyEndTime = null;
     changed = true;
-    console.log('[Background] Bankruptcy lock cleared during sync');
+    logger.debug('Background', 'Bankruptcy lock cleared during sync');
   }
 
   if (changed) {
@@ -327,16 +332,16 @@ onMessage('sync-debt', async () => {
 
 onMessage('verify-fuse', async (message) => {
   const data = message.data as unknown as ProtocolMap['verify-fuse']['req'];
-  const storage = await chrome.storage.local.get() as ExtensionStorage;
-  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  const storage = ensureStorageDefaults(await chrome.storage.local.get());
+  const config = storage.config;
   const service = new FuseApplicationService(config);
   return service.verifyFuse(data.bvid, data.fuseCode);
 });
 
 onMessage('apply-fuse', async (message) => {
   const data = message.data as unknown as ProtocolMap['apply-fuse']['req'];
-  const storage = await chrome.storage.local.get() as ExtensionStorage;
-  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  const storage = ensureStorageDefaults(await chrome.storage.local.get());
+  const config = storage.config;
   const behaviorLog = resetQuotaIfNeeded(normalizeBehaviorLog(storage.behaviorLog));
 
   const timeWindowService = new TimeWindowService(config);
@@ -391,8 +396,8 @@ onMessage('apply-fuse', async (message) => {
 
 onMessage('watch-ended', async (message) => {
   const data = message.data as unknown as ProtocolMap['watch-ended']['req'];
-  const storage = await chrome.storage.local.get() as ExtensionStorage;
-  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  const storage = ensureStorageDefaults(await chrome.storage.local.get());
+  const config = storage.config;
   const behaviorLog = normalizeBehaviorLog(storage.behaviorLog);
 
   const cooldownMinutes = config.postWatchCooldownMinutes;
@@ -412,8 +417,8 @@ onMessage('watch-ended', async (message) => {
 });
 
 onMessage('get-full-config', async () => {
-  const storage = await chrome.storage.local.get() as ExtensionStorage;
-  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  const storage = ensureStorageDefaults(await chrome.storage.local.get());
+  const config = storage.config;
   const debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
   return { config, debtAccount };
 });
@@ -423,8 +428,8 @@ const TIME_WINDOW_FUSE_KEY = 'timeWindowFuse';
 const TIME_WINDOW_FUSE_EXPIRES_KEY = 'timeWindowFuseExpiresAt';
 
 onMessage('apply-time-window-fuse', async () => {
-  const storage = await chrome.storage.local.get() as ExtensionStorage;
-  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  const storage = ensureStorageDefaults(await chrome.storage.local.get());
+  const config = storage.config;
 
   if (!config.instantBreakFuse) {
     return { success: false, message: '熔断功能未启用' };
@@ -458,8 +463,8 @@ onMessage('apply-time-window-fuse', async () => {
 
 onMessage('verify-time-window-fuse', async (message) => {
   const data = message.data as unknown as ProtocolMap['verify-time-window-fuse']['req'];
-  const storage = await chrome.storage.local.get() as ExtensionStorage;
-  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  const storage = ensureStorageDefaults(await chrome.storage.local.get());
+  const config = storage.config;
 
   // Retrieve from persistent local storage
   const storageData = await chrome.storage.local.get([TIME_WINDOW_FUSE_KEY, TIME_WINDOW_FUSE_EXPIRES_KEY]);
@@ -518,7 +523,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 // Handle open options page request from content script
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   if (request.action === 'openOptionsPage') {
-    console.log('[Background] Opening options page');
+    logger.debug('Background', 'Opening options page');
     chrome.tabs.create({
       url: chrome.runtime.getURL('src/manager/index.html')
     }, (tab) => {
@@ -526,7 +531,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
         console.error('[Background] Error opening options page:', chrome.runtime.lastError);
         sendResponse({ success: false, error: chrome.runtime.lastError.message });
       } else {
-        console.log('[Background] Options page opened in tab:', tab?.id);
+        logger.debug('Background', 'Options page opened in tab:', tab?.id);
         sendResponse({ success: true, tabId: tab?.id });
       }
     });
@@ -536,7 +541,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 
 // External message handler for extension detection
 chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
-  console.log('[Background] External message received:', request, 'from:', sender.id);
+  logger.debug('Background', 'External message received:', request, 'from:', sender.id);
   
   if (request.message === 'version' || request.message === 'ping') {
     const manifest = chrome.runtime.getManifest();

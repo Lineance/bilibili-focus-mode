@@ -1,9 +1,4 @@
-import type { ExtensionConfig } from '@core/types';
-
-interface FieldDescription {
-  label: string;
-  description: string;
-}
+import type { ExtensionConfig, FieldDescription } from '@core/types';
 
 interface PermanentGroupSettingsProps {
   config: ExtensionConfig;
@@ -11,7 +6,7 @@ interface PermanentGroupSettingsProps {
   descriptions: Record<string, FieldDescription>;
 }
 
-export function PermanentGroupSettings({ config, updateConfig, descriptions }: PermanentGroupSettingsProps) {
+export function PermanentGroupSettings({ config, updateConfig, descriptions }: PermanentGroupSettingsProps): React.JSX.Element {
   return (
     <div className="bg-gray-800 p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">📌 永久分组</h3>

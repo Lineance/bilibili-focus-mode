@@ -1,36 +1,18 @@
-import { useState } from 'react';
-
 import type { PermanentGroup, VideoMetadata } from '@core/types';
+import { getVideoUrl } from '@core/utils/videoUrl';
+import { useSelection } from '@hooks/useSelection';
 
 import { BatchToolbar, VideoCover } from './shared';
 
 export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }) {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
   // Flatten all items from all groups and separate by tag
   const allItems = groups.flatMap(group => group.items);
+  const allBvids = allItems.map((item) => item.bvid);
+  const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
   const learningItems = allItems.filter(item => item.tag === 'LEARNING');
   const musicItems = allItems.filter(item => item.tag === 'MUSIC');
   const entertainmentItems = allItems.filter(item => item.tag === 'ENTERTAINMENT');
   const totalItems = allItems.length;
-
-  const toggleSelection = (bvid: string) => {
-    const newSelected = new Set(selected);
-    if (newSelected.has(bvid)) {
-      newSelected.delete(bvid);
-    } else {
-      newSelected.add(bvid);
-    }
-    setSelected(newSelected);
-  };
-
-  const selectAll = () => {
-    setSelected(new Set(allItems.map((item) => item.bvid)));
-  };
-
-  const clearSelection = () => {
-    setSelected(new Set());
-  };
 
   const handleDeleteItem = async (bvid: string) => {
     if (!confirm('确定要删除这个视频吗？')) return;
@@ -46,9 +28,9 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
 
     await chrome.storage.local.set({ permanentGroups: updatedGroups });
 
-    const newSelected = new Set(selected);
-    newSelected.delete(bvid);
-    setSelected(newSelected);
+    if (isSelected(bvid)) {
+      toggleSelection(bvid);
+    }
   };
 
   const handleBatchDelete = async () => {
@@ -64,21 +46,19 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
     }));
 
     await chrome.storage.local.set({ permanentGroups: updatedGroups });
-    setSelected(new Set());
+    clearSelection();
   };
 
   const handleClearAll = async () => {
     if (!confirm('确定要清空所有永久分组吗？')) return;
     await chrome.storage.local.set({ permanentGroups: [] });
-    setSelected(new Set());
+    clearSelection();
   };
 
   const renderItemCard = (item: VideoMetadata) => {
     // Skip items with undefined bvid
     if (!item.bvid) return null;
-    const videoUrl = item.bvid.startsWith('LIVE_')
-      ? `https://live.bilibili.com/${item.bvid.replace('LIVE_', '')}`
-      : `https://www.bilibili.com/video/${item.bvid}`;
+    const videoUrl = getVideoUrl(item.bvid);
 
     return (
       <div

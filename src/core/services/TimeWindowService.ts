@@ -1,3 +1,4 @@
+import { MS_PER_DAY } from '@core/constants';
 import type { ExtensionConfig } from '@core/types';
 
 export interface TimeWindowStatus {
@@ -23,7 +24,7 @@ export class TimeWindowService {
       return {
         isInWindow: true,
         windowStart: new Date(),
-        windowEnd: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        windowEnd: new Date(Date.now() + MS_PER_DAY),
         timeUntilWindow: 0,
         timeRemainingInWindow: Infinity,
       };
@@ -78,57 +79,5 @@ export class TimeWindowService {
    */
   canBreakWindow(): boolean {
     return this.config.instantBreakFuse;
-  }
-
-  /**
-   * Format milliseconds to human readable string
-   */
-  formatDuration(ms: number): string {
-    if (ms === Infinity) return '∞';
-    if (ms <= 0) return '0分钟';
-
-    const hours = Math.floor(ms / (1000 * 60 * 60));
-    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (hours > 0) {
-      return `${hours}小时${minutes}分钟`;
-    }
-    return `${minutes}分钟`;
-  }
-
-  /**
-   * Get next window start time
-   */
-  getNextWindowStart(): Date {
-    const status = this.checkTimeWindow();
-    if (status.isInWindow) {
-      // Currently in window, return tomorrow's window
-      const nextStart = new Date(status.windowStart);
-      nextStart.setDate(nextStart.getDate() + 1);
-      return nextStart;
-    }
-    return status.windowStart;
-  }
-
-  /**
-   * Check if a specific time is in window (for testing)
-   */
-  isTimeInWindow(date: Date): boolean {
-    const [startHour, startMinute] = this.config.windowStart.split(':').map(Number);
-    const [endHour, endMinute] = this.config.windowEnd.split(':').map(Number);
-
-    const hour = date.getHours();
-    const minute = date.getMinutes();
-    const timeValue = hour * 60 + minute;
-    const startValue = startHour * 60 + startMinute;
-    const endValue = endHour * 60 + endMinute;
-
-    if (endValue >= startValue) {
-      // Normal window (e.g., 20:00 - 21:00)
-      return timeValue >= startValue && timeValue <= endValue;
-    } else {
-      // Overnight window (e.g., 23:00 - 01:00)
-      return timeValue >= startValue || timeValue <= endValue;
-    }
   }
 }

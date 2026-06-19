@@ -1,4 +1,4 @@
-import type { ExtensionConfig } from '@core/types';
+import type { ExtensionConfig, FieldDescription } from '@core/types';
 import { DEFAULT_CONFIG } from '@core/constants';
 
 export type ConfigValidationError = {
@@ -172,7 +172,7 @@ export class ConfigService {
   /**
    * Get configuration description for UI
    */
-  getConfigDescriptions(): Record<string, { label: string; description: string; type: 'boolean' | 'number' | 'string' | 'time' }> {
+  getConfigDescriptions(): Record<string, FieldDescription> {
     return {
       timeWindowEnabled: {
         label: '启用时间窗口',
