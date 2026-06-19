@@ -67,7 +67,7 @@ describe('SearchResultFilter', () => {
       expect(cards[1].hasAttribute('data-filtered')).toBe(true);
     });
 
-    it('should set opacity to 0.8 for all filtered cards', () => {
+    it('should set opacity to 0.97 for all filtered cards', () => {
       // Create 10 cards
       let html = '';
       for (let i = 0; i < 10; i++) {
@@ -84,9 +84,9 @@ describe('SearchResultFilter', () => {
       filter.filterResults({ hideAds: false, hideNonKeyword: true });
 
       const cards = document.querySelectorAll('.bili-video-card');
-      // All filtered cards should have opacity 0.8
-      expect((cards[0] as HTMLElement).style.getPropertyValue('--filter-opacity')).toBe('0.8');
-      expect((cards[5] as HTMLElement).style.getPropertyValue('--filter-opacity')).toBe('0.8');
+      // All filtered cards should have opacity 0.97
+      expect((cards[0] as HTMLElement).style.getPropertyValue('--filter-opacity')).toBe('0.97');
+      expect((cards[5] as HTMLElement).style.getPropertyValue('--filter-opacity')).toBe('0.97');
     });
 
     it('should hide ads with display:none', () => {

@@ -69,7 +69,7 @@ export class SearchResultFilter {
       // 不匹配的结果显示蒙版
       if (config.hideNonKeyword && !this.isTitleMatch(title)) {
         el.setAttribute('data-filtered', 'true');
-        el.style.setProperty('--filter-opacity', '0.8');
+        el.style.setProperty('--filter-opacity', '0.97');
       }
     });
   }
