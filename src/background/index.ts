@@ -18,17 +18,36 @@ function getNewConfigValue(newValue: unknown): typeof DEFAULT_STORAGE.config {
   return newValue as typeof DEFAULT_STORAGE.config;
 }
 
-// Initialize storage on install
-chrome.runtime.onInstalled.addListener((details) => {
+// Initialize storage on install or migrate on update (Issue #3)
+chrome.runtime.onInstalled.addListener(async (details) => {
   logger.debug('Background', 'Extension installed:', details.reason);
 
   if (details.reason === 'install') {
-    chrome.storage.local.set(DEFAULT_STORAGE).then(() => {
-      logger.debug('Background', 'Default storage initialized');
-      alarmHandler.scheduleLimboReviewReminder(DEFAULT_STORAGE.config.limboReviewTime);
-      alarmHandler.scheduleLimboAutoPurge(DEFAULT_STORAGE.config.limboAutoPurgeHours);
-      alarmHandler.scheduleCoolingCleanup();
-    });
+    await chrome.storage.local.set(DEFAULT_STORAGE);
+    logger.debug('Background', 'Default storage initialized');
+    alarmHandler.scheduleLimboReviewReminder(DEFAULT_STORAGE.config.limboReviewTime);
+    alarmHandler.scheduleLimboAutoPurge(DEFAULT_STORAGE.config.limboAutoPurgeHours);
+    alarmHandler.scheduleCoolingCleanup();
+  } else if (details.reason === 'update') {
+    const storage = await chrome.storage.local.get();
+    const currentVersion = (storage as Record<string, unknown>).version as number || 0;
+
+    if (currentVersion < 3) {
+      await chrome.storage.local.set({
+        ...DEFAULT_STORAGE,
+        ...storage,
+        version: 3,
+      });
+    }
+
+    logger.debug('Background', `Migrated from version ${currentVersion} to current`);
+    alarmHandler.scheduleLimboReviewReminder(
+      ((storage as Record<string, unknown>).config as Record<string, unknown>)?.limboReviewTime as string || DEFAULT_STORAGE.config.limboReviewTime
+    );
+    alarmHandler.scheduleLimboAutoPurge(
+      ((storage as Record<string, unknown>).config as Record<string, unknown>)?.limboAutoPurgeHours as number ?? DEFAULT_STORAGE.config.limboAutoPurgeHours
+    );
+    alarmHandler.scheduleCoolingCleanup();
   }
 });
 

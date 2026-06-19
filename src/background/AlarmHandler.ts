@@ -1,5 +1,5 @@
 import { DEFAULT_STORAGE } from '@core/constants';
-import type { CoolingItem, ExtensionConfig, VideoMetadata } from '@core/types';
+import type { CoolingItem, ExtensionConfig, GhostItem, VideoMetadata } from '@core/types';
 import { logger } from '@core/utils/logger';
 
 function getConfigFromStorage(storage: Record<string, unknown>): ExtensionConfig {
@@ -30,6 +30,10 @@ export class AlarmHandler {
 
       if (alarm.name === 'cooling-cleanup') {
         this.handleCoolingCleanup();
+      }
+
+      if (alarm.name === 'ghost-cleanup') {
+        this.handleGhostCleanup();
       }
     });
   }
@@ -68,6 +72,10 @@ export class AlarmHandler {
     });
   }
 
+  scheduleGhostCleanup(): void {
+    chrome.alarms.create('ghost-cleanup', { periodInMinutes: 360 });
+  }
+
   private handleLimboAutoPurge(): void {
     chrome.storage.local.get().then((storage) => {
       const config = getConfigFromStorage(storage);
@@ -96,6 +104,20 @@ export class AlarmHandler {
       if (updatedCoolingList.length !== coolingList.length) {
         chrome.storage.local.set({ coolingList: updatedCoolingList });
         logger.debug('AlarmHandler', `Cleaned up ${coolingList.length - updatedCoolingList.length} expired cooling items`);
+      }
+    });
+  }
+
+  private handleGhostCleanup(): void {
+    chrome.storage.local.get().then((storage) => {
+      const ghostList = (storage.ghostList || []) as GhostItem[];
+      const now = Date.now();
+
+      const updatedGhostList = ghostList.filter(item => item.canResurrectUntil > now);
+
+      if (updatedGhostList.length !== ghostList.length) {
+        chrome.storage.local.set({ ghostList: updatedGhostList });
+        logger.debug('AlarmHandler', `Cleaned up ${ghostList.length - updatedGhostList.length} expired ghosts`);
       }
     });
   }

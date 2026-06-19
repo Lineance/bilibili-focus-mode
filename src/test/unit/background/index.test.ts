@@ -135,7 +135,7 @@ describe('Background Script', () => {
       expect(chrome.storage.local.set).toHaveBeenCalledWith(DEFAULT_STORAGE);
     });
 
-    it('should not reinitialize on update', async () => {
+    it('should migrate storage on update', async () => {
       await import('@background/index');
 
       const onInstalledListener = vi.mocked(chrome.runtime.onInstalled.addListener).mock.calls[0]?.[0];
@@ -145,8 +145,8 @@ describe('Background Script', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      // Should not set storage on update
-      expect(chrome.storage.local.set).not.toHaveBeenCalledWith(DEFAULT_STORAGE);
+      // Should set storage on update for migration
+      expect(chrome.storage.local.set).toHaveBeenCalled();
     });
   });
 

@@ -68,6 +68,17 @@ export async function handleApplyFuse(
     return { success: false, message: result.reason };
   }
 
+  // Mark bankruptcy fuse items so they can override bankruptcy block (Issue #2)
+  if (data.isBankruptcy) {
+    const updatedStorage = ensureStorageDefaults(await chrome.storage.local.get());
+    const instantList = updatedStorage.instantList;
+    const item = instantList.find(i => i.bvid === data.metadata.bvid);
+    if (item) {
+      item.bankruptcyOverride = true;
+      await chrome.storage.local.set({ instantList });
+    }
+  }
+
   const globalStats: GlobalStats = storage.globalStats || DEFAULT_GLOBAL_STATS;
   globalStats.fuseApplicationsTotal++;
 

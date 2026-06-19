@@ -28,6 +28,7 @@ export interface InstantItem extends VideoMetadata {
   expiresAt: number;
   fuseCode: string;
   usedFuse: boolean;
+  bankruptcyOverride?: boolean;
 }
 
 export interface PermanentGroup {

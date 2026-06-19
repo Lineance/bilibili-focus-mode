@@ -33,8 +33,23 @@ export class PermissionService {
       const permanentResult = this.checkPermanentGroup(bvid);
       if (permanentResult) return { ...permanentResult, ...ctx };
 
+      // Check bankruptcy override BEFORE bankruptcy block (Issue #2)
+      const bankruptcyOverride = this.checkBankruptcyOverride(bvid);
+      if (bankruptcyOverride) return { ...bankruptcyOverride, ...ctx };
+
+      // During bankruptcy, allow learning-tagged videos for debt repayment (Issue #1)
       const bankruptcyResult = this.checkBankruptcy();
-      if (bankruptcyResult) return { ...bankruptcyResult, ...ctx };
+      if (bankruptcyResult) {
+        const videoTag = this.getVideoTag(bvid) ||
+          (title ? new KeywordRule(this.storage.config.keywordRules).check(title) : null) ||
+          'ENTERTAINMENT';
+
+        if (videoTag === 'LEARNING') {
+          // Allow learning during bankruptcy — continue to normal permission checks
+        } else {
+          return { ...bankruptcyResult, ...ctx, videoTag };
+        }
+      }
 
       if (title) {
         const keywordResult = this.checkKeywordRules(title);
@@ -73,6 +88,16 @@ export class PermissionService {
   private checkUploaderAllowlist(uploaderName: string): { result: PermissionResult; tag?: VideoTag } | null {
     const found = this.storage.allowedUploaders?.find(u => u.name === uploaderName);
     return found ? { result: { allowed: true, reason: 'PERMANENT' }, tag: found.tag } : null;
+  }
+
+  private checkBankruptcyOverride(bvid: string): PermissionResult | null {
+    const item = this.storage.instantList.find(
+      i => i.bvid === bvid &&
+           i.usedFuse &&
+           i.bankruptcyOverride &&
+           Date.now() < i.expiresAt
+    );
+    return item ? { allowed: true, reason: 'INSTANT' } : null;
   }
 
   private checkBankruptcy(): PermissionResult | null {
