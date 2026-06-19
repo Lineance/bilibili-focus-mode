@@ -74,11 +74,19 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
 
     const result = await safeSendMessage<{ success: boolean; limboCount: number }>('add-to-limbo', payload as { [key: string]: string | number | boolean | null | { [key: string]: string | number | boolean | null } });
 
-    if (result?.success) {
+    if (result === null) {
+      logger.error('Content', 'Failed to send message: result is null');
+      alert('消息发送失败，请刷新页面后重试');
+      return;
+    }
+
+    if (result.success) {
       const tagText = tagSelection === 'LEARNING' ? '学习' : '娱乐';
       alert(`已加入待审池！标签：${tagText}\n请在审批时间前往管理页处理`);
-    } else if (result) {
-      alert('添加失败，请重试');
+      // 移除 overlay
+      blockOverlayManager.remove();
+    } else {
+      alert('添加失败，待审池可能已满，请重试');
     }
   } catch (error) {
     console.error('[Content] Failed to add to limbo:', error);

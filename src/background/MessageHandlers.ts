@@ -13,18 +13,16 @@ import {
   handleDailyBypass,
 } from './handlers';
 
-const PLACEHOLDER_SENDER = { id: '' } as chrome.runtime.MessageSender;
-
 export function registerMessageHandlers(): void {
-  onMessage('check-permission', async (message) => handleCheckPermission(message.data, PLACEHOLDER_SENDER));
-  onMessage('add-to-limbo', async (message) => handleAddToLimbo(message.data, PLACEHOLDER_SENDER));
-  onMessage('update-debt', async (message) => handleUpdateDebt(message.data, PLACEHOLDER_SENDER));
-  onMessage('sync-debt', async (message) => handleSyncDebt(message.data, PLACEHOLDER_SENDER));
-  onMessage('verify-fuse', async (message) => handleVerifyFuse(message.data, PLACEHOLDER_SENDER));
-  onMessage('apply-fuse', async (message) => handleApplyFuse(message.data, PLACEHOLDER_SENDER));
-  onMessage('apply-time-window-fuse', async (message) => handleApplyTimeWindowFuse(message.data, PLACEHOLDER_SENDER));
-  onMessage('verify-time-window-fuse', async (message) => handleVerifyTimeWindowFuse(message.data, PLACEHOLDER_SENDER));
-  onMessage('watch-ended', async (message) => handleWatchEnded(message.data, PLACEHOLDER_SENDER));
-  onMessage('get-full-config', async (message) => handleGetFullConfig(message.data, PLACEHOLDER_SENDER));
-  onMessage('daily-bypass', async (message) => handleDailyBypass(message.data, PLACEHOLDER_SENDER));
+  onMessage('check-permission', async (message) => handleCheckPermission(message.data, {} as chrome.runtime.MessageSender));
+  onMessage('add-to-limbo', async (message) => handleAddToLimbo(message.data, {} as chrome.runtime.MessageSender));
+  onMessage('update-debt', async (message) => handleUpdateDebt(message.data, {} as chrome.runtime.MessageSender));
+  onMessage('sync-debt', async (message) => handleSyncDebt(message.data, {} as chrome.runtime.MessageSender));
+  onMessage('verify-fuse', async (message) => handleVerifyFuse(message.data, {} as chrome.runtime.MessageSender));
+  onMessage('apply-fuse', async (message) => handleApplyFuse(message.data, {} as chrome.runtime.MessageSender));
+  onMessage('apply-time-window-fuse', async (message) => handleApplyTimeWindowFuse(message.data, {} as chrome.runtime.MessageSender));
+  onMessage('verify-time-window-fuse', async (message) => handleVerifyTimeWindowFuse(message.data, {} as chrome.runtime.MessageSender));
+  onMessage('watch-ended', async (message) => handleWatchEnded(message.data, {} as chrome.runtime.MessageSender));
+  onMessage('get-full-config', async (message) => handleGetFullConfig(message.data, {} as chrome.runtime.MessageSender));
+  onMessage('daily-bypass', async (message) => handleDailyBypass(message.data, {} as chrome.runtime.MessageSender));
 }

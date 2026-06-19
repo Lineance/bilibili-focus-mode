@@ -66,6 +66,11 @@ export class StyleSimplificationService {
       /^\/\d+$/.test(window.location.pathname);
   }
 
+  isSearchPage(): boolean {
+    return window.location.host === 'search.bilibili.com' ||
+      window.location.pathname.startsWith('/search');
+  }
+
   applyVideoPlayerSimplification(options: VideoPlayerSimplificationOptions): void {
     if (!this.isVideoPlayerPage()) return;
     this.removePageStyles();
@@ -91,6 +96,13 @@ export class StyleSimplificationService {
     if (!this.isLivePage()) return;
     this.removePageStyles();
     const css = this.liveCSSGenerator.generate(options);
+    this.injectPageStyles(css);
+  }
+
+  applySearchPageSimplification(): void {
+    if (!this.isSearchPage()) return;
+    this.removePageStyles();
+    const css = this.globalCSSGenerator.generateSearchPageSimplification();
     this.injectPageStyles(css);
   }
 
@@ -139,6 +151,14 @@ export class StyleSimplificationService {
     const isVideoEnabled = videoPlayerSimplification?.enabled && this.isVideoPlayerPage();
     const isHomepageEnabled = homepageSimplification?.enabled && this.isHomepage();
     const isDynamicEnabled = dynamicSimplification?.enabled && this.isDynamicPage();
+    const isSearchPage = this.isSearchPage();
+
+    // 搜索页面始终应用简化（只显示搜索框）
+    if (isSearchPage) {
+      this.applyGlobalStyles();
+      this.applySearchPageSimplification();
+      return;
+    }
 
     if (!isVideoEnabled && !isHomepageEnabled && !isDynamicEnabled) {
       this.removeStyles();
