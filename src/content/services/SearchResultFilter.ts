@@ -1,6 +1,7 @@
 /**
  * 搜索结果过滤器
  * 搜索关键词与标题有任意公共子串即匹配
+ * 不匹配的结果显示灰色蒙版，按行数渐进式遮罩
  */
 export class SearchResultFilter {
   private keywordLower: string;
@@ -8,7 +9,6 @@ export class SearchResultFilter {
 
   constructor(keyword: string) {
     this.keywordLower = keyword.toLowerCase();
-    console.log('[SearchResultFilter] Created with keyword:', keyword, '→ lower:', this.keywordLower);
   }
 
   /**
@@ -18,14 +18,18 @@ export class SearchResultFilter {
   isTitleMatch(title: string): boolean {
     if (!title) return false;
     const titleLower = title.toLowerCase();
-    
-    // 快速检查：标题包含搜索词，或搜索词包含标题
-    if (titleLower.includes(this.keywordLower) || this.keywordLower.includes(titleLower)) {
+
+    // 快速检查：标题包含搜索词
+    if (titleLower.includes(this.keywordLower)) {
       return true;
     }
-    
-    // 检查搜索词的子串是否在标题中
-    // 从长到短检查，找到匹配就返回
+
+    // 标题长度>=2时，检查搜索词是否包含标题
+    if (titleLower.length >= this.minLength && this.keywordLower.includes(titleLower)) {
+      return true;
+    }
+
+    // 检查搜索词的子串是否在标题中（子串长度>=2）
     for (let len = this.keywordLower.length; len >= this.minLength; len--) {
       for (let i = 0; i <= this.keywordLower.length - len; i++) {
         const substr = this.keywordLower.substring(i, i + len);
@@ -34,52 +38,59 @@ export class SearchResultFilter {
         }
       }
     }
-    
+
     return false;
   }
 
   /**
    * 过滤搜索结果
+   * - 广告和推广直接隐藏
+   * - 不匹配的结果显示灰色蒙版，按行数渐进式遮罩
    */
   filterResults(config: { hideAds: boolean; hideNonKeyword: boolean }): void {
     if (!document.body) return;
-    
+
     const cards = document.querySelectorAll('.bili-video-card');
-    console.log('[SearchResultFilter] Filtering', cards.length, 'cards, config:', config);
-    
-    cards.forEach(card => {
+
+    cards.forEach((card) => {
+      const el = card as HTMLElement;
       const titleEl = card.querySelector('.bili-video-card__info--tit');
       const title = titleEl?.textContent || '';
       const link = card.querySelector('a');
-      const isAd = link?.href?.includes('gaoneng.bilibili.com') || 
+      const isAd = link?.href?.includes('gaoneng.bilibili.com') ||
                    card.querySelector('.bili-video-card__stats--ad');
 
-      let shouldHide = false;
-
+      // 广告和推广直接隐藏
       if (config.hideAds && isAd) {
-        shouldHide = true;
-        console.log('[SearchResultFilter] Hiding ad:', title);
+        el.style.display = 'none';
+        return;
       }
 
+      // 不匹配的结果显示蒙版
       if (config.hideNonKeyword && !this.isTitleMatch(title)) {
-        shouldHide = true;
-        console.log('[SearchResultFilter] Hiding no match:', title);
-      }
-
-      if (shouldHide) {
-        (card as HTMLElement).style.display = 'none';
-        card.setAttribute('data-filtered', 'true');
+        el.setAttribute('data-filtered', 'true');
+        el.style.setProperty('--filter-opacity', '0.8');
       }
     });
   }
 
   /**
-   * 恢复所有被隐藏的结果
+   * 恢复所有被隐藏/蒙版的结果
    */
   restoreAll(): void {
+    // 恢复蒙版卡片
     document.querySelectorAll('[data-filtered="true"]').forEach(el => {
-      (el as HTMLElement).style.display = '';
+      const htmlEl = el as HTMLElement;
+      htmlEl.style.removeProperty('--filter-opacity');
       el.removeAttribute('data-filtered');
+    });
+
+    // 恢复被隐藏的广告
+    document.querySelectorAll('.bili-video-card').forEach(card => {
+      const el = card as HTMLElement;
+      if (el.style.display === 'none') {
+        el.style.display = '';
+      }
     });
   }
 }

@@ -26,10 +26,7 @@ export class SearchPageHandler {
    */
   getKeyword(): string | null {
     const urlParams = new URLSearchParams(window.location.search);
-    const keyword = urlParams.get('keyword');
-    // URLSearchParams.get() 会自动解码URL编码的字符串
-    logger.debug('SearchPageHandler', 'Keyword from URL:', keyword);
-    return keyword;
+    return urlParams.get('keyword');
   }
   
   /**

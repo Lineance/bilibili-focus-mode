@@ -15,7 +15,6 @@ describe('SearchResultFilter', () => {
 
     it('should match when keyword substring is in title', () => {
       const filter = new SearchResultFilter('有旋场和无旋场');
-      // "有旋场" is a substring of keyword, and title contains "有旋场"
       expect(filter.isTitleMatch('有旋场详解')).toBe(true);
     });
 
@@ -36,14 +35,110 @@ describe('SearchResultFilter', () => {
 
     it('should match with minimum 2 chars', () => {
       const filter = new SearchResultFilter('有旋场');
-      // "有旋" is 2 chars, should match
       expect(filter.isTitleMatch('有旋')).toBe(true);
     });
 
     it('should not match single char', () => {
       const filter = new SearchResultFilter('有旋场');
-      // "有" is 1 char, below minimum
+      // "有" is 1 char, below minimum, should not match
       expect(filter.isTitleMatch('有')).toBe(false);
+    });
+  });
+
+  describe('filterResults', () => {
+    it('should set data-filtered attribute for non-matching titles', () => {
+      // Mock DOM
+      document.body.innerHTML = `
+        <div class="bili-video-card">
+          <div class="bili-video-card__info--tit">有旋场详解</div>
+          <a href="https://www.bilibili.com/video/BV1xxx"></a>
+        </div>
+        <div class="bili-video-card">
+          <div class="bili-video-card__info--tit">学习编程</div>
+          <a href="https://www.bilibili.com/video/BV2xxx"></a>
+        </div>
+      `;
+
+      const filter = new SearchResultFilter('有旋场');
+      filter.filterResults({ hideAds: false, hideNonKeyword: true });
+
+      const cards = document.querySelectorAll('.bili-video-card');
+      expect(cards[0].hasAttribute('data-filtered')).toBe(false);
+      expect(cards[1].hasAttribute('data-filtered')).toBe(true);
+    });
+
+    it('should set opacity to 0.8 for all filtered cards', () => {
+      // Create 10 cards
+      let html = '';
+      for (let i = 0; i < 10; i++) {
+        html += `
+          <div class="bili-video-card">
+            <div class="bili-video-card__info--tit">视频${i}</div>
+            <a href="https://www.bilibili.com/video/BV${i}"></a>
+          </div>
+        `;
+      }
+      document.body.innerHTML = html;
+
+      const filter = new SearchResultFilter('测试');
+      filter.filterResults({ hideAds: false, hideNonKeyword: true });
+
+      const cards = document.querySelectorAll('.bili-video-card');
+      // All filtered cards should have opacity 0.8
+      expect((cards[0] as HTMLElement).style.getPropertyValue('--filter-opacity')).toBe('0.8');
+      expect((cards[5] as HTMLElement).style.getPropertyValue('--filter-opacity')).toBe('0.8');
+    });
+
+    it('should hide ads with display:none', () => {
+      document.body.innerHTML = `
+        <div class="bili-video-card">
+          <div class="bili-video-card__info--tit">正常视频</div>
+          <a href="https://www.bilibili.com/video/BV1xxx"></a>
+        </div>
+        <div class="bili-video-card">
+          <div class="bili-video-card__info--tit">广告视频</div>
+          <a href="https://gaoneng.bilibili.com/xxx"></a>
+          <div class="bili-video-card__stats--ad">广告</div>
+        </div>
+      `;
+
+      const filter = new SearchResultFilter('测试');
+      filter.filterResults({ hideAds: true, hideNonKeyword: false });
+
+      const cards = document.querySelectorAll('.bili-video-card');
+      expect((cards[0] as HTMLElement).style.display).not.toBe('none');
+      expect((cards[1] as HTMLElement).style.display).toBe('none');
+    });
+  });
+
+  describe('restoreAll', () => {
+    it('should remove data-filtered attribute', () => {
+      document.body.innerHTML = `
+        <div class="bili-video-card" data-filtered="true" style="--filter-opacity: 0.5">
+          <div class="bili-video-card__info--tit">测试视频</div>
+        </div>
+      `;
+
+      const filter = new SearchResultFilter('测试');
+      filter.restoreAll();
+
+      const card = document.querySelector('.bili-video-card')!;
+      expect(card.hasAttribute('data-filtered')).toBe(false);
+      expect((card as HTMLElement).style.getPropertyValue('--filter-opacity')).toBe('');
+    });
+
+    it('should restore hidden ads', () => {
+      document.body.innerHTML = `
+        <div class="bili-video-card" style="display: none">
+          <div class="bili-video-card__info--tit">广告视频</div>
+        </div>
+      `;
+
+      const filter = new SearchResultFilter('测试');
+      filter.restoreAll();
+
+      const card = document.querySelector('.bili-video-card') as HTMLElement;
+      expect(card.style.display).toBe('');
     });
   });
 });

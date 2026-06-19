@@ -23,3 +23,27 @@
 .bilibili-focus-mode-hidden {
   display: none !important;
 }
+
+/* 搜索结果过滤蒙版 */
+.bili-video-card[data-filtered="true"] {
+  position: relative !important;
+  pointer-events: auto !important;
+}
+
+.bili-video-card[data-filtered="true"]::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(128, 128, 128, var(--filter-opacity, 0.7)) !important;
+  z-index: 10 !important;
+  pointer-events: none !important;
+  transition: opacity 0.3s ease !important;
+  border-radius: inherit !important;
+}
+
+.bili-video-card[data-filtered="true"]:hover::after {
+  opacity: 0 !important;
+}
