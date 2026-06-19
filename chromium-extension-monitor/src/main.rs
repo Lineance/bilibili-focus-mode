@@ -1,6 +1,6 @@
 use chromium_extension_monitor::config::ConfigManager;
 use chromium_extension_monitor::monitor::MonitorService;
-use chromium_extension_monitor::native_messaging::{self, NativeMessagingHandler};
+use chromium_extension_monitor::native_messaging::{self};
 use chromium_extension_monitor::utils;
 use chromium_extension_monitor::utils::logger;
 use chromium_extension_monitor::Result;
@@ -27,13 +27,11 @@ fn main() -> Result<()> {
     let config_manager = ConfigManager::from_cli(cli_args.clone())?;
     let config = config_manager.config().clone();
 
-    // 初始化日志系统
+    // 初始化日志系统（Native Messaging模式下只写文件，不写stdout）
     let _log_guard = logger::init_logging(&config.logging)?;
 
     info!("Chromium Extension Monitor 启动");
     info!("配置文件：{:?}", config_manager.config_path());
-    info!("监控间隔：{}s", config.monitor.check_interval);
-    info!("终止延迟：{}s", config.monitor.kill_delay);
 
     // 隐藏控制台窗口（如果配置为不显示）
     #[cfg(windows)]
@@ -68,16 +66,9 @@ fn main() -> Result<()> {
         running_clone.store(false, std::sync::atomic::Ordering::SeqCst);
     })?;
 
-    // 根据模式运行
-    if cli_args.native_messaging {
-        // Native Messaging 模式
-        info!("以 Native Messaging 主机模式运行");
-        monitor.run_with_native_messaging()?;
-    } else {
-        // 普通模式
-        info!("开始监控循环");
-        monitor.run()?;
-    }
+    // 运行 Native Messaging 模式
+    info!("以 Native Messaging 主机模式运行");
+    monitor.run_with_native_messaging()?;
 
     info!("监控服务已停止");
     Ok(())

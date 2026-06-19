@@ -1,22 +1,22 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 use crate::config::Config;
-use crate::extension::{DetectionResult, ExtensionDetector};
-use crate::process::{ProcessManager, TerminationResult};
+use crate::native_messaging::{read_message, write_message, NativeMessagingHandler};
+use std::io;
 
 /// 监控状态
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MonitorState {
-    /// 空闲
+    /// 空闲（等待扩展连接）
     Idle,
 
-    /// 监控中
+    /// 监控中（扩展已连接）
     Monitoring,
 
-    /// 警告中（扩展缺失，倒计时中）
+    /// 警告中（扩展断开，倒计时中）
     Warning {
         /// 剩余时间（秒）
         remaining_seconds: u64,
@@ -25,9 +25,6 @@ pub enum MonitorState {
     /// 终止中
     Terminating,
 
-    /// 已暂停
-    Paused,
-
     /// 已停止
     Stopped,
 }
@@ -35,8 +32,8 @@ pub enum MonitorState {
 /// 监控统计
 #[derive(Debug, Default, Clone)]
 pub struct MonitorStats {
-    /// 检测次数
-    pub detection_count: usize,
+    /// 心跳次数
+    pub heartbeat_count: usize,
 
     /// 警告次数
     pub warning_count: usize,
@@ -44,8 +41,8 @@ pub struct MonitorStats {
     /// 终止次数
     pub termination_count: usize,
 
-    /// 最后检测时间
-    pub last_detection: Option<Instant>,
+    /// 最后心跳时间
+    pub last_heartbeat: Option<Instant>,
 
     /// 运行时长
     pub uptime: Duration,
@@ -56,20 +53,11 @@ pub struct MonitorService {
     /// 配置
     config: Config,
 
-    /// 扩展检测器
-    detector: ExtensionDetector,
-
-    /// 进程管理器
-    process_manager: ProcessManager,
-
     /// 当前状态
     state: MonitorState,
 
     /// 运行标志
     running: Arc<AtomicBool>,
-
-    /// 暂停标志
-    paused: Arc<AtomicBool>,
 
     /// 统计信息
     stats: MonitorStats,
@@ -84,27 +72,12 @@ pub struct MonitorService {
 impl MonitorService {
     /// 创建监控服务
     pub fn new(config: Config) -> Self {
-        let detector = ExtensionDetector::new(
-            config.chromium.user_data_dirs.clone(),
-            config.extension.target_extensions.clone(),
-            config.extension.extension_name_keywords.clone(),
-            config.extension.match_mode.clone(),
-            config.extension.profiles.clone(),
-            config.extension.unpacked_extensions_paths.clone(),
-        );
-
-        let process_manager = ProcessManager::new(config.chromium.process_names.clone());
-
         let running = Arc::new(AtomicBool::new(false));
-        let paused = Arc::new(AtomicBool::new(false));
 
         Self {
             config,
-            detector,
-            process_manager,
             state: MonitorState::Idle,
             running,
-            paused,
             stats: MonitorStats::default(),
             start_time: Instant::now(),
             warning_start_time: None,
@@ -116,29 +89,6 @@ impl MonitorService {
         self.running.clone()
     }
 
-    /// 获取暂停标志
-    pub fn paused_flag(&self) -> Arc<AtomicBool> {
-        self.paused.clone()
-    }
-
-    /// 启动监控服务
-    pub fn start(&mut self) -> crate::Result<()> {
-        if self.running.load(Ordering::SeqCst) {
-            return Err(crate::error::MonitorError::StartupFailed(
-                "监控服务已在运行中".to_string(),
-            )
-            .into());
-        }
-
-        info!("启动监控服务");
-        self.running.store(true, Ordering::SeqCst);
-        self.paused.store(false, Ordering::SeqCst);
-        self.state = MonitorState::Monitoring;
-        self.start_time = Instant::now();
-
-        Ok(())
-    }
-
     /// 停止监控服务
     pub fn stop(&mut self) -> crate::Result<()> {
         info!("停止监控服务");
@@ -147,49 +97,42 @@ impl MonitorService {
         Ok(())
     }
 
-    /// 暂停监控
-    pub fn pause(&mut self) {
-        info!("暂停监控");
-        self.paused.store(true, Ordering::SeqCst);
-        self.state = MonitorState::Paused;
-    }
-
-    /// 恢复监控
-    pub fn resume(&mut self) {
-        info!("恢复监控");
-        self.paused.store(false, Ordering::SeqCst);
-        self.state = MonitorState::Monitoring;
-        self.warning_start_time = None;
-    }
-
-    /// 运行监控循环
-    pub fn run(&mut self) -> crate::Result<()> {
-        self.start()?;
-        self.run_monitoring_loop()
-    }
-
     /// 运行 Native Messaging 模式
     pub fn run_with_native_messaging(&mut self) -> crate::Result<()> {
-        use crate::native_messaging::{read_message, write_message, NativeMessagingHandler};
-        use std::io;
+        self.running.store(true, Ordering::SeqCst);
+        self.start_time = Instant::now();
 
-        self.start()?;
-
-        info!("以 Native Messaging 模式启动（仅Native Messaging，不运行文件系统扫描）");
+        info!("以 Native Messaging 主机模式启动");
 
         let handler = NativeMessagingHandler::new();
-        let running = self.running.clone();
+        let kill_delay = self.config.monitor.kill_delay;
 
-        // 启动 Native Messaging 监听（主线程，阻塞式）
+        // 主线程阻塞式读取 Native Messaging
         let stdin = io::stdin();
         let stdout = io::stdout();
         let mut reader = stdin.lock();
         let mut writer = stdout.lock();
 
-        while running.load(Ordering::SeqCst) {
+        self.state = MonitorState::Idle;
+        info!("等待扩展连接...");
+
+        while self.running.load(Ordering::SeqCst) {
             match read_message(&mut reader) {
                 Ok(msg) => {
                     let response = handler.handle_message(msg);
+
+                    // 更新统计
+                    if response.get("type").and_then(|v| v.as_str()) == Some("pong") {
+                        self.stats.heartbeat_count += 1;
+                        self.stats.last_heartbeat = Some(Instant::now());
+
+                        if self.state != MonitorState::Monitoring {
+                            info!("扩展已连接");
+                            self.state = MonitorState::Monitoring;
+                            self.warning_start_time = None;
+                        }
+                    }
+
                     if let Err(e) = write_message(&mut writer, &response) {
                         error!("Native messaging write error: {}", e);
                         break;
@@ -200,9 +143,17 @@ impl MonitorService {
                     info!("扩展连接断开（EOF）");
                     handler.on_connection_lost();
 
-                    // 连接断开后，可以切换到文件系统扫描模式
-                    info!("切换到文件系统扫描模式");
-                    self.run_monitoring_loop()?;
+                    // 进入警告倒计时
+                    self.warning_start_time = Some(Instant::now());
+                    self.stats.warning_count += 1;
+                    self.state = MonitorState::Warning {
+                        remaining_seconds: kill_delay,
+                    };
+
+                    info!("启动 {} 秒倒计时", kill_delay);
+
+                    // 等待倒计时或重新连接
+                    // 由于stdin EOF，进程应该退出
                     break;
                 }
                 Err(e) => {
@@ -212,182 +163,9 @@ impl MonitorService {
             }
         }
 
+        info!("退出 Native Messaging 循环");
         self.stop()?;
         Ok(())
-    }
-
-    /// 内部监控循环实现
-    fn run_monitoring_loop(&mut self) -> crate::Result<()> {
-        let check_interval = Duration::from_secs(self.config.monitor.check_interval);
-        let kill_delay = Duration::from_secs(self.config.monitor.kill_delay);
-        let idle_check_interval = Duration::from_secs(self.config.chromium.idle_check_interval);
-
-        info!(
-            "监控循环启动，检查间隔：{:?}, 终止延迟：{:?}, 空闲检查间隔：{:?}",
-            check_interval, kill_delay, idle_check_interval
-        );
-
-        let mut chrome_was_running = false;
-
-        while self.running.load(Ordering::SeqCst) {
-            // 检查是否暂停
-            if self.paused.load(Ordering::SeqCst) {
-                std::thread::sleep(Duration::from_millis(100));
-                continue;
-            }
-
-            // 如果配置为只在 Chrome 运行时扫描，先检测进程
-            if self.config.chromium.scan_only_when_running {
-                let chrome_running = self.process_manager.has_running_processes();
-
-                if !chrome_running {
-                    if chrome_was_running {
-                        info!("Chrome 已关闭，进入休眠模式");
-                        chrome_was_running = false;
-                    }
-                    self.state = MonitorState::Idle;
-                    // Chrome未运行时，使用更长的休眠间隔减少资源消耗
-                    std::thread::sleep(idle_check_interval);
-                    continue;
-                } else if !chrome_was_running {
-                    info!("Chrome 已启动，开始监控");
-                    chrome_was_running = true;
-                }
-            }
-
-            // 执行检测
-            match self.detect() {
-                Ok(result) => {
-                    self.stats.detection_count += 1;
-                    self.stats.last_detection = Some(Instant::now());
-
-                    if result.all_installed() {
-                        // 扩展已安装并启用，重置警告
-                        self.warning_start_time = None;
-                        self.state = MonitorState::Monitoring;
-                        debug!("扩展已安装并启用，继续监控");
-                    } else if result.has_disabled() {
-                        // 扩展已安装但被禁用
-                        if self.warning_start_time.is_none() {
-                            self.warning_start_time = Some(Instant::now());
-                            self.stats.warning_count += 1;
-                            warn!(
-                                "检测到扩展已安装但未启用，启动 {} 秒倒计时",
-                                self.config.monitor.kill_delay
-                            );
-                        }
-
-                        // 检查倒计时
-                        if let Some(warning_start) = self.warning_start_time {
-                            let elapsed = warning_start.elapsed();
-
-                            if elapsed >= kill_delay {
-                                // 倒计时结束，执行终止
-                                info!("倒计时结束，开始终止进程");
-                                self.state = MonitorState::Terminating;
-
-                                match self.terminate_processes() {
-                                    Ok(term_result) => {
-                                        self.stats.termination_count += 1;
-                                        info!(
-                                            "终止完成，成功：{}, 失败：{}",
-                                            term_result.terminated_count(),
-                                            term_result.failed.len()
-                                        );
-                                    }
-                                    Err(e) => {
-                                        error!("终止进程失败：{}", e);
-                                    }
-                                }
-
-                                // 重置警告
-                                self.warning_start_time = None;
-                                self.state = MonitorState::Monitoring;
-                            } else {
-                                // 更新状态
-                                let remaining = self.config.monitor.kill_delay - elapsed.as_secs();
-                                self.state = MonitorState::Warning {
-                                    remaining_seconds: remaining,
-                                };
-
-                                info!("警告倒计时：剩余 {} 秒", remaining);
-                            }
-                        }
-                    } else {
-                        // 扩展未安装
-                        if self.warning_start_time.is_none() {
-                            self.warning_start_time = Some(Instant::now());
-                            self.stats.warning_count += 1;
-                            warn!(
-                                "检测到扩展未安装，启动 {} 秒倒计时",
-                                self.config.monitor.kill_delay
-                            );
-                        }
-
-                        // 检查倒计时
-                        if let Some(warning_start) = self.warning_start_time {
-                            let elapsed = warning_start.elapsed();
-
-                            if elapsed >= kill_delay {
-                                // 倒计时结束，执行终止
-                                info!("倒计时结束，开始终止进程");
-                                self.state = MonitorState::Terminating;
-
-                                match self.terminate_processes() {
-                                    Ok(term_result) => {
-                                        self.stats.termination_count += 1;
-                                        info!(
-                                            "终止完成，成功：{}, 失败：{}",
-                                            term_result.terminated_count(),
-                                            term_result.failed.len()
-                                        );
-                                    }
-                                    Err(e) => {
-                                        error!("终止进程失败：{}", e);
-                                    }
-                                }
-
-                                // 重置警告
-                                self.warning_start_time = None;
-                                self.state = MonitorState::Monitoring;
-                            } else {
-                                // 更新状态
-                                let remaining = self.config.monitor.kill_delay - elapsed.as_secs();
-                                self.state = MonitorState::Warning {
-                                    remaining_seconds: remaining,
-                                };
-
-                                info!("警告倒计时：剩余 {} 秒", remaining);
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    error!("检测失败：{}", e);
-                }
-            }
-
-            // 清理缓存
-            self.detector.cleanup_cache();
-
-            // 等待下一次检测
-            debug!("等待下一次检测...");
-            std::thread::sleep(check_interval);
-        }
-
-        info!("退出监控循环");
-        self.stop()?;
-        Ok(())
-    }
-
-    /// 执行检测
-    pub fn detect(&mut self) -> crate::Result<DetectionResult> {
-        self.detector.detect()
-    }
-
-    /// 终止进程
-    fn terminate_processes(&mut self) -> crate::Result<TerminationResult> {
-        self.process_manager.terminate_all()
     }
 
     /// 获取当前状态
@@ -432,33 +210,9 @@ mod tests {
     }
 
     #[test]
-    fn test_monitor_state_transitions() {
-        let mut service = MonitorService::new(Config::default());
-
-        // 初始状态
-        assert_eq!(service.state(), MonitorState::Idle);
-
-        // 启动
-        service.start().unwrap();
-        assert_eq!(service.state(), MonitorState::Monitoring);
-
-        // 暂停
-        service.pause();
-        assert_eq!(service.state(), MonitorState::Paused);
-
-        // 恢复
-        service.resume();
-        assert_eq!(service.state(), MonitorState::Monitoring);
-
-        // 停止
-        service.stop().unwrap();
-        assert_eq!(service.state(), MonitorState::Stopped);
-    }
-
-    #[test]
     fn test_monitor_stats() {
-        let mut service = MonitorService::new(Config::default());
-        assert_eq!(service.stats().detection_count, 0);
+        let service = MonitorService::new(Config::default());
+        assert_eq!(service.stats().heartbeat_count, 0);
         assert_eq!(service.stats().warning_count, 0);
         assert_eq!(service.stats().termination_count, 0);
     }

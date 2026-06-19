@@ -40,10 +40,6 @@ pub struct CliArgs {
     #[arg(long)]
     pub no_console: bool,
 
-    /// 以 Native Messaging 主机模式运行（stdio）
-    #[arg(long)]
-    pub native_messaging: bool,
-
     /// 安装 Native Messaging 主机
     #[arg(long)]
     pub install_native_host: bool,
@@ -112,7 +108,6 @@ mod tests {
         assert!(!args.no_console);
         assert!(!args.verbose);
         assert!(!args.quiet);
-        assert!(!args.native_messaging);
         assert!(!args.install_native_host);
         assert!(!args.uninstall_native_host);
     }
@@ -142,12 +137,6 @@ mod tests {
         assert_eq!(args.extension, Some("extension-id-123".to_string()));
         assert!(args.no_console);
         assert!(args.verbose);
-    }
-
-    #[test]
-    fn test_cli_args_native_messaging() {
-        let args = CliArgs::parse_from(["chromium-extension-monitor", "--native-messaging"]);
-        assert!(args.native_messaging);
     }
 
     #[test]
