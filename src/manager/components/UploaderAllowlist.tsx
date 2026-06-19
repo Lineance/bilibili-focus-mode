@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { VideoTag, type AllowedUploader } from '@core/types';
-import { useState } from 'react';
+
+const TAG_OPTIONS: { value: VideoTag; label: string; emoji: string }[] = [
+  { value: 'LEARNING', label: '学习', emoji: '📚' },
+  { value: 'MUSIC', label: '音乐', emoji: '🎵' },
+  { value: 'ENTERTAINMENT', label: '娱乐', emoji: '🎮' },
+];
+
+const TAG_STYLES: Record<VideoTag, string> = {
+  LEARNING: 'bg-success',
+  MUSIC: 'bg-info',
+  ENTERTAINMENT: 'bg-warning',
+};
 
 export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] }): React.JSX.Element {
   const [newUploaderName, setNewUploaderName] = useState('');
   const [selectedTag, setSelectedTag] = useState<VideoTag>('LEARNING');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleAdd = async () => {
     if (!newUploaderName.trim()) return;
@@ -54,6 +66,24 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
     }
   };
 
+  const handleTagChange = async (id: string, newTag: VideoTag) => {
+    try {
+      const storage = await chrome.storage.local.get();
+      const currentUploaders = (storage.allowedUploaders || []) as AllowedUploader[];
+
+      await chrome.storage.local.set({
+        allowedUploaders: currentUploaders.map((u) =>
+          u.id === id ? { ...u, tag: newTag } : u
+        ),
+      });
+
+      setEditingId(null);
+    } catch (error) {
+      console.error('[UploaderAllowlist] Failed to update tag:', error);
+      alert('更新失败，请重试');
+    }
+  };
+
   const handleClearAll = async () => {
     if (!confirm('确定要清空所有UP主吗？')) return;
     try {
@@ -71,7 +101,7 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
         {uploaders.length > 0 && (
           <button
             onClick={handleClearAll}
-            className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
+            className="px-3 py-1 bg-error text-white rounded text-sm hover:bg-error/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             清空所有
           </button>
@@ -94,9 +124,11 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
             onChange={(e) => setSelectedTag(e.target.value as VideoTag)}
             className="px-3 py-2 bg-tertiary rounded"
           >
-            <option value="LEARNING">📚 学习</option>
-            <option value="MUSIC">🎵 音乐</option>
-            <option value="ENTERTAINMENT">🎮 娱乐</option>
+            {TAG_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.emoji} {opt.label}
+              </option>
+            ))}
           </select>
           <button
             onClick={handleAdd}
@@ -121,19 +153,35 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
                 <span className="text-2xl">👤</span>
                 <div>
                   <p className="font-medium">{uploader.name}</p>
-                  <span
-                    className={`px-2 py-0.5 rounded text-xs ${uploader.tag === 'LEARNING'
-                      ? 'bg-success'
-                      : 'bg-warning'
-                      }`}
-                  >
-                    {uploader.tag === 'LEARNING' ? '学习' : '娱乐'}
-                  </span>
+                  {editingId === uploader.id ? (
+                    <select
+                      value={uploader.tag}
+                      onChange={(e) => handleTagChange(uploader.id, e.target.value as VideoTag)}
+                      onBlur={() => setEditingId(null)}
+                      autoFocus
+                      className="px-2 py-1 bg-tertiary rounded border border-primary text-sm"
+                    >
+                      {TAG_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.emoji} {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <button
+                      onClick={() => setEditingId(uploader.id)}
+                      className={`px-2 py-0.5 rounded text-xs cursor-pointer hover:opacity-80 transition-opacity ${TAG_STYLES[uploader.tag]}`}
+                      title="点击修改标签"
+                    >
+                      {TAG_OPTIONS.find((opt) => opt.value === uploader.tag)?.emoji}{' '}
+                      {TAG_OPTIONS.find((opt) => opt.value === uploader.tag)?.label}
+                    </button>
+                  )}
                 </div>
               </div>
               <button
                 onClick={() => handleDelete(uploader.id)}
-                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
+                className="px-3 py-1 bg-error text-white rounded text-sm hover:bg-error/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 移除
               </button>

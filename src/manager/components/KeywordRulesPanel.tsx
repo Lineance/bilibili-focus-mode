@@ -30,6 +30,7 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }): Reac
           enabled: newEnabled,
           keywords: items.map(item => item.keyword),
           tag: 'LEARNING', // 保留字段以兼容旧版本
+          items: items, // 保存每个关键词的独立标签
         },
       };
       await chrome.storage.local.set({ config: newConfig });
