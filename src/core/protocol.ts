@@ -29,14 +29,6 @@ export interface ProtocolMap {
     req: { minutes: number; tag: VideoTag };
     res: { currentDebt: number; bankruptcyEndTime: number | null };
   };
-  'get-storage': {
-    req: { key: string };
-    res: unknown;
-  };
-  'set-storage': {
-    req: { key: string; value: unknown };
-    res: { success: boolean };
-  };
   'verify-fuse': {
     req: { bvid: string; fuseCode: string };
     res: { success: boolean; message: string };

@@ -1,4 +1,3 @@
-import { DEFAULT_STORAGE } from '@core/constants';
 import { ensureStorageDefaults } from './utils';
 
 export async function handleGetFullConfig(
@@ -7,6 +6,5 @@ export async function handleGetFullConfig(
 ): Promise<unknown> {
   const storage = ensureStorageDefaults(await chrome.storage.local.get());
   const config = storage.config;
-  const debtAccount = storage.debtAccount || DEFAULT_STORAGE.debtAccount;
-  return { config, debtAccount };
+  return { config };
 }
