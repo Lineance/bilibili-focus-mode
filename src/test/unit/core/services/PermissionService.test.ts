@@ -271,5 +271,63 @@ describe('PermissionService', () => {
       expect(result.allowed).toBe(false);
       expect(result.reason).toBe('NO_PERMISSION');
     });
+
+    it('should deny video when no permission and no bypass', () => {
+      const result = service.check('BV1xx');
+
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toBe('NO_PERMISSION');
+      expect(result.inReviewWindow).toBeDefined();
+      expect(result.timeUntilWindow).toBeDefined();
+    });
+
+    it('should return correct result structure for all scenarios', () => {
+      const result = service.check('BV999xx');
+
+      expect(result).toHaveProperty('allowed');
+      expect(result).toHaveProperty('reason');
+      expect(result).toHaveProperty('inReviewWindow');
+      expect(result).toHaveProperty('timeUntilWindow');
+    });
+
+    it('should handle bankruptcy with learning videos', () => {
+      const futureTime = Date.now() + 86400000;
+      mockStorage = {
+        ...mockStorage,
+        debtAccount: {
+          ...mockStorage.debtAccount,
+          bankruptcyEndTime: futureTime,
+        },
+        config: {
+          ...mockStorage.config,
+          keywordRules: {
+            enabled: true,
+            keywords: ['tutorial'],
+            tag: 'LEARNING' as const,
+          },
+        },
+      };
+      service = new PermissionService(mockStorage);
+
+      const result = service.check('BV1xx', undefined, 'Python Tutorial');
+      expect(result.allowed).toBe(true);
+      expect(result.reason).toBe('KEYWORD');
+    });
+
+    it('should block entertainment during bankruptcy', () => {
+      const futureTime = Date.now() + 86400000;
+      mockStorage = {
+        ...mockStorage,
+        debtAccount: {
+          ...mockStorage.debtAccount,
+          bankruptcyEndTime: futureTime,
+        },
+      };
+      service = new PermissionService(mockStorage);
+
+      const result = service.check('BV1xx');
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toBe('BANKRUPTCY');
+    });
   });
 });
