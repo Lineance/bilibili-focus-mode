@@ -8,15 +8,19 @@ export function useStorage(): ExtensionStorage {
 
   useEffect(() => {
     // Load initial value
-    chrome.storage.local.get().then((result: Partial<ExtensionStorage>) => {
-      logger.debug('useStorage', 'Loaded storage:', result);
-      if (Object.keys(result).length > 0) {
-        setStorage({
-          ...DEFAULT_STORAGE,
-          ...result,
-        });
-      }
-    });
+    chrome.storage.local.get()
+      .then((result: Partial<ExtensionStorage>) => {
+        logger.debug('useStorage', 'Loaded storage:', result);
+        if (Object.keys(result).length > 0) {
+          setStorage({
+            ...DEFAULT_STORAGE,
+            ...result,
+          });
+        }
+      })
+      .catch((error) => {
+        logger.error('useStorage', 'Failed to load storage:', error);
+      });
 
     // Listen for changes
     const handleChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {

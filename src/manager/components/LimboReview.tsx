@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 import type { ExtensionConfig, LimboItem } from '@core/types';
 import { useLimboActions } from '@hooks/useLimboActions';
@@ -8,7 +8,7 @@ import { LimboReviewItem } from './LimboReviewItem';
 import { ReviewWindowBanner } from './ReviewWindowBanner';
 import { BatchToolbar } from './shared';
 
-export function LimboReview({ items, config }: { items: readonly LimboItem[]; config: ExtensionConfig }) {
+export function LimboReview({ items, config }: { items: readonly LimboItem[]; config: ExtensionConfig }): React.JSX.Element {
   const allBvids = items.map((item) => item.bvid);
   const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
   const { processingBvid, handleAction, handleDelete, handleBatchDelete, handleClearAll } = useLimboActions(config);

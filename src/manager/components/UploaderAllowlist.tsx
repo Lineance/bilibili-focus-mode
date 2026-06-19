@@ -1,51 +1,67 @@
+import React from 'react';
 import { VideoTag, type AllowedUploader } from '@core/types';
 import { useState } from 'react';
 
-export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] }) {
+export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] }): React.JSX.Element {
   const [newUploaderName, setNewUploaderName] = useState('');
   const [selectedTag, setSelectedTag] = useState<VideoTag>('LEARNING');
 
   const handleAdd = async () => {
     if (!newUploaderName.trim()) return;
 
-    const storage = await chrome.storage.local.get();
-    const currentUploaders = (storage.allowedUploaders || []) as AllowedUploader[];
+    try {
+      const storage = await chrome.storage.local.get();
+      const currentUploaders = (storage.allowedUploaders || []) as AllowedUploader[];
 
-    // Check if already exists
-    if (currentUploaders.some((u) => u.name === newUploaderName.trim())) {
-      alert('该 UP 主已在白名单中');
-      return;
+      // Check if already exists
+      if (currentUploaders.some((u) => u.name === newUploaderName.trim())) {
+        console.warn('[UploaderAllowlist] 该 UP 主已在白名单中');
+        return;
+      }
+
+      const newUploader: AllowedUploader = {
+        id: `uploader_${Date.now()}`,
+        name: newUploaderName.trim(),
+        tag: selectedTag,
+        addedAt: Date.now(),
+      };
+
+      await chrome.storage.local.set({
+        allowedUploaders: [...currentUploaders, newUploader],
+      });
+
+      setNewUploaderName('');
+      console.warn('[UploaderAllowlist] 添加成功！');
+    } catch (error) {
+      console.error('[UploaderAllowlist] Failed to add uploader:', error);
+      alert('添加失败，请重试');
     }
-
-    const newUploader: AllowedUploader = {
-      id: `uploader_${Date.now()}`,
-      name: newUploaderName.trim(),
-      tag: selectedTag,
-      addedAt: Date.now(),
-    };
-
-    await chrome.storage.local.set({
-      allowedUploaders: [...currentUploaders, newUploader],
-    });
-
-    setNewUploaderName('');
-    alert('添加成功！');
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('确定要移除这个 UP 主吗？')) return;
 
-    const storage = await chrome.storage.local.get();
-    const currentUploaders = (storage.allowedUploaders || []) as AllowedUploader[];
+    try {
+      const storage = await chrome.storage.local.get();
+      const currentUploaders = (storage.allowedUploaders || []) as AllowedUploader[];
 
-    await chrome.storage.local.set({
-      allowedUploaders: currentUploaders.filter((u) => u.id !== id),
-    });
+      await chrome.storage.local.set({
+        allowedUploaders: currentUploaders.filter((u) => u.id !== id),
+      });
+    } catch (error) {
+      console.error('[UploaderAllowlist] Failed to delete uploader:', error);
+      alert('删除失败，请重试');
+    }
   };
 
   const handleClearAll = async () => {
     if (!confirm('确定要清空所有UP主吗？')) return;
-    await chrome.storage.local.set({ allowedUploaders: [] });
+    try {
+      await chrome.storage.local.set({ allowedUploaders: [] });
+    } catch (error) {
+      console.error('[UploaderAllowlist] Failed to clear uploaders:', error);
+      alert('清空失败，请重试');
+    }
   };
 
   return (

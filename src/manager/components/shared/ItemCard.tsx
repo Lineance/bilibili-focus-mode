@@ -1,3 +1,4 @@
+import React from 'react';
 import { getVideoUrl } from '@core/utils/videoUrl';
 
 import { VideoCover } from './VideoCover';
@@ -14,7 +15,7 @@ export function ItemCard({
   onSelect: () => void;
   onDelete: () => void;
   children?: React.ReactNode;
-}) {
+}): React.JSX.Element {
   const videoUrl = getVideoUrl(item.bvid);
 
   return (

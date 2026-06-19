@@ -1,5 +1,5 @@
 import { MS_PER_MINUTE } from '@core/constants';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import type { ExtensionConfig } from '@core/types';
 
@@ -18,7 +18,7 @@ export function DebtDashboard({
     totalRepaid?: number;
   };
   config: ExtensionConfig;
-}) {
+}): React.JSX.Element {
   const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {

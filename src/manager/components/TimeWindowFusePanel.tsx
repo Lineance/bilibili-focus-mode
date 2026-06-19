@@ -1,5 +1,5 @@
 import { MS_PER_DAY, MS_PER_SECOND } from '@core/constants';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { logger } from '@core/utils/logger';
 import { sendMessage } from 'webext-bridge/options';
 import { BehaviorLoggingService } from '@core/services';
@@ -10,7 +10,75 @@ interface FuseStats {
   month: number;
 }
 
-export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => void }) {
+async function loadFuseStats(): Promise<FuseStats> {
+  const loggingService = new BehaviorLoggingService();
+  const now = Date.now();
+  const weekAgo = now - 7 * MS_PER_DAY;
+  const monthAgo = now - 30 * MS_PER_DAY;
+
+  const weekLogs = await loggingService.getLogs({ startTime: weekAgo, actions: ['fuse_applied'] });
+  const monthLogs = await loggingService.getLogs({ startTime: monthAgo, actions: ['fuse_applied'] });
+
+  const weekCount = weekLogs.filter(l => l.details?.type === 'time_window').length;
+  const monthCount = monthLogs.filter(l => l.details?.type === 'time_window').length;
+
+  return { week: weekCount, month: monthCount };
+}
+
+interface FuseCodeDisplayProps {
+  fuseCode: string;
+  timeLeft: number;
+}
+
+function FuseCodeDisplay({ fuseCode, timeLeft }: FuseCodeDisplayProps): React.JSX.Element {
+  return (
+    <div className="bg-black/40 p-3 rounded-lg border border-orange-500/30">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-xs text-orange-500 font-semibold uppercase tracking-wider">临时熔断码</span>
+        <span className="text-xs text-gray-500 font-mono">
+          有效时间: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+        </span>
+      </div>
+      <div className="text-lg text-white font-mono bg-gray-900 p-3 rounded text-center break-all select-all border border-gray-700">
+        {fuseCode}
+      </div>
+    </div>
+  );
+}
+
+interface FuseVerificationInputProps {
+  inputCode: string;
+  onInputChange: (value: string) => void;
+  onVerify: () => void;
+  isLoading: boolean;
+}
+
+function FuseVerificationInput({ inputCode, onInputChange, onVerify, isLoading }: FuseVerificationInputProps): React.JSX.Element {
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="text-xs text-gray-400">请输入上方熔断码以确认操作：</label>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={inputCode}
+          onChange={(e) => onInputChange(e.target.value)}
+          placeholder="在此输入或粘贴熔断码"
+          className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm focus:border-orange-500 outline-none font-mono"
+          autoFocus
+        />
+        <button
+          onClick={onVerify}
+          disabled={isLoading || !inputCode.trim()}
+          className="px-6 py-2 bg-green-600 rounded font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+        >
+          {isLoading ? '验证中...' : '确认'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => void }): React.JSX.Element {
   const [fuseCode, setFuseCode] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [inputCode, setInputCode] = useState('');
@@ -20,33 +88,9 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
   const [nowTs, setNowTs] = useState<number>(() => Date.now());
 
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const loggingService = new BehaviorLoggingService();
-        const now = Date.now();
-        const weekAgo = now - 7 * MS_PER_DAY;
-        const monthAgo = now - 30 * MS_PER_DAY;
-
-        const weekLogs = await loggingService.getLogs({
-          startTime: weekAgo,
-          actions: ['fuse_applied'],
-        });
-        const monthLogs = await loggingService.getLogs({
-          startTime: monthAgo,
-          actions: ['fuse_applied'],
-        });
-
-        // Filter for time_window type if details exist
-        const weekCount = weekLogs.filter(l => l.details?.type === 'time_window').length;
-        const monthCount = monthLogs.filter(l => l.details?.type === 'time_window').length;
-
-        setStats({ week: weekCount, month: monthCount });
-      } catch (error) {
-        console.error('[TimeWindowFusePanel] Failed to fetch stats:', error);
-      }
-    };
-
-    loadStats();
+    loadFuseStats().then(setStats).catch((error) => {
+      console.error('[TimeWindowFusePanel] Failed to fetch stats:', error);
+    });
   }, []);
 
   useEffect(() => {
@@ -73,22 +117,9 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
         setFuseCode(res.fuseCode ?? null);
         setExpiresAt(res.expiresAt ?? null);
         setMessage('熔断码已生成，请输入以确认。这是一项破坏规则的操作，请谨慎对待。');
-        // Refresh stats after application
-        (async () => {
-          try {
-            const loggingService = new BehaviorLoggingService();
-            const now = Date.now();
-            const weekAgo = now - 7 * MS_PER_DAY;
-            const monthAgo = now - 30 * MS_PER_DAY;
-            const weekLogs = await loggingService.getLogs({ startTime: weekAgo, actions: ['fuse_applied'] });
-            const monthLogs = await loggingService.getLogs({ startTime: monthAgo, actions: ['fuse_applied'] });
-            const weekCount = weekLogs.filter(l => l.details?.type === 'time_window').length;
-            const monthCount = monthLogs.filter(l => l.details?.type === 'time_window').length;
-            setStats({ week: weekCount, month: monthCount });
-          } catch (error) {
-            console.error('[TimeWindowFusePanel] Failed to refresh stats:', error);
-          }
-        })();
+        loadFuseStats().then(setStats).catch((error) => {
+          console.error('[TimeWindowFusePanel] Failed to refresh stats:', error);
+        });
       } else {
         const errorMsg = (response && typeof response === 'object' && 'message' in response)
           ? (response as ProtocolMap['apply-time-window-fuse']['res']).message
@@ -180,38 +211,13 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="bg-black/40 p-3 rounded-lg border border-orange-500/30">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs text-orange-500 font-semibold uppercase tracking-wider">临时熔断码</span>
-              <span className="text-xs text-gray-500 font-mono">
-                有效时间: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-              </span>
-            </div>
-            <div className="text-lg text-white font-mono bg-gray-900 p-3 rounded text-center break-all select-all border border-gray-700">
-              {fuseCode}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-xs text-gray-400">请输入上方熔断码以确认操作：</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={inputCode}
-                onChange={(e) => setInputCode(e.target.value)}
-                placeholder="在此输入或粘贴熔断码"
-                className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm focus:border-orange-500 outline-none font-mono"
-                autoFocus
-              />
-              <button
-                onClick={handleVerifyFuse}
-                disabled={isLoading || !inputCode.trim()}
-                className="px-6 py-2 bg-green-600 rounded font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
-              >
-                {isLoading ? '验证中...' : '确认'}
-              </button>
-            </div>
-          </div>
+          <FuseCodeDisplay fuseCode={fuseCode} timeLeft={timeLeft} />
+          <FuseVerificationInput
+            inputCode={inputCode}
+            onInputChange={setInputCode}
+            onVerify={handleVerifyFuse}
+            isLoading={isLoading}
+          />
         </div>
       )}
 

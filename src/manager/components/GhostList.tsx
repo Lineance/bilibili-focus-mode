@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { GhostResurrectionService } from '@core/services';
 import type { ExtensionConfig, GhostItem } from '@core/types';
@@ -6,7 +6,7 @@ import { useSelection } from '@hooks/useSelection';
 
 import { BatchToolbar, ItemCard } from './shared';
 
-export function GhostList({ items, config }: { items: readonly GhostItem[]; config: ExtensionConfig }) {
+export function GhostList({ items, config }: { items: readonly GhostItem[]; config: ExtensionConfig }): React.JSX.Element {
   const allBvids = items.map((item) => item.bvid);
   const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
   const [now, setNow] = useState<number>(() => Date.now());
@@ -21,13 +21,18 @@ export function GhostList({ items, config }: { items: readonly GhostItem[]; conf
   const handleDelete = async (bvid: string) => {
     if (!confirm('确定要彻底删除这个视频吗？（无法恢复）')) return;
 
-    const storage = await chrome.storage.local.get();
-    const ghostList = (storage.ghostList || []) as GhostItem[];
-    const newGhostList = ghostList.filter((item) => item.bvid !== bvid);
-    await chrome.storage.local.set({ ghostList: newGhostList });
+    try {
+      const storage = await chrome.storage.local.get();
+      const ghostList = (storage.ghostList || []) as GhostItem[];
+      const newGhostList = ghostList.filter((item) => item.bvid !== bvid);
+      await chrome.storage.local.set({ ghostList: newGhostList });
 
-    if (isSelected(bvid)) {
-      toggleSelection(bvid);
+      if (isSelected(bvid)) {
+        toggleSelection(bvid);
+      }
+    } catch (error) {
+      console.error('[GhostList] Failed to delete:', error);
+      alert('删除失败，请重试');
     }
   };
 
@@ -35,17 +40,27 @@ export function GhostList({ items, config }: { items: readonly GhostItem[]; conf
     if (selected.size === 0) return;
     if (!confirm(`确定要彻底删除选中的 ${selected.size} 个视频吗？（无法恢复）`)) return;
 
-    const storage = await chrome.storage.local.get();
-    const ghostList = (storage.ghostList || []) as GhostItem[];
-    const newGhostList = ghostList.filter((item) => !selected.has(item.bvid));
-    await chrome.storage.local.set({ ghostList: newGhostList });
-    clearSelection();
+    try {
+      const storage = await chrome.storage.local.get();
+      const ghostList = (storage.ghostList || []) as GhostItem[];
+      const newGhostList = ghostList.filter((item) => !selected.has(item.bvid));
+      await chrome.storage.local.set({ ghostList: newGhostList });
+      clearSelection();
+    } catch (error) {
+      console.error('[GhostList] Failed to batch delete:', error);
+      alert('批量删除失败，请重试');
+    }
   };
 
   const handleClearAll = async () => {
     if (!confirm('确定要清空幽灵档案吗？（无法恢复）')) return;
-    await chrome.storage.local.set({ ghostList: [] });
-    clearSelection();
+    try {
+      await chrome.storage.local.set({ ghostList: [] });
+      clearSelection();
+    } catch (error) {
+      console.error('[GhostList] Failed to clear list:', error);
+      alert('清空失败，请重试');
+    }
   };
 
   const handleResurrect = async (item: GhostItem) => {

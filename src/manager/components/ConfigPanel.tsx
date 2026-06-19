@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 
 import { DEFAULT_CONFIG } from '@core/constants';
 import { ConfigService } from '@core/services';
@@ -16,7 +16,7 @@ import { QuotaSettings } from './config/QuotaSettings';
 import { DetectionSettings } from './config/DetectionSettings';
 import { StyleSimplificationSettings } from './config/StyleSimplificationSettings';
 
-export function ConfigPanel() {
+export function ConfigPanel(): React.JSX.Element {
   const [config, setConfig] = useState<ExtensionConfig>(DEFAULT_CONFIG);
   const [saved, setSaved] = useState(false);
   const configService = useMemo(() => new ConfigService(), []);

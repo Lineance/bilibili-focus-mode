@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeService } from '@core/services';
 import type { ThemeMode, ThemeColorScheme } from '@core/types';
 
-export function ThemePanel() {
+export function ThemePanel(): React.JSX.Element {
   const [themeService] = useState(() => new ThemeService());
   const [mode, setMode] = useState<ThemeMode>(themeService.getThemeConfig().mode);
   const [scheme, setScheme] = useState<ThemeColorScheme>(themeService.getThemeConfig().colorScheme);

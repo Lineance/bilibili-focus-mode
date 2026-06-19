@@ -226,13 +226,17 @@ async function checkHomepageRedirect(): Promise<void> {
 
 if (typeof window !== 'undefined' && window.location) {
   let lastUrl = window.location.href;
+  let debounceTimer: ReturnType<typeof setTimeout>;
   new MutationObserver(() => {
-    const url = window.location.href;
-    if (url !== lastUrl) {
-      lastUrl = url;
-      checkHomepageRedirect();
-      applyStyleSimplification();
-      setTimeout(checkPermission, MS_PER_SECOND);
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastUrl) {
+      lastUrl = currentUrl;
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        checkHomepageRedirect();
+        applyStyleSimplification();
+        checkPermission();
+      }, 300);
     }
   }).observe(document, { subtree: true, childList: true });
 }

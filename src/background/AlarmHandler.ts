@@ -2,6 +2,14 @@ import { DEFAULT_STORAGE } from '@core/constants';
 import type { ExtensionConfig, VideoMetadata } from '@core/types';
 import { logger } from '@core/utils/logger';
 
+function getConfigFromStorage(storage: Record<string, unknown>): ExtensionConfig {
+  return (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+}
+
+function getLimboListFromStorage(storage: Record<string, unknown>): VideoMetadata[] {
+  return (storage.limboList || []) as VideoMetadata[];
+}
+
 export class AlarmHandler {
   listen(): void {
     chrome.alarms.onAlarm.addListener((alarm) => {
@@ -52,11 +60,11 @@ export class AlarmHandler {
 
   private handleLimboAutoPurge(): void {
     chrome.storage.local.get().then((storage) => {
-      const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+      const config = getConfigFromStorage(storage);
       if (config.limboAutoPurgeHours <= 0) return;
 
       const cutoff = Date.now() - config.limboAutoPurgeHours * 60 * 60 * 1000;
-      const limboList = (storage.limboList || []) as VideoMetadata[];
+      const limboList = getLimboListFromStorage(storage);
       const updatedLimboList = limboList.filter((item) => item.addedAt >= cutoff);
 
       if (updatedLimboList.length !== limboList.length) {

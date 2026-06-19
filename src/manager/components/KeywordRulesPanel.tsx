@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { logger } from '@core/utils/logger';
 
 import type { ExtensionConfig, VideoTag } from '@core/types';
@@ -9,7 +9,7 @@ interface KeywordItem {
   tag: VideoTag;
 }
 
-export function KeywordRulesPanel({ config }: { config: ExtensionConfig }) {
+export function KeywordRulesPanel({ config }: { config: ExtensionConfig }): React.JSX.Element {
   const [keywordItems, setKeywordItems] = useState<KeywordItem[]>(
     config.keywordRules?.keywords?.map((k: string) => ({
       keyword: k,

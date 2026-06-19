@@ -2,7 +2,7 @@ import { DEFAULT_CONFIG } from '@core/constants';
 import { logger } from '@core/utils/logger';
 import { useStorage } from '@hooks/useStorage';
 import { ThemeService } from '@core/services';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { sendMessage } from 'webext-bridge/options';
 
 import {
@@ -30,7 +30,7 @@ type ActiveTab =
   | 'config'
   | 'theme';
 
-export function App() {
+export function App(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<ActiveTab>('limbo');
   const storage = useStorage();
 
@@ -48,31 +48,36 @@ export function App() {
   }, []);
 
   const handleExport = async () => {
-    const storage = await chrome.storage.local.get();
-    const exportData = {
-      version: 3,
-      exportDate: new Date().toISOString(),
-      config: storage.config,
-      limboList: storage.limboList || [],
-      coolingList: storage.coolingList || [],
-      instantList: storage.instantList || [],
-      permanentGroups: storage.permanentGroups || [],
-      ghostList: storage.ghostList || [],
-      allowedUploaders: storage.allowedUploaders || [],
-      debtAccount: storage.debtAccount,
-      globalStats: storage.globalStats,
-      behaviorLog: storage.behaviorLog,
-    };
+    try {
+      const storage = await chrome.storage.local.get();
+      const exportData = {
+        version: 3,
+        exportDate: new Date().toISOString(),
+        config: storage.config,
+        limboList: storage.limboList || [],
+        coolingList: storage.coolingList || [],
+        instantList: storage.instantList || [],
+        permanentGroups: storage.permanentGroups || [],
+        ghostList: storage.ghostList || [],
+        allowedUploaders: storage.allowedUploaders || [],
+        debtAccount: storage.debtAccount,
+        globalStats: storage.globalStats,
+        behaviorLog: storage.behaviorLog,
+      };
 
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `bilibili-focus-mode-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bilibili-focus-mode-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('[Manager] Failed to export:', error);
+      alert('导出失败，请重试');
+    }
   };
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,7 +110,7 @@ export function App() {
         behaviorLog: data.behaviorLog,
       });
 
-      alert('导入成功！');
+      console.warn('[Manager] 导入成功！');
       window.location.reload();
     } catch (error) {
       logger.error('Manager', 'Import error:', error);

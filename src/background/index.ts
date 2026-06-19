@@ -10,6 +10,14 @@ logger.debug('Background', 'Service worker started');
 const alarmHandler = new AlarmHandler();
 const messageRouter = new MessageRouter();
 
+function getConfigFromStorage(storage: Record<string, unknown>): ExtensionConfig {
+  return (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+}
+
+function getNewConfigValue(newValue: unknown): typeof DEFAULT_STORAGE.config {
+  return newValue as typeof DEFAULT_STORAGE.config;
+}
+
 // Initialize storage on install
 chrome.runtime.onInstalled.addListener((details) => {
   logger.debug('Background', 'Extension installed:', details.reason);
@@ -51,7 +59,7 @@ messageRouter.listen();
 
 // Schedule initial alarms from stored config
 chrome.storage.local.get('config').then((storage) => {
-  const config = (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
+  const config = getConfigFromStorage(storage);
   const limboReviewTime = config.limboReviewTime || DEFAULT_STORAGE.config.limboReviewTime;
   const limboAutoPurgeHours = config.limboAutoPurgeHours ?? DEFAULT_STORAGE.config.limboAutoPurgeHours;
   alarmHandler.scheduleLimboReviewReminder(limboReviewTime);
@@ -61,7 +69,7 @@ chrome.storage.local.get('config').then((storage) => {
 // Re-schedule alarms when config changes
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local' || !changes.config?.newValue) return;
-  const newConfig = changes.config.newValue as typeof DEFAULT_STORAGE.config;
+  const newConfig = getNewConfigValue(changes.config.newValue);
   alarmHandler.scheduleLimboReviewReminder(newConfig.limboReviewTime);
   alarmHandler.scheduleLimboAutoPurge(newConfig.limboAutoPurgeHours);
 });

@@ -1,3 +1,5 @@
+import React from 'react';
+
 export function BatchToolbar({
   selectedCount,
   onSelectAll,
@@ -10,7 +12,7 @@ export function BatchToolbar({
   onDeleteSelected: () => void;
   onClearSelection: () => void;
   totalCount: number;
-}) {
+}): React.JSX.Element | null {
   if (selectedCount === 0) return null;
 
   return (

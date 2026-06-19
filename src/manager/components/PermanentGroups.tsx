@@ -1,10 +1,11 @@
+import React from 'react';
 import type { PermanentGroup, VideoMetadata } from '@core/types';
 import { getVideoUrl } from '@core/utils/videoUrl';
 import { useSelection } from '@hooks/useSelection';
 
 import { BatchToolbar, VideoCover } from './shared';
 
-export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }) {
+export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }): React.JSX.Element {
   // Flatten all items from all groups and separate by tag
   const allItems = groups.flatMap(group => group.items);
   const allBvids = allItems.map((item) => item.bvid);
@@ -17,19 +18,24 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
   const handleDeleteItem = async (bvid: string) => {
     if (!confirm('确定要删除这个视频吗？')) return;
 
-    const storage = await chrome.storage.local.get();
-    const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
+    try {
+      const storage = await chrome.storage.local.get();
+      const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
 
-    // Remove item from whichever group it belongs to
-    const updatedGroups = permanentGroups.map((group) => ({
-      ...group,
-      items: group.items.filter((item) => item.bvid !== bvid),
-    }));
+      // Remove item from whichever group it belongs to
+      const updatedGroups = permanentGroups.map((group) => ({
+        ...group,
+        items: group.items.filter((item) => item.bvid !== bvid),
+      }));
 
-    await chrome.storage.local.set({ permanentGroups: updatedGroups });
+      await chrome.storage.local.set({ permanentGroups: updatedGroups });
 
-    if (isSelected(bvid)) {
-      toggleSelection(bvid);
+      if (isSelected(bvid)) {
+        toggleSelection(bvid);
+      }
+    } catch (error) {
+      console.error('[PermanentGroups] Failed to delete item:', error);
+      alert('删除失败，请重试');
     }
   };
 
@@ -37,22 +43,32 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
     if (selected.size === 0) return;
     if (!confirm(`确定要删除选中的 ${selected.size} 个视频吗？`)) return;
 
-    const storage = await chrome.storage.local.get();
-    const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
+    try {
+      const storage = await chrome.storage.local.get();
+      const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
 
-    const updatedGroups = permanentGroups.map((group) => ({
-      ...group,
-      items: group.items.filter((item) => !selected.has(item.bvid)),
-    }));
+      const updatedGroups = permanentGroups.map((group) => ({
+        ...group,
+        items: group.items.filter((item) => !selected.has(item.bvid)),
+      }));
 
-    await chrome.storage.local.set({ permanentGroups: updatedGroups });
-    clearSelection();
+      await chrome.storage.local.set({ permanentGroups: updatedGroups });
+      clearSelection();
+    } catch (error) {
+      console.error('[PermanentGroups] Failed to batch delete:', error);
+      alert('批量删除失败，请重试');
+    }
   };
 
   const handleClearAll = async () => {
     if (!confirm('确定要清空所有永久分组吗？')) return;
-    await chrome.storage.local.set({ permanentGroups: [] });
-    clearSelection();
+    try {
+      await chrome.storage.local.set({ permanentGroups: [] });
+      clearSelection();
+    } catch (error) {
+      console.error('[PermanentGroups] Failed to clear groups:', error);
+      alert('清空失败，请重试');
+    }
   };
 
   const renderItemCard = (item: VideoMetadata) => {
