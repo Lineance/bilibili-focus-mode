@@ -32,10 +32,11 @@ export function resetQuotaIfNeeded(behaviorLog: BehaviorLogState): BehaviorLogSt
 }
 
 export function assertMessageType<T>(message: unknown): T {
-  if (!message || typeof message !== 'object' || !('data' in message)) {
+  if (!message || typeof message !== 'object') {
     throw new Error('Invalid message format');
   }
-  return (message as { data: T }).data;
+  // webext-bridge passes data directly, not wrapped in a 'data' property
+  return message as T;
 }
 
 export function getStorageNumber(value: unknown, fallback: number): number {

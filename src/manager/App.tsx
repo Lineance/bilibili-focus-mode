@@ -110,7 +110,7 @@ export function App(): React.JSX.Element {
         behaviorLog: data.behaviorLog,
       });
 
-      console.warn('[Manager] 导入成功！');
+      logger.info('Manager', '导入成功！');
       window.location.reload();
     } catch (error) {
       logger.error('Manager', 'Import error:', error);
