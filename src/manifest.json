@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bilibili Focus Mode",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Intentional time management extension for Bilibili",
   "permissions": [
     "storage",

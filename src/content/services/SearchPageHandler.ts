@@ -26,7 +26,10 @@ export class SearchPageHandler {
    */
   getKeyword(): string | null {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('keyword');
+    const keyword = urlParams.get('keyword');
+    // URLSearchParams.get() 会自动解码URL编码的字符串
+    logger.debug('SearchPageHandler', 'Keyword from URL:', keyword);
+    return keyword;
   }
   
   /**
@@ -85,14 +88,24 @@ export class SearchPageHandler {
       this.filterResults(config);
     });
     
-    const searchContainer = document.querySelector('.search-page-wrapper, .video-list, .search-content');
-    const target = searchContainer || document.body;
+    // 等待DOM准备好
+    const attachObserver = () => {
+      const searchContainer = document.querySelector('.search-page-wrapper, .video-list, .search-content');
+      const target = searchContainer || document.body;
+      
+      if (target) {
+        this.observer!.observe(target, {
+          childList: true,
+          subtree: true,
+        });
+      }
+    };
     
-    if (target) {
-      this.observer.observe(target, {
-        childList: true,
-        subtree: true,
-      });
+    if (document.body) {
+      attachObserver();
+    } else {
+      // 等待DOMContentLoaded
+      document.addEventListener('DOMContentLoaded', attachObserver, { once: true });
     }
   }
   
