@@ -15,6 +15,7 @@ import { GhostSettings } from './config/GhostSettings';
 import { QuotaSettings } from './config/QuotaSettings';
 import { DetectionSettings } from './config/DetectionSettings';
 import { StyleSimplificationSettings } from './config/StyleSimplificationSettings';
+import { DailyBypassSettings } from './config/DailyBypassSettings';
 
 export function ConfigPanel(): React.JSX.Element {
   const [config, setConfig] = useState<ExtensionConfig>(DEFAULT_CONFIG);
@@ -91,6 +92,7 @@ export function ConfigPanel(): React.JSX.Element {
         <GhostSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <QuotaSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <DetectionSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
+        <DailyBypassSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <StyleSimplificationSettings config={config} updateConfig={updateConfig} />
       </div>
     </div>

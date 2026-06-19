@@ -222,6 +222,19 @@ export class ConfigService {
       });
     }
 
+    // Daily Bypass validation
+    if (config.dailyBypassQuota !== undefined) {
+      if (config.dailyBypassQuota < 1 || config.dailyBypassQuota > 10) {
+        errors.push({ field: 'dailyBypassQuota', message: 'dailyBypassQuota must be between 1 and 10' });
+      }
+    }
+
+    if (config.dailyBypassDurationMinutes !== undefined) {
+      if (config.dailyBypassDurationMinutes < 5 || config.dailyBypassDurationMinutes > 120) {
+        errors.push({ field: 'dailyBypassDurationMinutes', message: 'dailyBypassDurationMinutes must be between 5 and 120' });
+      }
+    }
+
     return errors;
   }
 

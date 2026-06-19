@@ -60,6 +60,7 @@ describe('FuseApplicationService', () => {
       lastQuotaResetDate: new Date().toISOString().slice(0, 10),
       lastWatchEnd: 0,
       currentCooldownUntil: null,
+      dailyBypassesUsedToday: 0,
     };
   });
 

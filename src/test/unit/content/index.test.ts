@@ -5,6 +5,7 @@ import type { PermissionResult } from '@core/types';
 const mockSendMessage = vi.fn();
 const mockGetURL = vi.fn((path: string) => `chrome-extension://test-id/${path}`);
 const mockOpenOptionsPage = vi.fn();
+const mockStorageLocalGet = vi.fn().mockResolvedValue({});
 
 vi.stubGlobal('chrome', {
   runtime: {
@@ -12,6 +13,11 @@ vi.stubGlobal('chrome', {
     sendMessage: mockSendMessage,
     getURL: mockGetURL,
     openOptionsPage: mockOpenOptionsPage,
+  },
+  storage: {
+    local: {
+      get: mockStorageLocalGet,
+    },
   },
 });
 
@@ -38,6 +44,9 @@ describe('Content Script', () => {
     
     // Mock window.alert
     vi.stubGlobal('alert', vi.fn());
+
+    // Default storage mock
+    mockStorageLocalGet.mockResolvedValue({});
   });
 
   afterEach(() => {
@@ -123,6 +132,12 @@ describe('Content Script', () => {
           reason: 'NO_PERMISSION' 
         } as PermissionResult);
 
+      // Mock storage for bypass info
+      mockStorageLocalGet.mockResolvedValue({
+        behaviorLog: { dailyBypassesUsedToday: 0 },
+        config: { dailyBypassEnabled: true, dailyBypassQuota: 3 },
+      });
+
       await import('@content/index');
 
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -194,6 +209,12 @@ describe('Content Script', () => {
           timeUntilWindow: 0
         } as PermissionResult);
 
+      // Mock storage for bypass info
+      mockStorageLocalGet.mockResolvedValue({
+        behaviorLog: { dailyBypassesUsedToday: 0 },
+        config: { dailyBypassEnabled: true, dailyBypassQuota: 3 },
+      });
+
       await import('@content/index');
 
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -227,6 +248,12 @@ describe('Content Script', () => {
           inReviewWindow: true,
           timeUntilWindow: 0
         } as PermissionResult);
+
+      // Mock storage for bypass info
+      mockStorageLocalGet.mockResolvedValue({
+        behaviorLog: { dailyBypassesUsedToday: 0 },
+        config: { dailyBypassEnabled: true, dailyBypassQuota: 3 },
+      });
 
       await import('@content/index');
 

@@ -11,6 +11,11 @@ interface FuseOptions {
   isBankruptcy: boolean;
 }
 
+interface BypassInfo {
+  enabled: boolean;
+  remainingUses: number;
+}
+
 export class BlockOverlayManager {
   /**
    * Show block overlay
@@ -20,8 +25,10 @@ export class BlockOverlayManager {
     reason: string,
     windowInfo: BlockOverlayOptions,
     fuseInfo: FuseOptions,
+    bypassInfo: BypassInfo,
     onAddToLimbo: (metadata: VideoMetadata) => Promise<void>,
-    onOpenManager: () => void
+    onOpenManager: () => void,
+    onDailyBypass: () => void
   ): void {
     this.applyHardBlock();
 
@@ -31,18 +38,22 @@ export class BlockOverlayManager {
     const isOutsideWindow = !windowInfo.inReviewWindow;
     const isBankruptcy = fuseInfo.isBankruptcy || reason === 'BANKRUPTCY';
 
+    const effectiveBypassInfo: BypassInfo = isBankruptcy
+      ? { enabled: false, remainingUses: bypassInfo.remainingUses }
+      : bypassInfo;
+
     const overlay = document.createElement('div');
     overlay.className = 'bilibili-focus-mode-block-overlay';
 
     const container = this.createOverlayContainer();
     container.appendChild(this.createInfoSection(metadata));
     container.appendChild(this.createStatusBox(isBankruptcy, isOutsideWindow, this.formatTime(windowInfo.timeUntilWindow)));
-    container.appendChild(this.createButtonBar());
+    container.appendChild(this.createButtonBar(effectiveBypassInfo));
 
     overlay.appendChild(container);
     document.body.appendChild(overlay);
 
-    this.setupButtonListeners(overlay, metadata, onAddToLimbo, onOpenManager);
+    this.setupButtonListeners(overlay, metadata, onAddToLimbo, onOpenManager, onDailyBypass);
 
     if (isBankruptcy) {
       const addBtn = overlay.querySelector('#bfm-add-limbo') as HTMLElement;
@@ -148,9 +159,17 @@ export class BlockOverlayManager {
   /**
    * Create button bar with add and manager buttons
    */
-  private createButtonBar(): HTMLDivElement {
+  private createButtonBar(bypassInfo: BypassInfo): HTMLDivElement {
     const buttonsDiv = document.createElement('div');
     buttonsDiv.style.cssText = 'display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 20px;';
+
+    if (bypassInfo.enabled && bypassInfo.remainingUses > 0) {
+      const bypassBtn = document.createElement('div');
+      bypassBtn.id = 'bfm-daily-bypass';
+      bypassBtn.style.cssText = 'padding: 10px 24px !important; background: #10b981 !important; border-radius: 6px !important; color: white !important; cursor: pointer !important; font-size: 14px !important; font-weight: bold !important; display: inline-block !important; user-select: none !important; transition: opacity 0.2s !important;';
+      bypassBtn.textContent = `每日放行 (${bypassInfo.remainingUses}次)`;
+      buttonsDiv.appendChild(bypassBtn);
+    }
 
     const addBtn = document.createElement('div');
     addBtn.id = 'bfm-add-limbo';
@@ -274,10 +293,12 @@ export class BlockOverlayManager {
     overlay: Element,
     metadata: VideoMetadata,
     onAddToLimbo: (metadata: VideoMetadata) => Promise<void>,
-    onOpenManager: () => void
+    onOpenManager: () => void,
+    onDailyBypass: () => void
   ): void {
     const addBtn = overlay.querySelector('#bfm-add-limbo') as HTMLElement;
     const mgrBtn = overlay.querySelector('#bfm-open-manager') as HTMLElement;
+    const bypassBtn = overlay.querySelector('#bfm-daily-bypass') as HTMLElement;
     
     if (addBtn) {
       addBtn.onmouseover = () => { addBtn.style.opacity = '0.8'; };
@@ -292,6 +313,16 @@ export class BlockOverlayManager {
         e.preventDefault();
         e.stopPropagation();
         onOpenManager();
+      };
+    }
+
+    if (bypassBtn) {
+      bypassBtn.onmouseover = () => { bypassBtn.style.opacity = '0.8'; };
+      bypassBtn.onmouseout = () => { bypassBtn.style.opacity = '1'; };
+      bypassBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onDailyBypass();
       };
     }
   }

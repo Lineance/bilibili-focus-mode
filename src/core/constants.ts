@@ -95,6 +95,10 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     keywords: ['playlist', '歌单'],
     tag: 'LEARNING',
   },
+  // Daily Bypass
+  dailyBypassEnabled: true,
+  dailyBypassQuota: 3,
+  dailyBypassDurationMinutes: 30,
 };
 
 export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {
@@ -113,6 +117,7 @@ export const DEFAULT_BEHAVIOR_LOG: BehaviorLogState = {
   lastQuotaResetDate: new Date().toISOString().slice(0, 10),
   lastWatchEnd: 0,
   currentCooldownUntil: null,
+  dailyBypassesUsedToday: 0,
 };
 
 export const DEFAULT_GLOBAL_STATS: GlobalStats = {

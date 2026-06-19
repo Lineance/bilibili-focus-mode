@@ -65,4 +65,8 @@ export interface ProtocolMap {
     req: {};
     res: { currentDebt: number; bankruptcyEndTime: number | null };
   };
+  'daily-bypass': {
+    req: {};
+    res: { success: boolean; message: string; expiresAt?: number };
+  };
 }

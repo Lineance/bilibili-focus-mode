@@ -18,7 +18,12 @@ export async function handleCheckPermission(
   const twBreak = await chrome.storage.local.get('timeWindowBreakUntil');
   const breakUntil = getStorageNumber(twBreak?.timeWindowBreakUntil, 0);
   const now = Date.now();
-  const isVirtuallyInWindow = now < breakUntil;
+
+  const bypassData = await chrome.storage.local.get('dailyBypassUntil');
+  const bypassUntil = getStorageNumber(bypassData?.dailyBypassUntil, 0);
+  const isBypassActive = now < bypassUntil;
+
+  const isVirtuallyInWindow = now < breakUntil || isBypassActive;
 
   return {
     ...result,

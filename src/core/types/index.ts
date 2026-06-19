@@ -1,7 +1,10 @@
 export interface FieldDescription {
   label: string;
   description: string;
-  type: 'boolean' | 'number' | 'string' | 'time';
+  type: 'boolean' | 'number' | 'string' | 'time' | 'toggle';
+  min?: number;
+  max?: number;
+  step?: number;
 }
 
 export type VideoTag = 'LEARNING' | 'ENTERTAINMENT' | 'MUSIC';
@@ -62,6 +65,7 @@ export interface BehaviorLogState {
   lastQuotaResetDate: string;
   lastWatchEnd: number;
   currentCooldownUntil: number | null;
+  dailyBypassesUsedToday: number;
 }
 
 export interface BehaviorLog {
@@ -218,6 +222,10 @@ export interface ExtensionConfig {
       tag: VideoTag;
     }>;
   };
+  // Daily Bypass
+  dailyBypassEnabled: boolean;
+  dailyBypassQuota: number;
+  dailyBypassDurationMinutes: number;
 }
 
 export interface ExtensionStorage {

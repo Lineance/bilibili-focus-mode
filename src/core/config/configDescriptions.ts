@@ -171,4 +171,25 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
     description: '根据视频标题关键词自动放行',
     type: 'boolean',
   },
+  dailyBypassEnabled: {
+    label: '每日放行',
+    description: '开启后，每天可使用N次放行功能，暂时跳过视频拦截',
+    type: 'toggle',
+  },
+  dailyBypassQuota: {
+    label: '每日放行次数',
+    description: '每天可使用放行功能的次数（1-10）',
+    type: 'number',
+    min: 1,
+    max: 10,
+    step: 1,
+  },
+  dailyBypassDurationMinutes: {
+    label: '放行时长（分钟）',
+    description: '每次放行的有效时长（5-120分钟）',
+    type: 'number',
+    min: 5,
+    max: 120,
+    step: 5,
+  },
 };

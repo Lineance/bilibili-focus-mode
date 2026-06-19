@@ -10,6 +10,7 @@ import {
   handleVerifyTimeWindowFuse,
   handleWatchEnded,
   handleGetFullConfig,
+  handleDailyBypass,
 } from './handlers';
 
 const PLACEHOLDER_SENDER = { id: '' } as chrome.runtime.MessageSender;
@@ -25,4 +26,5 @@ export function registerMessageHandlers(): void {
   onMessage('verify-time-window-fuse', async (message) => handleVerifyTimeWindowFuse(message.data, PLACEHOLDER_SENDER));
   onMessage('watch-ended', async (message) => handleWatchEnded(message.data, PLACEHOLDER_SENDER));
   onMessage('get-full-config', async (message) => handleGetFullConfig(message.data, PLACEHOLDER_SENDER));
+  onMessage('daily-bypass', async (message) => handleDailyBypass(message.data, PLACEHOLDER_SENDER));
 }

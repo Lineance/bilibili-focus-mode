@@ -147,6 +147,34 @@ async function runCheckPermission(): Promise<void> {
     logger.debug('Content', 'Permission denied, showing block overlay');
     const allowFuseOutsideWindow = Boolean(result.config?.instantBreakFuse);
     const inReviewWindow = result.inReviewWindow;
+    const isBankruptcy = result.reason === 'BANKRUPTCY';
+
+    const bypassData = await chrome.storage.local.get(['behaviorLog', 'config']);
+    const behaviorLog = bypassData.behaviorLog as Record<string, unknown> || {};
+    const config = bypassData.config as Record<string, unknown> || {};
+    const dailyBypassEnabled = (config.dailyBypassEnabled as boolean) ?? true;
+    const dailyBypassQuota = (config.dailyBypassQuota as number) ?? 3;
+    const remainingUses = Math.max(0, dailyBypassQuota - ((behaviorLog.dailyBypassesUsedToday as number) || 0));
+
+    const bypassInfo = {
+      enabled: !isBankruptcy && dailyBypassEnabled,
+      remainingUses,
+    };
+
+    const handleDailyBypass = async () => {
+      try {
+        const response = await safeSendMessage<{ success: boolean; message: string }>('daily-bypass', {});
+        if (response?.success) {
+          blockOverlayManager.remove();
+          setTimeout(checkPermission, 100);
+        } else {
+          alert(response?.message || '操作失败，请重试');
+        }
+      } catch (error) {
+        alert('操作失败，请重试');
+      }
+    };
+
     blockOverlayManager.show(
       metadata,
       result.reason,
@@ -156,10 +184,12 @@ async function runCheckPermission(): Promise<void> {
       },
       {
         allowFuse: inReviewWindow || allowFuseOutsideWindow,
-        isBankruptcy: result.reason === 'BANKRUPTCY',
+        isBankruptcy,
       },
+      bypassInfo,
       addToLimbo,
-      () => blockOverlayManager.openManagerPage()
+      () => blockOverlayManager.openManagerPage(),
+      handleDailyBypass
     );
   } else {
     logger.debug('Content', 'Permission granted, removing block');
