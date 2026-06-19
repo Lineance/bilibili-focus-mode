@@ -89,108 +89,21 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }): Reac
     await saveToStorage(keywordItems, newEnabled);
   };
 
-  const handleExport = () => {
-    const exportData = {
-      version: 1,
-      type: 'keyword-rules',
-      exportDate: new Date().toISOString(),
-      keywordRules: {
-        enabled,
-        keywords: keywordItems.map(item => item.keyword),
-        items: keywordItems, // 新增：包含每个关键词的标签信息
-      },
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `keyword-rules-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setMessage('导出成功');
-    setTimeout(() => setMessage(''), 2000);
-  };
-
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-
-      if (data.type !== 'keyword-rules') {
-        setMessage('导入失败：不是关键词规则文件');
-        return;
-      }
-
-      if (!confirm(`导入将覆盖现有的 ${keywordItems.length} 个关键词，确定要继续吗？`)) {
-        return;
-      }
-
-      // 支持新旧两种格式
-      let importedItems: KeywordItem[] = [];
-      if (data.keywordRules?.items) {
-        // 新格式：包含每个关键词的标签
-        importedItems = data.keywordRules.items;
-      } else {
-        // 旧格式：统一使用默认标签
-        const importedKeywords = data.keywordRules?.keywords || [];
-        const importedTag = data.keywordRules?.tag || 'LEARNING';
-        importedItems = importedKeywords.map((k: string) => ({ keyword: k, tag: importedTag }));
-      }
-
-      const importedEnabled = data.keywordRules?.enabled ?? true;
-
-      setKeywordItems(importedItems);
-      setEnabled(importedEnabled);
-      await saveToStorage(importedItems, importedEnabled);
-      setMessage(`导入成功：${importedItems.length} 个关键词`);
-    } catch (error) {
-      logger.error('KeywordRulesPanel', 'Import error:', error);
-      setMessage('导入失败：文件格式错误');
-    }
-
-    event.target.value = '';
-  };
-
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">关键词自动放行规则</h2>
-        <div className="flex items-center gap-4">
-          <div className="flex gap-2">
-            <button
-              onClick={handleExport}
-              className="px-3 py-1 bg-accent-primary rounded text-sm hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              导出规则
-            </button>
-            <label className="px-3 py-1 bg-accent-primary rounded text-sm hover:bg-accent-primary/90 cursor-pointer transition-colors">
-              导入规则
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleImport}
-                className="hidden"
-              />
-            </label>
-          </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={enabled}
-              onChange={handleToggleEnabled}
-              className="w-4 h-4 rounded"
-            />
-            <span className={enabled ? 'text-green-400' : 'text-secondary'}>
-              {enabled ? '已启用' : '已禁用'}
-            </span>
-          </label>
-        </div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={handleToggleEnabled}
+            className="w-4 h-4 rounded"
+          />
+          <span className={enabled ? 'text-green-400' : 'text-secondary'}>
+            {enabled ? '已启用' : '已禁用'}
+          </span>
+        </label>
       </div>
 
       <p className="text-secondary mb-4 text-sm">
