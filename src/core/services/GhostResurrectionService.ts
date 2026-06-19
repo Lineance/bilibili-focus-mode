@@ -2,6 +2,7 @@ import { MIN_REPENTANCE_LENGTH } from '@core/constants';
 import type { GhostItem, CoolingItem, VideoMetadata, ExtensionConfig, GlobalStats } from '@core/types';
 import { ExpirationService } from './ExpirationService';
 import { FuseService } from './FuseService';
+import { storageQueue } from '@core/utils/storageQueue';
 
 export interface ResurrectionResult {
   success: boolean;
@@ -126,19 +127,22 @@ export class GhostResurrectionService {
       return g;
     });
 
-    // Add to cooling list
+    // Add to cooling list (deduplicate by bvid)
     const coolingList = (storage.coolingList || []) as CoolingItem[];
-    coolingList.push(coolingItem);
+    const filteredCoolingList = coolingList.filter(i => i.bvid !== ghostItem.bvid);
+    filteredCoolingList.push(coolingItem);
 
     // Update global stats
     const globalStats: GlobalStats = (storage.globalStats as GlobalStats) || { ghostResurrectionsTotal: 0, fuseApplicationsTotal: 0, fuseOverridesTotal: 0, bankruptcyHistory: [], lifecycleTransitions: {} };
     globalStats.ghostResurrectionsTotal++;
 
-    await chrome.storage.local.set({
-      ghostList: updatedGhostList,
-      coolingList,
-      globalStats,
-    });
+    await storageQueue.enqueue(() =>
+      chrome.storage.local.set({
+        ghostList: updatedGhostList,
+        coolingList: filteredCoolingList,
+        globalStats,
+      })
+    );
 
     return {
       success: true,

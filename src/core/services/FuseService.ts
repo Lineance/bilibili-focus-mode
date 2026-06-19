@@ -41,7 +41,9 @@ export class FuseService {
     const rawLength = 64 + Math.floor(remainingMinutes / 60) * 2;
     const clampedLength = Math.min(rawLength, this.config.bankruptcyOverrideMaxFuse);
     // Round up to nearest even number
-    return Math.ceil(clampedLength / 2) * 2;
+    const roundedLength = Math.ceil(clampedLength / 2) * 2;
+    // Ensure minimum fuse length
+    return Math.max(roundedLength, MIN_FUSE_LENGTH);
   }
 
   verifyFuseCode(input: string, expected: string): boolean {

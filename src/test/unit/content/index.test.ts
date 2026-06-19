@@ -8,6 +8,7 @@ const mockOpenOptionsPage = vi.fn();
 
 vi.stubGlobal('chrome', {
   runtime: {
+    id: 'test-extension-id',
     sendMessage: mockSendMessage,
     getURL: mockGetURL,
     openOptionsPage: mockOpenOptionsPage,

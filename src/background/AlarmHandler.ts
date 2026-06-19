@@ -1,5 +1,5 @@
 import { DEFAULT_STORAGE } from '@core/constants';
-import type { ExtensionConfig, VideoMetadata } from '@core/types';
+import type { CoolingItem, ExtensionConfig, VideoMetadata } from '@core/types';
 import { logger } from '@core/utils/logger';
 
 function getConfigFromStorage(storage: Record<string, unknown>): ExtensionConfig {
@@ -26,6 +26,10 @@ export class AlarmHandler {
 
       if (alarm.name === 'limbo-auto-purge') {
         this.handleLimboAutoPurge();
+      }
+
+      if (alarm.name === 'cooling-cleanup') {
+        this.handleCoolingCleanup();
       }
     });
   }
@@ -58,6 +62,12 @@ export class AlarmHandler {
     });
   }
 
+  scheduleCoolingCleanup(): void {
+    chrome.alarms.create('cooling-cleanup', {
+      periodInMinutes: 360,
+    });
+  }
+
   private handleLimboAutoPurge(): void {
     chrome.storage.local.get().then((storage) => {
       const config = getConfigFromStorage(storage);
@@ -69,6 +79,23 @@ export class AlarmHandler {
 
       if (updatedLimboList.length !== limboList.length) {
         chrome.storage.local.set({ limboList: updatedLimboList });
+      }
+    });
+  }
+
+  private handleCoolingCleanup(): void {
+    chrome.storage.local.get().then((storage) => {
+      const coolingList = (storage.coolingList || []) as CoolingItem[];
+      const now = Date.now();
+
+      const cleanupThreshold = now - 24 * 60 * 60 * 1000;
+      const updatedCoolingList = coolingList.filter(item =>
+        item.expiresAt > cleanupThreshold
+      );
+
+      if (updatedCoolingList.length !== coolingList.length) {
+        chrome.storage.local.set({ coolingList: updatedCoolingList });
+        logger.debug('AlarmHandler', `Cleaned up ${coolingList.length - updatedCoolingList.length} expired cooling items`);
       }
     });
   }

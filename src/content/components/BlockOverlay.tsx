@@ -42,7 +42,12 @@ export class BlockOverlayManager {
     overlay.appendChild(container);
     document.body.appendChild(overlay);
 
-    this.setupButtonListeners(overlay, onAddToLimbo, onOpenManager);
+    this.setupButtonListeners(overlay, metadata, onAddToLimbo, onOpenManager);
+
+    if (isBankruptcy) {
+      const addBtn = overlay.querySelector('#bfm-add-limbo') as HTMLElement;
+      if (addBtn) addBtn.style.display = 'none';
+    }
   }
 
   /**
@@ -65,7 +70,6 @@ export class BlockOverlayManager {
       '#live-player',
       '.live-player',
       '[class*="live-player"]',
-      '[class*="player"]',
       '#player',
     ];
 
@@ -268,6 +272,7 @@ export class BlockOverlayManager {
    */
   private setupButtonListeners(
     overlay: Element,
+    metadata: VideoMetadata,
     onAddToLimbo: (metadata: VideoMetadata) => Promise<void>,
     onOpenManager: () => void
   ): void {
@@ -277,7 +282,7 @@ export class BlockOverlayManager {
     if (addBtn) {
       addBtn.onmouseover = () => { addBtn.style.opacity = '0.8'; };
       addBtn.onmouseout = () => { addBtn.style.opacity = '1'; };
-      addBtn.onclick = () => onAddToLimbo({} as VideoMetadata);
+      addBtn.onclick = () => onAddToLimbo(metadata);
     }
     
     if (mgrBtn) {

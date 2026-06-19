@@ -146,7 +146,7 @@ describe('ConfigService', () => {
 
       expect(errors).toContainEqual({
         field: 'baseFuseLength',
-        message: '基础熔断码长度应在 4-16 之间',
+        message: '基础熔断码长度应在 8-64 之间',
       });
     });
 

@@ -12,7 +12,7 @@ export class VideoTracker {
   private lastWatchTick = 0;
   private latestConfig: { debtEnabled?: boolean } | null = null;
   private latestVideoTag: VideoTag = 'ENTERTAINMENT';
-  private currentBvid: string | null = null;
+  private getCurrentBvid: () => string | null;
   private safeSendMessage: SafeSendMessage;
 
   constructor(
@@ -20,7 +20,7 @@ export class VideoTracker {
     getCurrentBvid: () => string | null
   ) {
     this.safeSendMessage = safeSendMessage;
-    this.currentBvid = getCurrentBvid();
+    this.getCurrentBvid = getCurrentBvid;
   }
 
   /**
@@ -76,9 +76,10 @@ export class VideoTracker {
    */
   private handleEnded = (): void => {
     this.stopWatchTimer(true);
-    if (!this.currentBvid) return;
+    const bvid = this.getCurrentBvid();
+    if (!bvid) return;
     this.safeSendMessage('watch-ended', {
-      bvid: this.currentBvid,
+      bvid,
       endedAt: Date.now(),
     } as ProtocolMap['watch-ended']['req']).catch((error) => {
       console.error('[Content] Failed to report watch end:', error);

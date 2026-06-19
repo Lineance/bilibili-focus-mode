@@ -53,7 +53,10 @@ export function DebtDashboard({
       {/* Main Debt Display */}
       <div className={`p-6 rounded-lg mb-4 ${effectiveBankrupt ? 'bg-red-900/70' : 'bg-gray-700'}`}>
         <div className="text-4xl font-bold mb-2 text-white">
-          {debt.toFixed(1)} 分钟
+          {debt < 0 
+            ? `信用额度: ${Math.abs(debt).toFixed(1)} 分钟`
+            : `${debt.toFixed(1)} 分钟`
+          }
         </div>
         <p className="text-gray-200">
           {effectiveBankrupt

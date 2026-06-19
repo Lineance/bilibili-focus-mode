@@ -28,7 +28,9 @@ export function useStorage(): ExtensionStorage {
         setStorage((prev) => ({
           ...prev,
           ...Object.fromEntries(
-            Object.entries(changes).map(([key, change]) => [key, change.newValue])
+            Object.entries(changes)
+              .filter(([, change]) => change.newValue !== undefined)
+              .map(([key, change]) => [key, change.newValue])
           ),
         }));
       }

@@ -11,7 +11,10 @@ import { VideoTracker } from './services/VideoTracker';
 import { PermissionChecker } from './services/PermissionChecker';
 import './purify.css';
 
-logger.debug('Content', 'Script loaded');
+if (typeof chrome === 'undefined' || !chrome.runtime?.id) {
+  // Extension context not available, skip initialization
+} else {
+  logger.debug('Content', 'Script loaded');
 
 async function safeSendMessage<T>(type: string, data?: unknown): Promise<T | null> {
   try {
@@ -27,14 +30,6 @@ async function safeSendMessage<T>(type: string, data?: unknown): Promise<T | nul
       return null;
     }
     throw error;
-  }
-}
-
-function isExtensionContextValid(): boolean {
-  try {
-    return !!chrome.runtime?.id;
-  } catch {
-    return false;
   }
 }
 
@@ -91,9 +86,30 @@ async function addToLimbo(metadata: VideoMetadata): Promise<void> {
   }
 }
 
+let _checkInProgress = false;
+let _pendingCheck = false;
+
 async function checkPermission(): Promise<void> {
+  if (_checkInProgress) {
+    _pendingCheck = true;
+    return;
+  }
+
+  _checkInProgress = true;
+  try {
+    await runCheckPermission();
+  } finally {
+    _checkInProgress = false;
+    if (_pendingCheck) {
+      _pendingCheck = false;
+      setTimeout(checkPermission, 100);
+    }
+  }
+}
+
+async function runCheckPermission(): Promise<void> {
   logger.debug('Content', 'Checking permission...');
-  
+
   const configForExtraction = permissionChecker.getLatestConfig() || DEFAULT_CONTENT_CONFIG;
   
   let metadata = metadataExtractor.extractVideoMetadata(configForExtraction.collectionDetectionEnabled);
@@ -258,7 +274,4 @@ setInterval(() => {
     checkPermission();
   }
 }, PERMISSION_CHECK_INTERVAL_MS);
-
-if (!isExtensionContextValid()) {
-  logger.debug('Content', 'Extension context not available, skipping initialization');
 }

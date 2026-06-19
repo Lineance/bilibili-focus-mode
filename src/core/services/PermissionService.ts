@@ -33,6 +33,9 @@ export class PermissionService {
       const permanentResult = this.checkPermanentGroup(bvid);
       if (permanentResult) return { ...permanentResult, ...ctx };
 
+      const bankruptcyResult = this.checkBankruptcy();
+      if (bankruptcyResult) return { ...bankruptcyResult, ...ctx };
+
       if (title) {
         const keywordResult = this.checkKeywordRules(title);
         if (keywordResult) return { ...keywordResult, ...ctx };
@@ -42,9 +45,6 @@ export class PermissionService {
         const uploaderResult = this.checkUploaderAllowlist(uploaderName);
         if (uploaderResult) return { ...uploaderResult.result, ...ctx, uploaderAllowed: true, videoTag: uploaderResult.tag || resolvedTag };
       }
-
-      const bankruptcyResult = this.checkBankruptcy();
-      if (bankruptcyResult) return { ...bankruptcyResult, ...ctx };
 
       const instantResult = this.checkInstantList(bvid);
       if (instantResult) return { ...instantResult, ...ctx };
@@ -67,7 +67,7 @@ export class PermissionService {
   private checkKeywordRules(title: string): PermissionResult | null {
     if (!this.storage.config.keywordRules?.enabled) return null;
     return new KeywordRule(this.storage.config.keywordRules).check(title)
-      ? { allowed: true, reason: 'PERMANENT' } : null;
+      ? { allowed: true, reason: 'KEYWORD' } : null;
   }
 
   private checkUploaderAllowlist(uploaderName: string): { result: PermissionResult; tag?: VideoTag } | null {

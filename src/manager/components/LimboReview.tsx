@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import type { ExtensionConfig, LimboItem } from '@core/types';
 import { useLimboActions } from '@hooks/useLimboActions';
@@ -13,24 +13,47 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
   const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
   const { processingBvid, handleAction, handleDelete, handleBatchDelete, handleClearAll } = useLimboActions(config);
 
-  const now = new Date();
   const [windowStartHour, windowStartMinute] = config.windowStart.split(':').map(Number);
   const [windowEndHour, windowEndMinute] = config.windowEnd.split(':').map(Number);
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const startMinutes = windowStartHour * 60 + windowStartMinute;
-  const endMinutes = windowEndHour * 60 + windowEndMinute;
 
-  const calculateIsInReviewWindow = () => {
-    if (!config.timeWindowEnabled) {
-      return true;
-    } else if (endMinutes >= startMinutes) {
+  const [isInReviewWindow, setIsInReviewWindow] = useState(() => {
+    if (!config.timeWindowEnabled) return true;
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const startMinutes = windowStartHour * 60 + windowStartMinute;
+    const endMinutes = windowEndHour * 60 + windowEndMinute;
+    if (endMinutes >= startMinutes) {
       return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
     } else {
       return currentMinutes >= startMinutes || currentMinutes <= endMinutes;
     }
-  };
+  });
 
-  const [isInReviewWindow, setIsInReviewWindow] = useState(calculateIsInReviewWindow);
+  useEffect(() => {
+    const checkWindow = () => {
+      if (!config.timeWindowEnabled) {
+        setIsInReviewWindow(true);
+        return;
+      }
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const startMinutes = windowStartHour * 60 + windowStartMinute;
+      const endMinutes = windowEndHour * 60 + windowEndMinute;
+
+      let inWindow: boolean;
+      if (endMinutes >= startMinutes) {
+        inWindow = currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+      } else {
+        inWindow = currentMinutes >= startMinutes || currentMinutes <= endMinutes;
+      }
+
+      setIsInReviewWindow(inWindow);
+    };
+
+    checkWindow();
+    const interval = setInterval(checkWindow, 60000);
+    return () => clearInterval(interval);
+  }, [windowStartHour, windowStartMinute, windowEndHour, windowEndMinute, config.timeWindowEnabled]);
 
   const onDelete = async (bvid: string) => {
     const success = await handleDelete(bvid);

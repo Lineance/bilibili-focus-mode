@@ -28,11 +28,16 @@ export async function handleApplyFuse(
   const config = storage.config;
   const behaviorLog = resetQuotaIfNeeded(normalizeBehaviorLog(storage.behaviorLog));
 
+  const twBreak = await chrome.storage.local.get('timeWindowBreakUntil');
+  const breakUntil = getStorageNumber(twBreak?.timeWindowBreakUntil, 0);
+  const now = Date.now();
+  const hasActiveBreak = now < breakUntil;
+
   const timeWindowService = new TimeWindowService(config);
   const windowStatus = timeWindowService.checkTimeWindow();
 
-  if (!windowStatus.isInWindow && !timeWindowService.canBreakWindow()) {
-    return { success: false, message: '当前不允许在审批时间外使用熔断码' };
+  if (!windowStatus.isInWindow && !hasActiveBreak) {
+    return { success: false, message: '当前不在审批时间窗口内，无法申请熔断' };
   }
 
   if (behaviorLog.currentCooldownUntil && Date.now() < behaviorLog.currentCooldownUntil) {

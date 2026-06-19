@@ -3,6 +3,7 @@ import type { ProtocolMap } from '@core/protocol';
 import { DebtService } from '@core/services';
 import type { DebtAccount, GlobalStats } from '@core/types';
 import { logger } from '@core/utils/logger';
+import { storageQueue } from '@core/utils/storageQueue';
 import { migrateDebtAccount, syncCurrentDebt } from '../DebtMigrationService';
 import { assertMessageType, ensureStorageDefaults } from './utils';
 
@@ -51,28 +52,24 @@ export async function handleUpdateDebt(
       updatedAccount.bankruptcyCount = (updatedAccount.bankruptcyCount || 0) + 1;
       bankruptcyDeclared = true;
     }
-  } else if (hasActiveLock) {
-    updatedAccount.bankruptcyEndTime = null;
-    bankruptcyEndTime = null;
-    logger.debug('Background', 'Bankruptcy lock cleared due to debt repayment');
   }
 
   const globalStats: GlobalStats = storage.globalStats || DEFAULT_GLOBAL_STATS;
   if (bankruptcyDeclared) {
+    const maxHistoryLength = 100;
+    const newEntry = { timestamp: Date.now(), debtAtBankruptcy: updatedAccount.currentDebt, bypassed: false };
     globalStats.bankruptcyHistory = [
-      ...globalStats.bankruptcyHistory,
-      {
-        timestamp: Date.now(),
-        debtAtBankruptcy: updatedAccount.currentDebt,
-        bypassed: false,
-      },
+      ...globalStats.bankruptcyHistory.slice(-(maxHistoryLength - 1)),
+      newEntry,
     ];
   }
 
-  await chrome.storage.local.set({
-    debtAccount: updatedAccount,
-    globalStats,
-  });
+  await storageQueue.enqueue(() =>
+    chrome.storage.local.set({
+      debtAccount: updatedAccount,
+      globalStats,
+    })
+  );
 
   return { currentDebt: updatedAccount.currentDebt, bankruptcyEndTime };
 }

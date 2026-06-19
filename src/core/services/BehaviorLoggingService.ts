@@ -130,7 +130,11 @@ export class BehaviorLoggingService {
     }
 
     // Calculate peak hour
-    stats.peakHour = hourCounts.indexOf(Math.max(...hourCounts));
+    if (hourCounts.every(c => c === 0)) {
+      stats.peakHour = -1;
+    } else {
+      stats.peakHour = hourCounts.indexOf(Math.max(...hourCounts));
+    }
 
     return stats;
   }

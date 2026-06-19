@@ -202,12 +202,14 @@ export class FuseApplicationService {
     const now = Date.now();
     const oneHourAgo = now - MS_PER_HOUR;
 
-    // If last application was within 1 hour, count it
-    if (behaviorLog.lastInstantApplication > oneHourAgo) {
-      return behaviorLog.instantApplicationsToday;
+    if (!behaviorLog.lastInstantApplication || behaviorLog.lastInstantApplication < oneHourAgo) {
+      return 0;
     }
 
-    return 0;
+    const hoursElapsedToday = (now - new Date().setHours(0, 0, 0, 0)) / MS_PER_HOUR;
+    const avgPerHour = behaviorLog.instantApplicationsToday / Math.max(1, hoursElapsedToday);
+
+    return Math.max(1, Math.round(avgPerHour));
   }
 
   private resetBehaviorLogQuotaIfNeeded(behaviorLog: BehaviorLogState): BehaviorLogState {

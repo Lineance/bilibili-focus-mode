@@ -32,15 +32,14 @@ export function migrateDebtAccount(debtAccount: DebtAccount): DebtAccount {
 
 export function syncCurrentDebt(
   debtAccount: DebtAccount,
-  config: { entertainmentRatio: number; learningRepayRatio: number }
+  _config: { entertainmentRatio: number; learningRepayRatio: number }
 ): { account: DebtAccount; changed: boolean } {
-  const entertainmentDebt = (debtAccount.totalEntertainmentMinutes || 0) * config.entertainmentRatio;
-  const learningRepaid = (debtAccount.totalLearningMinutes || 0) * config.learningRepayRatio;
-  const recalculatedDebt = entertainmentDebt + learningRepaid;
-
-  if (Math.abs(debtAccount.currentDebt - recalculatedDebt) > 0.1) {
-    logger.debug('DebtMigrationService', 'Syncing currentDebt with totals:', debtAccount.currentDebt, '->', recalculatedDebt);
-    return { account: { ...debtAccount, currentDebt: recalculatedDebt }, changed: true };
+  if (!isFinite(debtAccount.currentDebt)) {
+    logger.debug('DebtMigrationService', 'Resetting corrupted currentDebt:', debtAccount.currentDebt, '-> 0');
+    return {
+      account: { ...debtAccount, currentDebt: 0 },
+      changed: true,
+    };
   }
 
   return { account: debtAccount, changed: false };

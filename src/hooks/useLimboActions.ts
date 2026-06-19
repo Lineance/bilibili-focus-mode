@@ -13,6 +13,7 @@ import type {
 } from '@core/types';
 import { getTodayKey, resetQuotaIfNeeded } from '@core/utils/dateUtils';
 import { logger } from '@core/utils/logger';
+import { storageQueue } from '@core/utils/storageQueue';
 
 function normalizeBehaviorLog(raw: unknown): BehaviorLogState {
   return {
@@ -66,15 +67,18 @@ export function useLimboActions(config: ExtensionConfig) {
           );
           const coolingItem = expirationService.createCoolingItem(metadata);
           const coolingList = (storage.coolingList || []) as CoolingItem[];
+          const filteredCoolingList = coolingList.filter(i => i.bvid !== item.bvid);
           const updatedBehaviorLog = {
             ...behaviorLog,
             coolingApplicationsToday: behaviorLog.coolingApplicationsToday + 1,
           };
-          await chrome.storage.local.set({
-            limboList: newLimboList,
-            coolingList: [...coolingList, coolingItem],
-            behaviorLog: updatedBehaviorLog,
-          });
+          await storageQueue.enqueue(() =>
+            chrome.storage.local.set({
+              limboList: newLimboList,
+              coolingList: [...filteredCoolingList, coolingItem],
+              behaviorLog: updatedBehaviorLog,
+            })
+          );
           alert(`已加入冷静期，将在 ${config.coolingCooldownHours} 小时后可用`);
         } else if (action === 'instant') {
           if (config.dailyInstantQuota > 0 && behaviorLog.instantApplicationsToday >= config.dailyInstantQuota) {
@@ -90,19 +94,30 @@ export function useLimboActions(config: ExtensionConfig) {
           );
           const instantItem = expirationService.createInstantItem(metadata, '');
           const instantList = (storage.instantList || []) as InstantItem[];
+          const filteredInstantList = instantList.filter(i => i.bvid !== item.bvid);
           const updatedBehaviorLog = {
             ...behaviorLog,
             instantApplicationsToday: behaviorLog.instantApplicationsToday + 1,
             lastInstantApplication: Date.now(),
           };
-          await chrome.storage.local.set({
-            limboList: newLimboList,
-            instantList: [...instantList, instantItem],
-            behaviorLog: updatedBehaviorLog,
-          });
+          await storageQueue.enqueue(() =>
+            chrome.storage.local.set({
+              limboList: newLimboList,
+              instantList: [...filteredInstantList, instantItem],
+              behaviorLog: updatedBehaviorLog,
+            })
+          );
           alert(`已加入即时许可，有效期 ${config.instantDurationHours} 小时`);
         } else {
           const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
+
+          const existsInAnyGroup = permanentGroups.some(g =>
+            g.items.some(i => i.bvid === item.bvid)
+          );
+          if (existsInAnyGroup) {
+            alert('该视频已在其他永久分组中');
+            return false;
+          }
 
           const totalPermanentItems = permanentGroups.reduce((sum, group) => sum + group.items.length, 0);
           if (totalPermanentItems >= config.totalPermanentLimit) {
@@ -137,10 +152,12 @@ export function useLimboActions(config: ExtensionConfig) {
             targetGroup.items.push(metadata);
           }
 
-          await chrome.storage.local.set({
-            limboList: newLimboList,
-            permanentGroups,
-          });
+          await storageQueue.enqueue(() =>
+            chrome.storage.local.set({
+              limboList: newLimboList,
+              permanentGroups,
+            })
+          );
 
           const tagText = item.tag === 'LEARNING' ? '学习' : '娱乐';
           alert(`已加入永久分组（${tagText}）`);

@@ -91,7 +91,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   },
   // Keyword-based auto-allow rules
   keywordRules: {
-    enabled: true,
+    enabled: false,
     keywords: ['playlist', '歌单'],
     tag: 'LEARNING',
   },
