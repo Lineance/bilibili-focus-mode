@@ -67,10 +67,10 @@ describe('SearchResultFilter', () => {
       expect(cards[1].hasAttribute('data-filtered')).toBe(true);
     });
 
-    it('should set opacity to 0.97 for all filtered cards', () => {
-      // Create 10 cards
+    it('should set opacity from 0.9 by row', () => {
+      // Create 15 cards (3 rows of 5)
       let html = '';
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 15; i++) {
         html += `
           <div class="bili-video-card">
             <div class="bili-video-card__info--tit">视频${i}</div>
@@ -84,9 +84,12 @@ describe('SearchResultFilter', () => {
       filter.filterResults({ hideAds: false, hideNonKeyword: true });
 
       const cards = document.querySelectorAll('.bili-video-card');
-      // All filtered cards should have opacity 0.97
-      expect((cards[0] as HTMLElement).style.getPropertyValue('--filter-opacity')).toBe('0.97');
-      expect((cards[5] as HTMLElement).style.getPropertyValue('--filter-opacity')).toBe('0.97');
+      // First row (index 0-4): opacity = 0.9
+      expect(parseFloat((cards[0] as HTMLElement).style.getPropertyValue('--filter-opacity'))).toBeCloseTo(0.9);
+      // Second row (index 5-9): opacity = 0.92
+      expect(parseFloat((cards[5] as HTMLElement).style.getPropertyValue('--filter-opacity'))).toBeCloseTo(0.92);
+      // Third row (index 10-14): opacity = 0.94
+      expect(parseFloat((cards[10] as HTMLElement).style.getPropertyValue('--filter-opacity'))).toBeCloseTo(0.94);
     });
 
     it('should hide ads with display:none', () => {
