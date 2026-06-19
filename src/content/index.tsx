@@ -36,6 +36,7 @@ async function safeSendMessage<T>(type: string, data?: unknown): Promise<T | nul
 
 const metadataExtractor = new VideoMetadataExtractor();
 const blockOverlayManager = new BlockOverlayManager();
+const styleService = new StyleSimplificationService();
 const permissionChecker = new PermissionChecker(safeSendMessage);
 const videoTracker = new VideoTracker(safeSendMessage, () => permissionChecker.getCurrentBvid());
 
@@ -158,7 +159,7 @@ async function runCheckPermission(): Promise<void> {
     const inReviewWindow = result.inReviewWindow;
     const isBankruptcy = result.reason === 'BANKRUPTCY';
 
-    const bypassData = await chrome.storage.local.get(['behaviorLog', 'config']);
+    const bypassData = await chrome.storage.local.get(['behaviorLog', 'config', 'dailyBypassUntil', 'timeWindowBreakUntil']);
     const behaviorLog = bypassData.behaviorLog as Record<string, unknown> || {};
     const config = bypassData.config as Record<string, unknown> || {};
     const dailyBypassEnabled = (config.dailyBypassEnabled as boolean) ?? true;
@@ -223,7 +224,6 @@ async function applyStyleSimplification(): Promise<void> {
       liveSimplification: config.liveSimplification,
     });
 
-    const styleService = new StyleSimplificationService();
     styleService.applyGlobalStyles();
 
     if (styleService.isVideoPlayerPage() && config.videoPlayerSimplification?.enabled) {
@@ -265,7 +265,6 @@ async function checkHomepageRedirect(): Promise<void> {
   try {
     const config = await permissionChecker.getFullConfig();
     if (config?.homepageSimplification?.redirectToSearch) {
-      const styleService = new StyleSimplificationService();
       if (styleService.isVideoPlayerPage() || styleService.isDynamicPage() || metadataExtractor.isLivePage() || metadataExtractor.isSearchPage()) {
         logger.debug('Content', 'Not redirecting - on video/dynamic/live/search page');
         return;
@@ -307,7 +306,8 @@ chrome.storage.onChanged.addListener((changes) => {
 if (typeof window !== 'undefined' && window.location) {
   let lastUrl = window.location.href;
   let debounceTimer: ReturnType<typeof setTimeout>;
-  new MutationObserver(() => {
+
+  function onUrlChange() {
     const currentUrl = window.location.href;
     if (currentUrl !== lastUrl) {
       lastUrl = currentUrl;
@@ -318,7 +318,28 @@ if (typeof window !== 'undefined' && window.location) {
         checkPermission();
       }, 300);
     }
-  }).observe(document, { subtree: true, childList: true });
+  }
+
+  // Intercept history API for SPA navigation
+  const originalPushState = history.pushState;
+  history.pushState = function (...args) {
+    originalPushState.apply(this, args);
+    onUrlChange();
+  };
+
+  const originalReplaceState = history.replaceState;
+  history.replaceState = function (...args) {
+    originalReplaceState.apply(this, args);
+    onUrlChange();
+  };
+
+  window.addEventListener('popstate', onUrlChange);
+
+  // Observe only the <title> element for Bilibili's SPA title changes
+  const titleEl = document.querySelector('title');
+  if (titleEl) {
+    new MutationObserver(onUrlChange).observe(titleEl, { childList: true });
+  }
 }
 
 if (document.readyState === 'loading') {

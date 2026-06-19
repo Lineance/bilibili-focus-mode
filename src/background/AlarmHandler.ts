@@ -77,7 +77,7 @@ export class AlarmHandler {
   }
 
   private handleLimboAutoPurge(): void {
-    chrome.storage.local.get().then((storage) => {
+    chrome.storage.local.get(['limboList', 'config']).then((storage) => {
       const config = getConfigFromStorage(storage);
       if (config.limboAutoPurgeHours <= 0) return;
 
@@ -92,7 +92,7 @@ export class AlarmHandler {
   }
 
   private handleCoolingCleanup(): void {
-    chrome.storage.local.get().then((storage) => {
+    chrome.storage.local.get(['coolingList', 'config']).then((storage) => {
       const coolingList = (storage.coolingList || []) as CoolingItem[];
       const now = Date.now();
 
@@ -109,7 +109,7 @@ export class AlarmHandler {
   }
 
   private handleGhostCleanup(): void {
-    chrome.storage.local.get().then((storage) => {
+    chrome.storage.local.get('ghostList').then((storage) => {
       const ghostList = (storage.ghostList || []) as GhostItem[];
       const now = Date.now();
 

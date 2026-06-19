@@ -72,89 +72,23 @@ export class GhostResurrectionService {
     fuseCodeInput: string,
     repentanceReason: string
   ): Promise<ResurrectionResult> {
-    // Check if can resurrect
-    const canResurrectCheck = this.canResurrect(ghostItem);
-    if (!canResurrectCheck.canResurrect) {
-      return {
-        success: false,
-        message: canResurrectCheck.reason || '无法招魂',
-      };
-    }
-
-    // Validate repentance reason
-    if (!repentanceReason || repentanceReason.trim().length < MIN_REPENTANCE_LENGTH) {
-      return {
-        success: false,
-        message: '忏悔理由至少需要20个字',
-      };
-    }
-
-    // Generate and verify fuse code
     const expectedFuseCode = this.fuseService.generateFuseCode(this.config.ghostResurrectFuseLength);
-    const isValidFuse = this.fuseService.verifyFuseCode(fuseCodeInput, expectedFuseCode);
-
-    if (!isValidFuse) {
-      return {
-        success: false,
-        message: '熔断码错误，请重新输入',
-      };
-    }
-
-    // Create metadata for cooling item
-    const metadata: VideoMetadata = {
-      bvid: ghostItem.bvid,
-      title: ghostItem.title,
-      uploader: ghostItem.uploader,
-      coverUrl: ghostItem.coverUrl,
-      tag: ghostItem.tag,
-      addedAt: Date.now(),
-    };
-
-    // Create cooling item with double penalty if enabled
-    const coolingItem = this.expirationService.createCoolingItem(metadata);
-
-    // Mark ghost as resurrected
-    const storage = await chrome.storage.local.get();
-    const ghostList = (storage.ghostList || []) as GhostItem[];
-    const updatedGhostList = ghostList.map((g) => {
-      if (g.bvid === ghostItem.bvid) {
-        return {
-          ...g,
-          resurrected: true,
-          repentanceReason: repentanceReason.trim(),
-        };
-      }
-      return g;
-    });
-
-    // Add to cooling list (deduplicate by bvid)
-    const coolingList = (storage.coolingList || []) as CoolingItem[];
-    const filteredCoolingList = coolingList.filter(i => i.bvid !== ghostItem.bvid);
-    filteredCoolingList.push(coolingItem);
-
-    // Update global stats
-    const globalStats: GlobalStats = (storage.globalStats as GlobalStats) || { ghostResurrectionsTotal: 0, fuseApplicationsTotal: 0, fuseOverridesTotal: 0, bankruptcyHistory: [], lifecycleTransitions: {} };
-    globalStats.ghostResurrectionsTotal++;
-
-    await storageQueue.enqueue(() =>
-      chrome.storage.local.set({
-        ghostList: updatedGhostList,
-        coolingList: filteredCoolingList,
-        globalStats,
-      })
-    );
-
-    return {
-      success: true,
-      message: `招魂成功！视频已进入冷静期${this.config.ghostDoublePenalty ? '（双倍冷静期惩罚）' : ''}`,
-      coolingItem,
-    };
+    return this.performResurrection(ghostItem, fuseCodeInput, expectedFuseCode, repentanceReason);
   }
 
   async resurrectWithCode(
     ghostItem: GhostItem,
     expectedFuseCode: string,
     userFuseCode: string,
+    repentanceReason: string
+  ): Promise<ResurrectionResult> {
+    return this.performResurrection(ghostItem, userFuseCode, expectedFuseCode, repentanceReason);
+  }
+
+  private async performResurrection(
+    ghostItem: GhostItem,
+    fuseCodeToVerify: string,
+    expectedFuseCode: string,
     repentanceReason: string
   ): Promise<ResurrectionResult> {
     const canResurrectCheck = this.canResurrect(ghostItem);
@@ -166,7 +100,7 @@ export class GhostResurrectionService {
       return { success: false, message: '忏悔理由至少需要20个字' };
     }
 
-    const isValid = this.fuseService.verifyFuseCode(userFuseCode, expectedFuseCode);
+    const isValid = this.fuseService.verifyFuseCode(fuseCodeToVerify, expectedFuseCode);
     if (!isValid) {
       return { success: false, message: '熔断码错误，请重新输入' };
     }

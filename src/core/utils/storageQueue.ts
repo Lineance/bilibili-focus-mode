@@ -23,7 +23,11 @@ class StorageQueue {
     this.processing = true;
     while (this.queue.length > 0) {
       const operation = this.queue.shift()!;
-      await operation();
+      try {
+        await operation();
+      } catch (error) {
+        console.error('[StorageQueue] Operation failed:', error);
+      }
     }
     this.processing = false;
   }

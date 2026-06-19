@@ -45,3 +45,31 @@ export function useStorage(): ExtensionStorage {
 
   return storage;
 }
+
+// Granular selector hook for components that only need specific fields
+export function useStorageField<K extends keyof ExtensionStorage>(key: K): ExtensionStorage[K] {
+  const [value, setValue] = useState<ExtensionStorage[K]>(DEFAULT_STORAGE[key]);
+
+  useEffect(() => {
+    chrome.storage.local.get(key)
+      .then((result) => {
+        if (result[key] !== undefined) {
+          setValue(result[key] as ExtensionStorage[K]);
+        }
+      })
+      .catch((error) => {
+        logger.error('useStorageField', `Failed to load ${key}:`, error);
+      });
+
+    const handleChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName === 'local' && changes[key]) {
+        setValue(changes[key].newValue as ExtensionStorage[K]);
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleChange);
+    return () => chrome.storage.onChanged.removeListener(handleChange);
+  }, [key]);
+
+  return value;
+}

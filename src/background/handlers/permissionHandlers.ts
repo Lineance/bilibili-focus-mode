@@ -10,19 +10,20 @@ export async function handleCheckPermission(
   const data = assertMessageType<ProtocolMap['check-permission']['req']>(request);
   logger.debug('Background', 'Checking permission for:', data.bvid, 'uploader:', data.uploaderName);
 
-  const storage = ensureStorageDefaults(await chrome.storage.local.get());
+  const allData = await chrome.storage.local.get([
+    'config', 'permanentGroups', 'instantList', 'coolingList', 'limboList', 'ghostList',
+    'allowedUploaders', 'debtAccount', 'timeWindowBreakUntil', 'dailyBypassUntil'
+  ]);
+
+  const storage = ensureStorageDefaults(allData);
   const service = new PermissionService(storage);
   const result = service.check(data.bvid, data.uploaderName, data.title);
   const config = storage.config;
 
-  const twBreak = await chrome.storage.local.get('timeWindowBreakUntil');
-  const breakUntil = getStorageNumber(twBreak?.timeWindowBreakUntil, 0);
   const now = Date.now();
-
-  const bypassData = await chrome.storage.local.get('dailyBypassUntil');
-  const bypassUntil = getStorageNumber(bypassData?.dailyBypassUntil, 0);
+  const breakUntil = getStorageNumber(allData.timeWindowBreakUntil, 0);
+  const bypassUntil = getStorageNumber(allData.dailyBypassUntil, 0);
   const isBypassActive = now < bypassUntil;
-
   const isVirtuallyInWindow = now < breakUntil || isBypassActive;
 
   return {

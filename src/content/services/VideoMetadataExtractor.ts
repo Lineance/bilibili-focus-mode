@@ -99,10 +99,10 @@ export class VideoMetadataExtractor {
   }
 
   /**
-   * Find live title element with multiple selectors
+   * Find live title element with combined selector
    */
   private findLiveTitleElement(): Element | null {
-    const titleSelectors = [
+    const combinedSelector = [
       '#head-info-vm > div > div.lower-row > div.left-ctnr > div.live-title > div > div',
       '#head-info-vm .title-length-limit',
       '#head-info-vm .live-title',
@@ -112,18 +112,16 @@ export class VideoMetadataExtractor {
       '.room-title',
       'h1.title',
       '[class*="title"]',
-      'h1'
-    ];
-    
-    for (const selector of titleSelectors) {
-      try {
-        const el = document.querySelector(selector);
-        if (el && el.textContent?.trim()) {
-          return el;
-        }
-      } catch (e) {
-        logger.warn('Content', 'Error with selector:', selector, e);
+      'h1',
+    ].join(', ');
+
+    try {
+      const el = document.querySelector(combinedSelector);
+      if (el && el.textContent?.trim()) {
+        return el;
       }
+    } catch (e) {
+      logger.warn('Content', 'Error with combined selector:', e);
     }
     return null;
   }

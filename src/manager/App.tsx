@@ -2,7 +2,7 @@ import { DEFAULT_CONFIG } from '@core/constants';
 import { logger } from '@core/utils/logger';
 import { useStorage } from '@hooks/useStorage';
 import { ThemeService } from '@core/services';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { sendMessage } from 'webext-bridge/options';
 
 import {
@@ -35,9 +35,12 @@ export function App(): React.JSX.Element {
   const storage = useStorage();
 
   // Initialize theme service on app mount
+  const themeServiceRef = useRef<ThemeService | null>(null);
   useEffect(() => {
-    const themeService = new ThemeService();
-    themeService.initialize();
+    if (!themeServiceRef.current) {
+      themeServiceRef.current = new ThemeService();
+    }
+    themeServiceRef.current.initialize();
   }, []);
 
   useEffect(() => {

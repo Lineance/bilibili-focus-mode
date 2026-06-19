@@ -73,7 +73,7 @@ export class BlockOverlayManager {
    * Apply hard block - hide video player
    */
   private applyHardBlock(): void {
-    const playerSelectors = [
+    const playerSelector = [
       '.bilibili-player',
       '.bpx-player-container',
       '#bilibili-player',
@@ -82,17 +82,13 @@ export class BlockOverlayManager {
       '.live-player',
       '[class*="live-player"]',
       '#player',
-    ];
+    ].join(', ');
 
-    playerSelectors.forEach(selector => {
-      const players = document.querySelectorAll(selector);
-      players.forEach(player => {
-        (player as HTMLElement).style.display = 'none';
-      });
+    document.querySelectorAll(playerSelector).forEach(player => {
+      (player as HTMLElement).style.display = 'none';
     });
 
-    const videos = document.querySelectorAll('video');
-    videos.forEach(video => {
+    document.querySelectorAll('video').forEach(video => {
       video.pause();
       video.currentTime = 0;
     });

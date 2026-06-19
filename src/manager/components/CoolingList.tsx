@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 import type { CoolingItem } from '@core/types';
+import { useNow } from '@hooks/useNow';
 import { useSelection } from '@hooks/useSelection';
 
 import { BatchToolbar, ItemCard } from './shared';
@@ -8,14 +9,7 @@ import { BatchToolbar, ItemCard } from './shared';
 export function CoolingList({ items }: { items: readonly CoolingItem[] }): React.JSX.Element {
   const allBvids = items.map((item) => item.bvid);
   const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
-  const [now, setNow] = useState<number>(() => Date.now());
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setNow(Date.now());
-    }, 60000);
-    return () => clearInterval(timer);
-  }, []);
+  const now = useNow(60000);
 
   const handleDelete = async (bvid: string) => {
     if (!confirm('确定要删除这个视频吗？')) return;

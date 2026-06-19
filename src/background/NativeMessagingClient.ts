@@ -1,7 +1,7 @@
 import { logger } from '@core/utils/logger';
 
 const HOST_NAME = 'com.bilibili.focus.monitor';
-const HEARTBEAT_INTERVAL_MS = 3000;
+const HEARTBEAT_INTERVAL_MS = 15000;
 const RECONNECT_BASE_DELAY_MS = 1000;
 const RECONNECT_MAX_DELAY_MS = 60000;
 const MAX_RECONNECT_ATTEMPTS = 10;

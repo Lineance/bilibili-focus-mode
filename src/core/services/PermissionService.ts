@@ -13,10 +13,12 @@ export class PermissionError extends Error {
 export class PermissionService {
   private storage: ExtensionStorage;
   private timeWindowService: TimeWindowService;
+  private keywordRule: KeywordRule;
 
   constructor(storage: ExtensionStorage = DEFAULT_STORAGE) {
     this.storage = storage;
     this.timeWindowService = new TimeWindowService(storage.config);
+    this.keywordRule = new KeywordRule(storage.config.keywordRules);
   }
 
   check(bvid: string, uploaderName?: string, title?: string): PermissionResult & {
@@ -26,7 +28,16 @@ export class PermissionService {
     videoTag?: VideoTag;
   } {
     try {
-      const resolvedTag = this.getVideoTag(bvid) || 'ENTERTAINMENT';
+      const tagMap = new Map<string, VideoTag>();
+      for (const g of this.storage.permanentGroups) {
+        for (const i of g.items) tagMap.set(i.bvid, i.tag);
+      }
+      for (const i of this.storage.instantList) tagMap.set(i.bvid, i.tag);
+      for (const i of this.storage.coolingList) tagMap.set(i.bvid, i.tag);
+      for (const i of this.storage.limboList) tagMap.set(i.bvid, i.tag);
+      for (const i of this.storage.ghostList) tagMap.set(i.bvid, i.tag);
+
+      const resolvedTag = tagMap.get(bvid) || 'ENTERTAINMENT';
       const { isInWindow: inReviewWindow, timeUntilWindow } = this.timeWindowService.checkTimeWindow();
       const ctx = { inReviewWindow, timeUntilWindow, videoTag: resolvedTag };
 
@@ -40,8 +51,8 @@ export class PermissionService {
       // During bankruptcy, allow learning-tagged videos for debt repayment (Issue #1)
       const bankruptcyResult = this.checkBankruptcy();
       if (bankruptcyResult) {
-        const videoTag = this.getVideoTag(bvid) ||
-          (title ? new KeywordRule(this.storage.config.keywordRules).check(title) : null) ||
+        const videoTag = tagMap.get(bvid) ||
+          (title ? this.keywordRule.check(title) : null) ||
           'ENTERTAINMENT';
 
         if (videoTag === 'LEARNING') {
@@ -81,7 +92,7 @@ export class PermissionService {
 
   private checkKeywordRules(title: string): PermissionResult | null {
     if (!this.storage.config.keywordRules?.enabled) return null;
-    return new KeywordRule(this.storage.config.keywordRules).check(title)
+    return this.keywordRule.check(title)
       ? { allowed: true, reason: 'KEYWORD' } : null;
   }
 
@@ -120,11 +131,4 @@ export class PermissionService {
     return { allowed: false, reason: 'EXPIRED' };
   }
 
-  private getVideoTag(bvid: string): VideoTag | undefined {
-    return this.storage.permanentGroups.flatMap(g => g.items).find(i => i.bvid === bvid)?.tag
-      ?? this.storage.instantList.find(i => i.bvid === bvid)?.tag
-      ?? this.storage.coolingList.find(i => i.bvid === bvid)?.tag
-      ?? this.storage.limboList.find(i => i.bvid === bvid)?.tag
-      ?? this.storage.ghostList.find(i => i.bvid === bvid)?.tag;
-  }
 }

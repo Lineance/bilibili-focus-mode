@@ -1,5 +1,6 @@
 import { MAX_LOG_ENTRIES, MS_PER_DAY, MS_PER_HOUR, MS_PER_SECOND } from '@core/constants';
 import type { BehaviorLog, BehaviorStats, TimeRange, LogFilter } from '@core/types';
+import { storageQueue } from '@core/utils/storageQueue';
 
 
 export class BehaviorLoggingService {
@@ -14,23 +15,26 @@ export class BehaviorLoggingService {
     details?: Record<string, unknown>,
     metadata?: { bvid?: string; groupId?: string }
   ): Promise<void> {
-    const log: BehaviorLog = {
-      id: this.generateId(),
-      timestamp: Date.now(),
-      action,
-      details,
-      ...metadata,
-    };
+    await storageQueue.enqueue(async () => {
+      const storage = await chrome.storage.local.get(this.STORAGE_KEY);
+      const logs = (storage[this.STORAGE_KEY] || []) as BehaviorLog[];
 
-    const logs = await this.getAllLogs();
-    logs.push(log);
+      const log: BehaviorLog = {
+        id: this.generateId(),
+        timestamp: Date.now(),
+        action,
+        details,
+        ...metadata,
+      };
 
-    // Keep only the most recent logs
-    if (logs.length > this.MAX_LOGS) {
-      logs.splice(0, logs.length - this.MAX_LOGS);
-    }
+      logs.push(log);
 
-    await chrome.storage.local.set({ [this.STORAGE_KEY]: logs });
+      if (logs.length > this.MAX_LOGS) {
+        logs.splice(0, logs.length - this.MAX_LOGS);
+      }
+
+      await chrome.storage.local.set({ [this.STORAGE_KEY]: logs });
+    });
   }
 
   /**

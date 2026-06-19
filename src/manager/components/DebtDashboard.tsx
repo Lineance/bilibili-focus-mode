@@ -1,7 +1,8 @@
 import { MS_PER_MINUTE } from '@core/constants';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 import type { ExtensionConfig } from '@core/types';
+import { useNow } from '@hooks/useNow';
 
 export function DebtDashboard({
   account,
@@ -19,14 +20,7 @@ export function DebtDashboard({
   };
   config: ExtensionConfig;
 }): React.JSX.Element {
-  const [now, setNow] = useState<number>(() => Date.now());
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setNow(Date.now());
-    }, MS_PER_MINUTE);
-    return () => clearInterval(timer);
-  }, []);
+  const now = useNow(MS_PER_MINUTE);
 
   // Support both new and legacy field names
   const entertainmentMinutes = account?.totalEntertainmentMinutes ?? account?.totalAccrued ?? 0;

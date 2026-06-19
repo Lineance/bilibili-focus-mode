@@ -2,7 +2,6 @@
 .recommend-list, .next-play, .related-video,
 #danmakuBox, .danmaku-box {
   display: none !important;
-  visibility: hidden !important;
 }
 
 .bilibili-focus-mode-block-overlay {

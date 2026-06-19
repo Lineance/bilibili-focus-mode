@@ -6,6 +6,7 @@ export class SearchResultFilter {
   private keyword: string;
   private keywordLower: string;
   private keywordPinyin: string;
+  private titleCache = new Map<string, { lower: string; pinyin: string; firstLetters: string }>();
   
   constructor(keyword: string) {
     this.keyword = keyword;
@@ -20,6 +21,17 @@ export class SearchResultFilter {
     return this.keyword;
   }
   
+  private getCachedTitleInfo(title: string) {
+    if (!this.titleCache.has(title)) {
+      this.titleCache.set(title, {
+        lower: title.toLowerCase(),
+        pinyin: this.toPinyin(title),
+        firstLetters: this.getFirstLetters(title),
+      });
+    }
+    return this.titleCache.get(title)!;
+  }
+  
   /**
    * 检查标题是否匹配关键词
    * 支持：精确匹配、模糊匹配、拼音匹配
@@ -27,22 +39,17 @@ export class SearchResultFilter {
   isTitleMatch(title: string): boolean {
     if (!title) return false;
     
-    const titleLower = title.toLowerCase();
+    const info = this.getCachedTitleInfo(title);
     
-    // 1. 精确包含
-    if (titleLower.includes(this.keywordLower)) {
+    if (info.lower.includes(this.keywordLower)) {
       return true;
     }
     
-    // 2. 拼音匹配
-    const titlePinyin = this.toPinyin(title);
-    if (titlePinyin.includes(this.keywordPinyin)) {
+    if (info.pinyin.includes(this.keywordPinyin)) {
       return true;
     }
     
-    // 3. 首字母拼音匹配
-    const titleFirstLetters = this.getFirstLetters(title);
-    if (titleFirstLetters.includes(this.keywordLower)) {
+    if (info.firstLetters.includes(this.keywordLower)) {
       return true;
     }
     

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 /**
  * Custom hook for managing list item selection
@@ -30,12 +30,15 @@ export function useSelection(allBvids: string[]) {
     return selected.has(bvid);
   }, [selected]);
 
-  return {
+  // Memoize the return object to prevent unnecessary re-renders
+  const result = useMemo(() => ({
     selected,
     selectedCount: selected.size,
     toggleSelection,
     selectAll,
     clearSelection,
     isSelected,
-  };
+  }), [selected, toggleSelection, selectAll, clearSelection, isSelected]);
+
+  return result;
 }

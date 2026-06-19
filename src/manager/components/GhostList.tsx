@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 import { GhostResurrectionService } from '@core/services';
 import type { ExtensionConfig, GhostItem } from '@core/types';
+import { useNow } from '@hooks/useNow';
 import { useSelection } from '@hooks/useSelection';
 
 import { BatchToolbar, ItemCard } from './shared';
@@ -9,14 +10,7 @@ import { BatchToolbar, ItemCard } from './shared';
 export function GhostList({ items, config }: { items: readonly GhostItem[]; config: ExtensionConfig }): React.JSX.Element {
   const allBvids = items.map((item) => item.bvid);
   const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
-  const [now, setNow] = useState<number>(() => Date.now());
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setNow(Date.now());
-    }, 60000);
-    return () => clearInterval(timer);
-  }, []);
+  const now = useNow(60000);
 
   const handleDelete = async (bvid: string) => {
     if (!confirm('确定要彻底删除这个视频吗？（无法恢复）')) return;

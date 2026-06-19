@@ -85,7 +85,10 @@ export class SearchPageHandler {
       this.filterResults(config);
     });
     
-    this.observer.observe(document.body, {
+    const searchContainer = document.querySelector('.search-page-wrapper, .video-list, .search-content');
+    const target = searchContainer || document.body;
+    
+    this.observer.observe(target, {
       childList: true,
       subtree: true,
     });

@@ -177,7 +177,7 @@ export class FuseApplicationService {
    * Check if a video has an active instant permission
    */
   async hasActiveInstant(bvid: string): Promise<boolean> {
-    const storage = await chrome.storage.local.get();
+    const storage = await chrome.storage.local.get('instantList');
     const instantList = (storage.instantList || []) as InstantItem[];
     const item = instantList.find((i) => i.bvid === bvid);
 
@@ -191,7 +191,7 @@ export class FuseApplicationService {
    * Get the fuse code for a video (for display purposes)
    */
   async getFuseCode(bvid: string): Promise<string | null> {
-    const storage = await chrome.storage.local.get();
+    const storage = await chrome.storage.local.get('instantList');
     const instantList = (storage.instantList || []) as InstantItem[];
     const item = instantList.find((i) => i.bvid === bvid);
 
