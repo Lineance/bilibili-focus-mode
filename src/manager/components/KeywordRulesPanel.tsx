@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { logger } from '@core/utils/logger';
 
 import type { ExtensionConfig, VideoTag } from '@core/types';
@@ -10,16 +10,30 @@ interface KeywordItem {
 }
 
 export function KeywordRulesPanel({ config }: { config: ExtensionConfig }): React.JSX.Element {
-  const [keywordItems, setKeywordItems] = useState<KeywordItem[]>(
-    config.keywordRules?.keywords?.map((k: string) => ({
+  // 优先使用 items 字段（每个关键词独立标签），否则从 keywords 数组创建
+  const [keywordItems, setKeywordItems] = useState<KeywordItem[]>(() => {
+    if (config.keywordRules?.items && config.keywordRules.items.length > 0) {
+      return config.keywordRules.items;
+    }
+    return config.keywordRules?.keywords?.map((k: string) => ({
       keyword: k,
       tag: config.keywordRules?.tag || 'LEARNING',
-    })) || []
-  );
+    })) || [];
+  });
   const [newKeyword, setNewKeyword] = useState('');
   const [newTag, setNewTag] = useState<VideoTag>('LEARNING');
   const [enabled, setEnabled] = useState(config.keywordRules?.enabled ?? true);
   const [message, setMessage] = useState('');
+
+  // 迁移旧格式数据：如果有 keywords 但没有 items，自动保存一次
+  useEffect(() => {
+    const needsMigration = config.keywordRules?.keywords?.length > 0 && 
+                          (!config.keywordRules.items || config.keywordRules.items.length === 0);
+    if (needsMigration && keywordItems.length > 0) {
+      logger.info('KeywordRulesPanel', 'Migrating keyword rules to items format');
+      saveToStorage(keywordItems, enabled);
+    }
+  }, []);
 
   const saveToStorage = async (items: KeywordItem[], newEnabled: boolean) => {
     try {
