@@ -68,13 +68,13 @@ export function ConfigPanel(): React.JSX.Element {
           )}
           <button
             onClick={handleReset}
-            className="px-3 py-1 bg-gray-600 rounded text-sm hover:bg-gray-700"
+            className="px-3 py-1 bg-tertiary border border-secondary rounded text-sm hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             重置默认
           </button>
           <button
             onClick={handleSave}
-            className="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-700"
+            className="px-3 py-1 bg-accent-primary rounded text-sm hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             保存配置
           </button>

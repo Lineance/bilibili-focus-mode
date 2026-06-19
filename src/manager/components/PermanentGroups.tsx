@@ -79,13 +79,13 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
     return (
       <div
         key={item.bvid}
-        className={`flex gap-3 items-center bg-gray-700 p-3 rounded ${selected.has(item.bvid) ? 'ring-2 ring-blue-500' : ''}`}
+        className={`flex gap-3 items-center bg-tertiary p-3 rounded ${selected.has(item.bvid) ? 'ring-2 ring-blue-500' : ''}`}
       >
         <input
           type="checkbox"
           checked={selected.has(item.bvid)}
           onChange={() => toggleSelection(item.bvid)}
-          className="w-4 h-4 rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+          className="w-4 h-4 rounded border-primary text-blue-600 focus:ring-blue-500"
         />
         <a
           href={videoUrl}
@@ -104,7 +104,7 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
           >
             {item.title}
           </a>
-          <p className="text-xs text-gray-400">{item.uploader}</p>
+          <p className="text-xs text-secondary">{item.uploader}</p>
         </div>
         <button
           onClick={() => handleDeleteItem(item.bvid)}
@@ -138,18 +138,18 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
       </div>
 
       {totalItems === 0 ? (
-        <p className="text-gray-500">没有永久分组视频</p>
+        <p className="text-muted">没有永久分组视频</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Learning Column */}
-          <div className="bg-gray-800 p-4 rounded-lg">
+          <div className="bg-secondary p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-2xl">📚</span>
               <h3 className="text-lg font-medium text-green-400">学习 ({learningItems.length})</h3>
             </div>
             <div className="grid gap-3">
               {learningItems.length === 0 ? (
-                <p className="text-gray-500 text-sm">暂无学习类视频</p>
+                <p className="text-muted text-sm">暂无学习类视频</p>
               ) : (
                 learningItems.map(renderItemCard)
               )}
@@ -157,14 +157,14 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
           </div>
 
           {/* Entertainment Column */}
-          <div className="bg-gray-800 p-4 rounded-lg">
+          <div className="bg-secondary p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-2xl">🎮</span>
               <h3 className="text-lg font-medium text-yellow-400">娱乐 ({entertainmentItems.length})</h3>
             </div>
             <div className="grid gap-3">
               {entertainmentItems.length === 0 ? (
-                <p className="text-gray-500 text-sm">暂无娱乐类视频</p>
+                <p className="text-muted text-sm">暂无娱乐类视频</p>
               ) : (
                 entertainmentItems.map(renderItemCard)
               )}

@@ -35,11 +35,11 @@ function FuseCodeDisplay({ fuseCode, timeLeft }: FuseCodeDisplayProps): React.JS
     <div className="bg-black/40 p-3 rounded-lg border border-orange-500/30">
       <div className="flex justify-between items-center mb-2">
         <span className="text-xs text-orange-500 font-semibold uppercase tracking-wider">临时熔断码</span>
-        <span className="text-xs text-gray-500 font-mono">
+        <span className="text-xs text-muted font-mono">
           有效时间: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
         </span>
       </div>
-      <div className="text-lg text-white font-mono bg-gray-900 p-3 rounded text-center break-all select-all border border-gray-700">
+      <div className="text-lg text-primary font-mono bg-primary p-3 rounded text-center break-all select-all border border-secondary">
         {fuseCode}
       </div>
     </div>
@@ -56,20 +56,20 @@ interface FuseVerificationInputProps {
 function FuseVerificationInput({ inputCode, onInputChange, onVerify, isLoading }: FuseVerificationInputProps): React.JSX.Element {
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-xs text-gray-400">请输入上方熔断码以确认操作：</label>
+      <label className="text-xs text-secondary">请输入上方熔断码以确认操作：</label>
       <div className="flex gap-2">
         <input
           type="text"
           value={inputCode}
           onChange={(e) => onInputChange(e.target.value)}
           placeholder="在此输入或粘贴熔断码"
-          className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm focus:border-orange-500 outline-none font-mono"
+          className="flex-1 px-3 py-2 bg-primary border border-secondary rounded text-sm focus:border-orange-500 outline-none font-mono"
           autoFocus
         />
         <button
           onClick={onVerify}
           disabled={isLoading || !inputCode.trim()}
-          className="px-6 py-2 bg-green-600 rounded font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+          className="px-6 py-2 bg-success rounded font-medium hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? '验证中...' : '确认'}
         </button>
@@ -170,34 +170,34 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
   const timeLeft = expiresAt ? Math.max(0, Math.floor((expiresAt - nowTs) / MS_PER_SECOND)) : 0;
 
   return (
-    <div className="bg-gray-800 border border-orange-900/50 rounded-lg p-4 shadow-xl">
+    <div className="bg-secondary border border-orange-900/50 rounded-lg p-4 shadow-xl">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-orange-500 font-bold flex items-center gap-2">
             <span>⚡</span> 时间窗口熔断申请
           </h3>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-secondary mt-1">
             熔断机制允许你在非审批时间内强行开启窗口，但这会削弱你的自律意志。
           </p>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase text-gray-500 font-semibold">熔断统计</div>
-          <div className="text-xs text-gray-300 mt-0.5">
-            本周: <span className={stats.week > 3 ? 'text-red-400' : 'text-orange-400'}>{stats.week}</span> 次 | 
-            本月: <span className={stats.month > 10 ? 'text-red-400' : 'text-orange-400'}>{stats.month}</span> 次
+          <div className="text-[10px] uppercase text-muted font-semibold">熔断统计</div>
+          <div className="text-xs text-primary mt-0.5">
+            本周: <span className={stats.week > 3 ? 'text-error' : 'text-warning'}>{stats.week}</span> 次 | 
+            本月: <span className={stats.month > 10 ? 'text-error' : 'text-warning'}>{stats.month}</span> 次
           </div>
         </div>
       </div>
 
       {!fuseCode ? (
         <div className="flex flex-col gap-3">
-          <div className="text-sm text-gray-300 bg-black/20 p-2 rounded border border-gray-700">
+          <div className="text-sm text-primary bg-black/20 p-2 rounded border border-secondary">
             注意：频繁申请熔断会导致熔断码长度呈指数级增长。
           </div>
           <button
             onClick={handleApplyFuse}
             disabled={isLoading}
-            className="w-full py-2 bg-orange-600 rounded font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-2 bg-accent-primary rounded font-medium hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
@@ -223,7 +223,7 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
 
       {message && (
         <div className={`mt-3 p-2 rounded text-xs ${
-          message.includes('成功') ? 'bg-green-900/30 text-green-400 border border-green-800' : 'bg-red-900/30 text-red-400 border border-red-800'
+          message.includes('成功') ? 'bg-success/20 text-success border border-success' : 'bg-error/20 text-error border border-error'
         }`}>
           {message}
         </div>

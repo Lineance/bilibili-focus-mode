@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@theme {
+  --color-success: #22c55e;
+  --color-error: #ef4444;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
+  --color-muted: #6b7280;
+}
+
 body {
   margin: 0;
   min-width: 320px;

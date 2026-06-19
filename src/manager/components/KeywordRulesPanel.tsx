@@ -150,11 +150,11 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }): Reac
           <div className="flex gap-2">
             <button
               onClick={handleExport}
-              className="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-700"
+              className="px-3 py-1 bg-accent-primary rounded text-sm hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               导出规则
             </button>
-            <label className="px-3 py-1 bg-green-600 rounded text-sm hover:bg-green-700 cursor-pointer">
+            <label className="px-3 py-1 bg-accent-primary rounded text-sm hover:bg-accent-primary/90 cursor-pointer transition-colors">
               导入规则
               <input
                 type="file"
@@ -171,14 +171,14 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }): Reac
               onChange={handleToggleEnabled}
               className="w-4 h-4 rounded"
             />
-            <span className={enabled ? 'text-green-400' : 'text-gray-400'}>
+            <span className={enabled ? 'text-green-400' : 'text-secondary'}>
               {enabled ? '已启用' : '已禁用'}
             </span>
           </label>
         </div>
       </div>
 
-      <p className="text-gray-400 mb-4 text-sm">
+      <p className="text-secondary mb-4 text-sm">
         当视频标题包含以下关键词时，将自动放行并标记为对应类型
       </p>
 
@@ -188,40 +188,40 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }): Reac
           value={newKeyword}
           onChange={(e) => setNewKeyword(e.target.value)}
           placeholder="输入关键词"
-          className="flex-1 px-3 py-2 bg-gray-800 rounded border border-gray-700"
+          className="flex-1 px-3 py-2 bg-secondary rounded border border-secondary"
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
         />
         <select
           value={newTag}
           onChange={(e) => setNewTag(e.target.value as VideoTag)}
-          className="px-3 py-2 bg-gray-800 rounded border border-gray-700"
+          className="px-3 py-2 bg-secondary rounded border border-secondary"
         >
           <option value="LEARNING">学习</option>
           <option value="MUSIC">音乐</option>
         </select>
         <button
           onClick={handleAdd}
-          className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+          className="px-4 py-2 bg-accent-primary rounded hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           添加
         </button>
       </div>
 
       {keywordItems.length === 0 ? (
-        <p className="text-gray-500">暂无关键词规则</p>
+        <p className="text-muted">暂无关键词规则</p>
       ) : (
         <div className="grid gap-2">
           {keywordItems.map((item) => (
             <div
               key={item.keyword}
-              className="flex justify-between items-center bg-gray-800 p-3 rounded"
+              className="flex justify-between items-center bg-secondary p-3 rounded"
             >
               <div className="flex items-center gap-4 flex-1">
                 <span className="font-mono text-green-400">{item.keyword}</span>
                 <select
                   value={item.tag}
                   onChange={(e) => handleTagChange(item.keyword, e.target.value as VideoTag)}
-                  className="px-2 py-1 bg-gray-700 rounded border border-gray-600 text-sm"
+                  className="px-2 py-1 bg-tertiary rounded border border-primary text-sm"
                 >
                   <option value="LEARNING">学习</option>
                   <option value="MUSIC">音乐</option>

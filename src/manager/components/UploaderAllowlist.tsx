@@ -79,7 +79,7 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
       </div>
 
       {/* Add new uploader */}
-      <div className="bg-gray-800 p-4 rounded-lg mb-4">
+      <div className="bg-secondary p-4 rounded-lg mb-4">
         <h3 className="text-lg font-medium mb-3">添加UP主</h3>
         <div className="flex gap-3 flex-wrap">
           <input
@@ -87,12 +87,12 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
             value={newUploaderName}
             onChange={(e) => setNewUploaderName(e.target.value)}
             placeholder="输入UP主名称"
-            className="flex-1 min-w-[200px] px-3 py-2 bg-gray-700 rounded"
+            className="flex-1 min-w-[200px] px-3 py-2 bg-tertiary rounded"
           />
           <select
             value={selectedTag}
             onChange={(e) => setSelectedTag(e.target.value as VideoTag)}
-            className="px-3 py-2 bg-gray-700 rounded"
+            className="px-3 py-2 bg-tertiary rounded"
           >
             <option value="LEARNING">📚 学习</option>
             <option value="MUSIC">🎵 音乐</option>
@@ -100,7 +100,7 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
           </select>
           <button
             onClick={handleAdd}
-            className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-accent-primary rounded hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             添加
           </button>
@@ -109,13 +109,13 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
 
       {/* Uploader list */}
       {uploaders.length === 0 ? (
-        <p className="text-gray-500">暂无UP主白名单</p>
+        <p className="text-muted">暂无UP主白名单</p>
       ) : (
         <div className="grid gap-3">
           {uploaders.map((uploader) => (
             <div
               key={uploader.id}
-              className="bg-gray-800 p-4 rounded-lg flex justify-between items-center"
+              className="bg-secondary p-4 rounded-lg flex justify-between items-center"
             >
               <div className="flex items-center gap-3">
                 <span className="text-2xl">👤</span>
@@ -123,8 +123,8 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
                   <p className="font-medium">{uploader.name}</p>
                   <span
                     className={`px-2 py-0.5 rounded text-xs ${uploader.tag === 'LEARNING'
-                      ? 'bg-green-600'
-                      : 'bg-yellow-600'
+                      ? 'bg-success'
+                      : 'bg-warning'
                       }`}
                   >
                     {uploader.tag === 'LEARNING' ? '学习' : '娱乐'}

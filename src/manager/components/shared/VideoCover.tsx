@@ -6,7 +6,7 @@ export function VideoCover({ url, title, small = false }: { url: string; title: 
 
   if (error || !url) {
     return (
-      <div className={`${sizeClass} bg-gray-700 rounded flex items-center justify-center text-xs text-gray-400`}>
+      <div className={`${sizeClass} bg-tertiary rounded flex items-center justify-center text-xs text-secondary`}>
         无封面
       </div>
     );

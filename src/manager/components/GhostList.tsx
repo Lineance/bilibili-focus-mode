@@ -95,7 +95,7 @@ export function GhostList({ items, config }: { items: readonly GhostItem[]; conf
       </div>
 
       {items.length === 0 ? (
-        <p className="text-gray-500">没有幽灵档案</p>
+        <p className="text-muted">没有幽灵档案</p>
       ) : (
         <div className="grid gap-4">
           {items.map((item) => {
@@ -109,13 +109,13 @@ export function GhostList({ items, config }: { items: readonly GhostItem[]; conf
                 onSelect={() => toggleSelection(item.bvid)}
                 onDelete={() => handleDelete(item.bvid)}
               >
-                <p className="text-sm mt-2 text-gray-400">
+                <p className="text-sm mt-2 text-secondary">
                   {daysLeft > 0 ? `还可招魂 ${daysLeft} 天` : '已彻底消失'}
                 </p>
                 {daysLeft > 0 && (
                   <button
                     onClick={() => handleResurrect(item)}
-                    className="mt-2 px-3 py-1 bg-purple-600 rounded text-sm hover:bg-purple-700"
+                    className="mt-2 px-3 py-1 bg-accent-primary rounded text-sm hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     招魂
                   </button>

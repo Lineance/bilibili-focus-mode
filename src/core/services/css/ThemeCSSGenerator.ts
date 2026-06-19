@@ -31,9 +31,21 @@ export class ThemeCSSGenerator {
         --fm-error: ${colors.error};
         --fm-info: ${colors.info};
         
+        /* Status color RGB values (for rgba usage) */
+        --fm-text-success-rgb: 16, 185, 129;
+        --fm-text-error-rgb: 239, 68, 68;
+        --fm-text-warning-rgb: 245, 158, 11;
+        
         /* Special colors */
         --fm-overlay: ${colors.overlay};
         --fm-shadow: ${colors.shadow};
+        
+        /* Semantic text color aliases */
+        --fm-text-success: ${colors.success};
+        --fm-text-error: ${colors.error};
+        --fm-text-warning: ${colors.warning};
+        --fm-text-info: ${colors.info};
+        --fm-accent-primary-hover: ${colors.accentHover};
         
         /* Mode indicator */
         --fm-mode: "${mode}";
@@ -136,64 +148,70 @@ export class ThemeCSSGenerator {
         border: 1px solid var(--fm-border-secondary);
       }
 
-      /* Text colors in various contexts */
+      /* Gray shades */
+      .bg-gray-600 { background-color: var(--fm-bg-tertiary) !important; }
+      .bg-gray-700 { background-color: var(--fm-bg-tertiary) !important; }
+      .bg-gray-900 { background-color: var(--fm-bg-secondary) !important; }
+
+      .text-gray-200 { color: var(--fm-text-primary) !important; }
+      .text-gray-300 { color: var(--fm-text-secondary) !important; }
       .text-gray-400 { color: var(--fm-text-tertiary) !important; }
       .text-gray-500 { color: var(--fm-text-muted) !important; }
-      .text-gray-300 { color: var(--fm-text-secondary) !important; }
 
-      /* Background variations */
-      .bg-black\\/20, .bg-black\\/30, .bg-black\\/40 {
-        background-color: var(--fm-bg-tertiary) !important;
-      }
+      /* Blue shades */
+      .bg-blue-500 { background-color: var(--fm-accent-primary) !important; }
+      .bg-blue-700 { background-color: var(--fm-accent-primary-hover) !important; }
+      .text-blue-200 { color: var(--fm-text-info) !important; }
+      .text-blue-300 { color: var(--fm-text-info) !important; }
+      .text-blue-400 { color: var(--fm-text-info) !important; }
+      .ring-blue-500 { --tw-ring-color: var(--fm-accent-primary) !important; }
 
-      .bg-gray-700 {
-        background-color: var(--fm-bg-tertiary) !important;
-      }
+      /* Green shades */
+      .bg-green-500 { background-color: var(--fm-text-success) !important; }
+      .bg-green-600 { background-color: var(--fm-success) !important; }
+      .bg-green-700 { background-color: var(--fm-text-success) !important; opacity: 0.9; }
+      .bg-green-800 { background-color: var(--fm-text-success) !important; opacity: 0.8; }
+      .bg-green-900\\/30 { background-color: rgba(var(--fm-text-success-rgb), 0.3) !important; }
+      .bg-green-900\\/50 { background-color: rgba(var(--fm-text-success-rgb), 0.5) !important; }
+      .text-green-200 { color: var(--fm-text-success) !important; }
+      .text-green-300 { color: var(--fm-text-success) !important; }
 
-      .bg-gray-900 {
-        background-color: var(--fm-bg-secondary) !important;
-      }
+      /* Red shades */
+      .bg-red-500 { background-color: var(--fm-text-error) !important; }
+      .bg-red-600 { background-color: var(--fm-error) !important; }
+      .bg-red-700 { background-color: var(--fm-text-error) !important; opacity: 0.9; }
+      .bg-red-800 { background-color: var(--fm-text-error) !important; opacity: 0.8; }
+      .bg-red-900\\/30 { background-color: rgba(var(--fm-text-error-rgb), 0.3) !important; }
+      .bg-red-900\\/70 { background-color: rgba(var(--fm-text-error-rgb), 0.7) !important; }
+      .text-red-300 { color: var(--fm-text-error) !important; }
+
+      /* Yellow shades */
+      .bg-yellow-500 { background-color: var(--fm-text-warning) !important; }
+      .bg-yellow-700 { background-color: var(--fm-text-warning) !important; opacity: 0.9; }
+      .bg-yellow-900\\/50 { background-color: rgba(var(--fm-text-warning-rgb), 0.5) !important; }
+      .text-yellow-200 { color: var(--fm-text-warning) !important; }
+      .text-yellow-300 { color: var(--fm-text-warning) !important; }
+
+      /* Orange shades */
+      .bg-orange-600 { background-color: var(--fm-accent-primary) !important; }
+      .bg-orange-700 { background-color: var(--fm-accent-hover) !important; }
+      .text-orange-400 { color: var(--fm-text-warning) !important; }
+
+      /* Purple shades */
+      .bg-purple-600 { background-color: #8B5CF6 !important; }
+      .bg-purple-700 { background-color: #7C3AED !important; }
 
       /* Border colors */
-      .border-gray-700 {
-        border-color: var(--fm-border-secondary) !important;
-      }
+      .border-gray-700 { border-color: var(--fm-border-secondary) !important; }
+      .border-orange-500\\/30 { border-color: rgba(249, 115, 22, 0.3) !important; }
+      .border-orange-900\\/50 { border-color: rgba(249, 115, 22, 0.5) !important; }
 
-      .border-orange-900\\/50 {
-        border-color: var(--fm-border-secondary) !important;
-      }
-
-      .border-orange-500\\/30 {
-        border-color: var(--fm-accent-primary) !important;
-        opacity: 0.3;
-      }
-
-      /* Status-specific backgrounds */
-      .bg-green-900\\/30 {
-        background-color: var(--fm-success) !important;
-        opacity: 0.1;
-      }
-
-      .bg-red-900\\/30 {
-        background-color: var(--fm-error) !important;
-        opacity: 0.1;
-      }
-
-      .bg-green-600 {
-        background-color: var(--fm-success) !important;
-      }
-
-      .bg-red-600 {
-        background-color: var(--fm-error) !important;
-      }
-
-      .bg-orange-600 {
-        background-color: var(--fm-accent-primary) !important;
-      }
-
-      .bg-orange-700 {
-        background-color: var(--fm-accent-hover) !important;
-      }
+      /* Black overlays */
+      .bg-black\\/20 { background-color: rgba(0, 0, 0, 0.2) !important; }
+      .bg-black\\/30 { background-color: rgba(0, 0, 0, 0.3) !important; }
+      .bg-black\\/40 { background-color: rgba(0, 0, 0, 0.4) !important; }
+      .bg-black\\/80 { background-color: rgba(0, 0, 0, 0.8) !important; }
+      .bg-black\\/95 { background-color: rgba(0, 0, 0, 0.95) !important; }
     `;
   }
 

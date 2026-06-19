@@ -104,7 +104,7 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
       </div>
 
       {items.length === 0 ? (
-        <p className="text-gray-500">待审池为空，在B站播放页添加视频</p>
+        <p className="text-muted">待审池为空，在B站播放页添加视频</p>
       ) : (
         <div className="grid gap-4">
           {items.map((item) => (

@@ -192,6 +192,8 @@ export class BlockOverlayManager {
   private createTagDialog(metadata: VideoMetadata): HTMLDivElement {
     const dialog = document.createElement('div');
     dialog.className = 'bfm-tag-dialog';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-label', '选择视频类型');
     dialog.style.cssText = `
       position: fixed;
       top: 0;
@@ -303,12 +305,16 @@ export class BlockOverlayManager {
     if (addBtn) {
       addBtn.onmouseover = () => { addBtn.style.opacity = '0.8'; };
       addBtn.onmouseout = () => { addBtn.style.opacity = '1'; };
+      addBtn.onfocus = () => { addBtn.style.outline = '2px solid white'; addBtn.style.outlineOffset = '2px'; };
+      addBtn.onblur = () => { addBtn.style.outline = 'none'; };
       addBtn.onclick = () => onAddToLimbo(metadata);
     }
     
     if (mgrBtn) {
       mgrBtn.onmouseover = () => { mgrBtn.style.opacity = '0.8'; };
       mgrBtn.onmouseout = () => { mgrBtn.style.opacity = '1'; };
+      mgrBtn.onfocus = () => { mgrBtn.style.outline = '2px solid white'; mgrBtn.style.outlineOffset = '2px'; };
+      mgrBtn.onblur = () => { mgrBtn.style.outline = 'none'; };
       mgrBtn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -319,6 +325,8 @@ export class BlockOverlayManager {
     if (bypassBtn) {
       bypassBtn.onmouseover = () => { bypassBtn.style.opacity = '0.8'; };
       bypassBtn.onmouseout = () => { bypassBtn.style.opacity = '1'; };
+      bypassBtn.onfocus = () => { bypassBtn.style.outline = '2px solid white'; bypassBtn.style.outlineOffset = '2px'; };
+      bypassBtn.onblur = () => { bypassBtn.style.outline = 'none'; };
       bypassBtn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();

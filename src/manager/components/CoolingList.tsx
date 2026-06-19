@@ -77,7 +77,7 @@ export function CoolingList({ items }: { items: readonly CoolingItem[] }): React
       </div>
 
       {items.length === 0 ? (
-        <p className="text-gray-500">没有处于冷静期的视频</p>
+        <p className="text-muted">没有处于冷静期的视频</p>
       ) : (
         <div className="grid gap-4">
           {items.map((item) => {
@@ -92,7 +92,7 @@ export function CoolingList({ items }: { items: readonly CoolingItem[] }): React
                 onSelect={() => toggleSelection(item.bvid)}
                 onDelete={() => handleDelete(item.bvid)}
               >
-                <p className={`text-sm mt-2 ${isExpired ? 'text-red-400' : isAvailable ? 'text-green-400' : 'text-yellow-400'}`}>
+                <p className={`text-sm mt-2 ${isExpired ? 'text-error' : isAvailable ? 'text-success' : 'text-warning'}`}>
                   {isExpired
                     ? '已过期'
                     : isAvailable

@@ -68,7 +68,7 @@ export function InstantList({ items, config }: { items: readonly InstantItem[]; 
         <div className="flex gap-2">
           <button
             onClick={() => setShowApplyDialog(true)}
-            className="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-700"
+            className="px-3 py-1 bg-accent-primary rounded text-sm hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             申请熔断码
           </button>
@@ -84,7 +84,7 @@ export function InstantList({ items, config }: { items: readonly InstantItem[]; 
       </div>
 
       {items.length === 0 ? (
-        <p className="text-gray-500">没有即时许可</p>
+        <p className="text-muted">没有即时许可</p>
       ) : (
         <div className="grid gap-4">
           {items.map((item) => {
@@ -99,7 +99,7 @@ export function InstantList({ items, config }: { items: readonly InstantItem[]; 
                 onSelect={() => toggleSelection(item.bvid)}
                 onDelete={() => handleDelete(item.bvid)}
               >
-                <p className={`text-sm mt-2 ${isExpired ? 'text-red-400' : 'text-green-400'}`}>
+                <p className={`text-sm mt-2 ${isExpired ? 'text-error' : 'text-success'}`}>
                   {isExpired ? '已过期' : `剩余 ${hoursLeft} 小时`}
                 </p>
               </ItemCard>
