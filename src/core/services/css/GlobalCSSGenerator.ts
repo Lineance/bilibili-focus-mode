@@ -24,6 +24,27 @@ export class GlobalCSSGenerator {
         display: none !important;
       }
 
+      /* 隐藏搜索下拉栏目（热搜等） */
+      .search-panel-popover,
+      .search-panel,
+      .trending,
+      .trendings-double {
+        display: none !important;
+      }
+
+      /* 隐藏侧边栏按钮 */
+      .side-buttons-container,
+      .side-buttons-wrapper {
+        display: none !important;
+      }
+
+      /* 隐藏页脚 */
+      #biliMainFooter,
+      .biliMainFooterWrapper,
+      .bili-footer {
+        display: none !important;
+      }
+
       /* 隐藏搜索结果区域 */
       .search-page,
       .search-page .video-list,
@@ -50,11 +71,21 @@ export class GlobalCSSGenerator {
       }
 
       /* 确保搜索框可见且居中 */
-      .search-entry-page .search-entry-page-input {
+      .search-entry-page .search-input-container {
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
         min-height: 50vh !important;
+      }
+
+      /* 隐藏搜索框旁边的logo */
+      .search-logo {
+        display: none !important;
+      }
+
+      /* 隐藏标题 */
+      .search-center-title {
+        display: none !important;
       }
     `;
   }
