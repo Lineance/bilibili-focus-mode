@@ -99,6 +99,8 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   dailyBypassEnabled: true,
   dailyBypassQuota: 3,
   dailyBypassDurationMinutes: 30,
+  // Native Messaging
+  nativeMessagingEnabled: false,
 };
 
 export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {

@@ -16,6 +16,7 @@ import { QuotaSettings } from './config/QuotaSettings';
 import { DetectionSettings } from './config/DetectionSettings';
 import { StyleSimplificationSettings } from './config/StyleSimplificationSettings';
 import { DailyBypassSettings } from './config/DailyBypassSettings';
+import { NativeMessagingSettings } from './config/NativeMessagingSettings';
 
 export function ConfigPanel(): React.JSX.Element {
   const [config, setConfig] = useState<ExtensionConfig>(DEFAULT_CONFIG);
@@ -93,6 +94,7 @@ export function ConfigPanel(): React.JSX.Element {
         <QuotaSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <DetectionSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <DailyBypassSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
+        <NativeMessagingSettings config={config} updateConfig={updateConfig} />
         <StyleSimplificationSettings config={config} updateConfig={updateConfig} />
       </div>
     </div>

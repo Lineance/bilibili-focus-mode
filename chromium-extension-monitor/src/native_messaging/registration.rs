@@ -94,9 +94,6 @@ pub fn uninstall_native_host() -> crate::Result<()> {
 /// Register native messaging host in Windows registry
 #[cfg(windows)]
 fn register_windows_registry(manifest_path: &Path) -> crate::Result<()> {
-    use std::ffi::OsStr;
-    use std::os::windows::ffi::OsStrExt;
-
     info!("Registering in Windows registry...");
 
     // Registry paths for Chrome and Chromium

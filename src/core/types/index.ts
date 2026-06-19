@@ -226,6 +226,8 @@ export interface ExtensionConfig {
   dailyBypassEnabled: boolean;
   dailyBypassQuota: number;
   dailyBypassDurationMinutes: number;
+  // Native Messaging
+  nativeMessagingEnabled: boolean;
 }
 
 export interface ExtensionStorage {

@@ -1,0 +1,81 @@
+2026-06-19T11:12:20.591365Z  INFO ThreadId(01) chromium_extension_monitor::utils::logger: src\utils\logger.rs:62: 日志系统初始化完成，级别：info
+2026-06-19T11:12:20.592268Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:33: Chromium Extension Monitor 启动
+2026-06-19T11:12:20.593018Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:34: 配置文件："./config.toml"
+2026-06-19T11:12:20.593540Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:48: 检测到未以管理员权限运行，正在请求管理员权限...
+2026-06-19T11:12:25.671730Z  INFO ThreadId(01) chromium_extension_monitor::utils::logger: src\utils\logger.rs:62: 日志系统初始化完成，级别：info
+2026-06-19T11:12:25.674361Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:33: Chromium Extension Monitor 启动
+2026-06-19T11:12:25.674866Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:34: 配置文件："./config.toml"
+2026-06-19T11:12:25.675348Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:54: 以管理员权限运行
+2026-06-19T11:12:25.675911Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:70: 以 Native Messaging 主机模式运行
+2026-06-19T11:12:25.676763Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:105: 以 Native Messaging 主机模式启动
+2026-06-19T11:12:25.677621Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:117: 等待扩展连接...
+2026-06-19T11:12:56.004000Z  INFO ThreadId(01) chromium_extension_monitor::utils::logger: src\utils\logger.rs:62: 日志系统初始化完成，级别：info
+2026-06-19T11:12:56.004807Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:33: Chromium Extension Monitor 启动
+2026-06-19T11:12:56.005326Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:34: 配置文件："./config.toml"
+2026-06-19T11:12:56.005750Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:48: 检测到未以管理员权限运行，正在请求管理员权限...
+2026-06-19T11:13:00.633713Z  INFO ThreadId(01) chromium_extension_monitor::utils::logger: src\utils\logger.rs:62: 日志系统初始化完成，级别：info
+2026-06-19T11:13:00.634389Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:33: Chromium Extension Monitor 启动
+2026-06-19T11:13:00.645309Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:34: 配置文件："./config.toml"
+2026-06-19T11:13:00.645953Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:54: 以管理员权限运行
+2026-06-19T11:13:00.647064Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:70: 以 Native Messaging 主机模式运行
+2026-06-19T11:13:00.647590Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:105: 以 Native Messaging 主机模式启动
+2026-06-19T11:13:00.648433Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:117: 等待扩展连接...
+2026-06-19T11:13:37.566612Z  INFO ThreadId(01) chromium_extension_monitor::utils::logger: src\utils\logger.rs:62: 日志系统初始化完成，级别：info
+2026-06-19T11:13:37.566810Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:33: Chromium Extension Monitor 启动
+2026-06-19T11:13:37.566819Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:34: 配置文件："./config.toml"
+2026-06-19T11:13:37.566831Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:48: 检测到未以管理员权限运行，正在请求管理员权限...
+2026-06-19T11:13:41.528227Z  INFO ThreadId(01) chromium_extension_monitor::utils::logger: src\utils\logger.rs:62: 日志系统初始化完成，级别：info
+2026-06-19T11:13:41.529001Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:33: Chromium Extension Monitor 启动
+2026-06-19T11:13:41.529499Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:34: 配置文件："./config.toml"
+2026-06-19T11:13:41.530215Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:54: 以管理员权限运行
+2026-06-19T11:13:41.530679Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:70: 以 Native Messaging 主机模式运行
+2026-06-19T11:13:41.531261Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:105: 以 Native Messaging 主机模式启动
+2026-06-19T11:13:41.531772Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:117: 等待扩展连接...
+2026-06-19T11:13:42.020343Z  INFO ThreadId(03) chromium_extension_monitor: src\main.rs:65: 收到退出信号
+2026-06-19T11:14:33.596368Z ERROR ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:160: Native messaging read error: Message too large: 168626701 bytes (max 1048576)
+2026-06-19T11:14:33.596996Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:166: 退出 Native Messaging 循环
+2026-06-19T11:14:33.597823Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:94: 停止监控服务
+2026-06-19T11:14:33.598425Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:73: 监控服务已停止
+2026-06-19T11:14:43.066865Z  INFO ThreadId(01) chromium_extension_monitor::utils::logger: src\utils\logger.rs:62: 日志系统初始化完成，级别：info
+2026-06-19T11:14:43.067977Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:33: Chromium Extension Monitor 启动
+2026-06-19T11:14:43.068735Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:34: 配置文件："./config.toml"
+2026-06-19T11:14:43.069466Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:48: 检测到未以管理员权限运行，正在请求管理员权限...
+2026-06-19T11:14:47.616900Z  INFO ThreadId(01) chromium_extension_monitor::utils::logger: src\utils\logger.rs:62: 日志系统初始化完成，级别：info
+2026-06-19T11:14:47.617378Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:33: Chromium Extension Monitor 启动
+2026-06-19T11:14:47.617675Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:34: 配置文件："./config.toml"
+2026-06-19T11:14:47.617967Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:54: 以管理员权限运行
+2026-06-19T11:14:47.618337Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:70: 以 Native Messaging 主机模式运行
+2026-06-19T11:14:47.618627Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:105: 以 Native Messaging 主机模式启动
+2026-06-19T11:14:47.618929Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:117: 等待扩展连接...
+2026-06-19T11:16:17.894629Z  INFO ThreadId(03) chromium_extension_monitor: src\main.rs:65: 收到退出信号
+2026-06-19T11:17:25.509696Z  INFO ThreadId(01) chromium_extension_monitor::utils::logger: src\utils\logger.rs:62: 日志系统初始化完成，级别：info
+2026-06-19T11:17:25.510674Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:33: Chromium Extension Monitor 启动
+2026-06-19T11:17:25.511298Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:34: 配置文件："./config.toml"
+2026-06-19T11:17:25.511810Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:54: 以管理员权限运行
+2026-06-19T11:17:25.512486Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:70: 以 Native Messaging 主机模式运行
+2026-06-19T11:17:25.513163Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:105: 以 Native Messaging 主机模式启动
+2026-06-19T11:17:25.513772Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:117: 等待扩展连接...
+2026-06-19T11:19:31.378373Z  INFO ThreadId(03) chromium_extension_monitor: src\main.rs:65: 收到退出信号
+2026-06-19T11:20:03.592944Z  INFO ThreadId(01) chromium_extension_monitor::utils::logger: src\utils\logger.rs:62: 日志系统初始化完成，级别：info
+2026-06-19T11:20:03.593616Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:33: Chromium Extension Monitor 启动
+2026-06-19T11:20:03.594174Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:34: 配置文件："./config.toml"
+2026-06-19T11:20:03.594852Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:48: 检测到未以管理员权限运行，正在请求管理员权限...
+2026-06-19T11:20:08.243822Z  INFO ThreadId(01) chromium_extension_monitor::utils::logger: src\utils\logger.rs:62: 日志系统初始化完成，级别：info
+2026-06-19T11:20:08.247320Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:33: Chromium Extension Monitor 启动
+2026-06-19T11:20:08.247601Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:34: 配置文件："./config.toml"
+2026-06-19T11:20:08.247963Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:54: 以管理员权限运行
+2026-06-19T11:20:08.248334Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:70: 以 Native Messaging 主机模式运行
+2026-06-19T11:20:08.248574Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:105: 以 Native Messaging 主机模式启动
+2026-06-19T11:20:08.248797Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:117: 等待扩展连接...
+2026-06-19T11:26:03.167406Z  INFO ThreadId(01) chromium_extension_monitor::utils::logger: src\utils\logger.rs:62: 日志系统初始化完成，级别：info
+2026-06-19T11:26:03.168040Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:33: Chromium Extension Monitor 启动
+2026-06-19T11:26:03.168651Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:34: 配置文件："./config.toml"
+2026-06-19T11:26:03.169584Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:48: 检测到未以管理员权限运行，正在请求管理员权限...
+2026-06-19T11:26:07.464478Z  INFO ThreadId(01) chromium_extension_monitor::utils::logger: src\utils\logger.rs:62: 日志系统初始化完成，级别：info
+2026-06-19T11:26:07.464883Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:33: Chromium Extension Monitor 启动
+2026-06-19T11:26:07.465419Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:34: 配置文件："./config.toml"
+2026-06-19T11:26:07.466046Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:54: 以管理员权限运行
+2026-06-19T11:26:07.466487Z  INFO ThreadId(01) chromium_extension_monitor: src\main.rs:70: 以 Native Messaging 主机模式运行
+2026-06-19T11:26:07.466823Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:105: 以 Native Messaging 主机模式启动
+2026-06-19T11:26:07.467153Z  INFO ThreadId(01) chromium_extension_monitor::monitor::service: src\monitor\service.rs:117: 等待扩展连接...
+2026-06-19T11:26:20.731637Z  INFO ThreadId(03) chromium_extension_monitor: src\main.rs:65: 收到退出信号

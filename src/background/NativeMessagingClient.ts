@@ -4,6 +4,8 @@ const HOST_NAME = 'com.bilibili.focus.monitor';
 const HEARTBEAT_INTERVAL_MS = 3000;
 const RECONNECT_BASE_DELAY_MS = 1000;
 const RECONNECT_MAX_DELAY_MS = 60000;
+const MAX_RECONNECT_ATTEMPTS = 10;
+const DEBUG = false; // 生产环境关闭详细日志
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -26,21 +28,31 @@ export class NativeMessagingClient {
    */
   connect(): void {
     if (this.state === 'connecting' || this.state === 'connected') {
-      logger.debug('NativeMessaging', 'Already connected or connecting');
+      if (DEBUG) logger.debug('NativeMessaging', 'Already connected or connecting');
+      return;
+    }
+
+    // 检查最大重连次数
+    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      logger.warn('NativeMessaging', `Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached, giving up`);
+      this.state = 'error';
       return;
     }
 
     this.state = 'connecting';
-    logger.debug('NativeMessaging', 'Connecting to host:', HOST_NAME);
+    logger.info('NativeMessaging', 'Connecting to host:', HOST_NAME);
 
     try {
       this.port = chrome.runtime.connectNative(HOST_NAME);
 
       this.port.onMessage.addListener((message: unknown) => {
+        if (DEBUG) logger.debug('NativeMessaging', 'Message received:', message);
         this.handleMessage(message as NativeMessage);
       });
 
       this.port.onDisconnect.addListener(() => {
+        const lastError = chrome.runtime.lastError;
+        if (DEBUG) logger.debug('NativeMessaging', 'Port disconnected, error:', lastError);
         this.handleDisconnect();
       });
 
@@ -48,10 +60,10 @@ export class NativeMessagingClient {
       this.state = 'connected';
       this.reconnectAttempts = 0;
       this.startHeartbeat();
-      logger.info('NativeMessaging', 'Connected to host');
+      logger.info('NativeMessaging', 'Connected to host successfully');
     } catch (error) {
       this.state = 'error';
-      logger.debug('NativeMessaging', 'Failed to connect:', error);
+      logger.error('NativeMessaging', 'Failed to connect:', error);
       this.scheduleReconnect();
     }
   }
@@ -60,7 +72,7 @@ export class NativeMessagingClient {
    * Disconnect from native messaging host
    */
   disconnect(): void {
-    logger.debug('NativeMessaging', 'Disconnecting');
+    if (DEBUG) logger.debug('NativeMessaging', 'Disconnecting');
     this.stopHeartbeat();
     this.clearReconnectTimer();
 
@@ -77,7 +89,7 @@ export class NativeMessagingClient {
    */
   send(message: NativeMessage): boolean {
     if (this.state !== 'connected' || !this.port) {
-      logger.debug('NativeMessaging', 'Not connected, cannot send');
+      if (DEBUG) logger.debug('NativeMessaging', 'Not connected, cannot send');
       return false;
     }
 

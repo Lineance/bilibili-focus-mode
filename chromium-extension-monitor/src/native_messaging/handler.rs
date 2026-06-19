@@ -1,7 +1,7 @@
 use serde_json::{json, Value};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 /// Native messaging handler state
 pub struct NativeMessagingHandler {

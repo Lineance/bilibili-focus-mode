@@ -7,9 +7,9 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   error: 3,
 };
 
-// Use 'warn' in production, 'debug' in development
+// Use 'info' in production, 'debug' in development
 const isProd = typeof import.meta !== 'undefined' && (import.meta as unknown as { env?: { PROD?: boolean } }).env?.PROD;
-const CURRENT_LEVEL: LogLevel = isProd ? 'warn' : 'debug';
+const CURRENT_LEVEL: LogLevel = isProd ? 'info' : 'debug';
 
 function shouldLog(level: LogLevel): boolean {
   return LOG_LEVELS[level] >= LOG_LEVELS[CURRENT_LEVEL];

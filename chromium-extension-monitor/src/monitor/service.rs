@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tracing::{debug, error, info};
+use tracing::{error, info};
 
 use crate::config::Config;
 use crate::native_messaging::{read_message, write_message, NativeMessagingHandler};

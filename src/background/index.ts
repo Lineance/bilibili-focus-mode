@@ -79,8 +79,16 @@ messageRouter.register('openOptionsPage', async () => {
 
 messageRouter.listen();
 
-// Connect to native messaging host (non-blocking, failure is tolerated)
-nativeClient.connect();
+// Connect to native messaging host if enabled (non-blocking, failure is tolerated)
+chrome.storage.local.get('config').then((storage) => {
+  const config = getConfigFromStorage(storage);
+  if (config.nativeMessagingEnabled) {
+    logger.info('Background', 'Native Messaging enabled, connecting...');
+    nativeClient.connect();
+  } else {
+    logger.debug('Background', 'Native Messaging disabled');
+  }
+});
 
 // Listen for native messaging events
 nativeClient.on('status', (message) => {

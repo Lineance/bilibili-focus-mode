@@ -192,4 +192,9 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
     max: 120,
     step: 5,
   },
+  nativeMessagingEnabled: {
+    label: '启用外部监控连接',
+    description: '允许外部监控程序通过 Native Messaging 检测扩展状态',
+    type: 'boolean',
+  },
 };
