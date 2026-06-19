@@ -88,10 +88,12 @@ export class SearchPageHandler {
     const searchContainer = document.querySelector('.search-page-wrapper, .video-list, .search-content');
     const target = searchContainer || document.body;
     
-    this.observer.observe(target, {
-      childList: true,
-      subtree: true,
-    });
+    if (target) {
+      this.observer.observe(target, {
+        childList: true,
+        subtree: true,
+      });
+    }
   }
   
   /**
