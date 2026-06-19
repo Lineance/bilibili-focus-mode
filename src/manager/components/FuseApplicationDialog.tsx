@@ -64,11 +64,31 @@ export function FuseApplicationDialog({ instantDurationHours, onApply, onClose }
         {fuseCode ? (
           <div className="text-center">
             <p className="text-success mb-2">熔断码申请成功！</p>
-            <div className="bg-primary p-4 rounded text-2xl font-mono text-yellow-400 mb-4">
-              {fuseCode}
+            <div className="bg-primary p-4 rounded text-2xl text-yellow-400 mb-4 relative overflow-hidden">
+              <div className="absolute inset-0 opacity-10 pointer-events-none"
+                style={{
+                  backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, currentColor 2px, currentColor 3px)',
+                }}
+              />
+              <div
+                className="relative font-mono tracking-[0.3em] select-none"
+                onCopy={(e) => e.preventDefault()}
+                onCut={(e) => e.preventDefault()}
+                onContextMenu={(e) => e.preventDefault()}
+                style={{
+                  textShadow: '1px 0 0 currentColor, -1px 0 0 currentColor',
+                  letterSpacing: '0.3em',
+                }}
+              >
+                {fuseCode.split('').map((char, i) => (
+                  <span key={i} style={{ display: 'inline-block', transform: `translateY(${Math.sin(i * 0.8) * 2}px)` }}>
+                    {char}
+                  </span>
+                ))}
+              </div>
             </div>
             <p className="text-sm text-secondary mb-4">
-              有效期 {instantDurationHours} 小时，请牢记此码
+              有效期 {instantDurationHours} 小时，请手动输入此码
             </p>
             <button
               onClick={onClose}

@@ -39,9 +39,30 @@ function FuseCodeDisplay({ fuseCode, timeLeft }: FuseCodeDisplayProps): React.JS
           有效时间: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
         </span>
       </div>
-      <div className="text-lg text-primary font-mono bg-primary p-3 rounded text-center break-all select-all border border-secondary">
-        {fuseCode}
+      <div className="relative overflow-hidden bg-primary p-3 rounded border border-secondary">
+        {/* 背景干扰线 */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, currentColor 2px, currentColor 3px)',
+          }}
+        />
+        <div
+          className="relative text-lg text-primary font-mono text-center tracking-[0.3em] select-none"
+          onCopy={(e) => e.preventDefault()}
+          onCut={(e) => e.preventDefault()}
+          onContextMenu={(e) => e.preventDefault()}
+          style={{
+            textShadow: '1px 0 0 currentColor, -1px 0 0 currentColor',
+          }}
+        >
+          {fuseCode.split('').map((char, i) => (
+            <span key={i} style={{ display: 'inline-block', transform: `translateY(${Math.sin(i * 0.8) * 2}px)` }}>
+              {char}
+            </span>
+          ))}
+        </div>
       </div>
+      <p className="text-xs text-muted mt-2 text-center">请手动输入上方熔断码，不支持复制粘贴</p>
     </div>
   );
 }
