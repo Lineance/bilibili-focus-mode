@@ -1,7 +1,7 @@
 import { MS_PER_SECOND, PERMISSION_CHECK_INTERVAL_MS } from '@core/constants';
 import { logger } from '@core/utils/logger';
 import type { ProtocolMap } from '@core/protocol';
-import type { VideoMetadata } from '@core/types';
+import type { VideoMetadata, ExtensionConfig } from '@core/types';
 import { BILIBILI_SEARCH_URL } from '@core/constants';
 import { StyleSimplificationService } from '@core/services';
 import { sendMessage } from 'webext-bridge/content-script';
@@ -9,6 +9,7 @@ import { VideoMetadataExtractor } from './services/VideoMetadataExtractor';
 import { BlockOverlayManager } from './components/BlockOverlay';
 import { VideoTracker } from './services/VideoTracker';
 import { PermissionChecker } from './services/PermissionChecker';
+import { SearchPageHandler } from './services/SearchPageHandler';
 import './purify.css';
 
 if (typeof chrome === 'undefined' || !chrome.runtime?.id) {
@@ -277,6 +278,31 @@ async function checkHomepageRedirect(): Promise<void> {
     console.error('[Content] Failed to check homepage redirect:', error);
   }
 }
+
+// Initialize search page handler
+const searchPageHandler = new SearchPageHandler();
+
+// Apply search filter if on search page
+if (searchPageHandler.isSearchPage()) {
+  chrome.storage.local.get('config').then(result => {
+    const config = result.config as ExtensionConfig;
+    if (config?.searchSimplification?.enabled) {
+      searchPageHandler.applyFilter(config.searchSimplification);
+    }
+  });
+}
+
+// Listen for config changes to update search filter
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.config && searchPageHandler.isSearchPage()) {
+    const newConfig = changes.config.newValue as ExtensionConfig;
+    if (newConfig?.searchSimplification?.enabled) {
+      searchPageHandler.applyFilter(newConfig.searchSimplification);
+    } else {
+      searchPageHandler.stopFilter();
+    }
+  }
+});
 
 if (typeof window !== 'undefined' && window.location) {
   let lastUrl = window.location.href;

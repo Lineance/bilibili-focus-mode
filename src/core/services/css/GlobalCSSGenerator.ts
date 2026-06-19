@@ -89,4 +89,44 @@ export class GlobalCSSGenerator {
       }
     `;
   }
+
+  /**
+   * 生成搜索结果过滤CSS
+   * 隐藏广告和直播等元素
+   */
+  generateSearchResultFilterCSS(config: { hideAds: boolean; hideLiveStreams: boolean }): string {
+    let css = '';
+
+    if (config.hideAds) {
+      css += `
+        /* 隐藏品牌广告区域 */
+        .brand-ad-list {
+          display: none !important;
+        }
+
+        /* 隐藏广告卡片 */
+        .bili-video-card:has(.bili-video-card__stats--ad),
+        .bili-video-card:has(a[href*="gaoneng.bilibili.com"]) {
+          display: none !important;
+        }
+
+        /* 隐藏广告反馈入口 */
+        .ad-feedback-entry {
+          display: none !important;
+        }
+      `;
+    }
+
+    if (config.hideLiveStreams) {
+      css += `
+        /* 隐藏直播结果 */
+        .search-page .live-list,
+        .search-page .live-card {
+          display: none !important;
+        }
+      `;
+    }
+
+    return css;
+  }
 }

@@ -7,6 +7,8 @@ const mockGetURL = vi.fn((path: string) => `chrome-extension://test-id/${path}`)
 const mockOpenOptionsPage = vi.fn();
 const mockStorageLocalGet = vi.fn().mockResolvedValue({});
 
+const mockOnChangedAddListener = vi.fn();
+
 vi.stubGlobal('chrome', {
   runtime: {
     id: 'test-extension-id',
@@ -17,6 +19,9 @@ vi.stubGlobal('chrome', {
   storage: {
     local: {
       get: mockStorageLocalGet,
+    },
+    onChanged: {
+      addListener: mockOnChangedAddListener,
     },
   },
 });

@@ -212,6 +212,14 @@ export interface ExtensionConfig {
     hideSidebar: boolean;
     minimalPlayer: boolean;
   };
+  // Search results page simplification
+  searchSimplification: {
+    enabled: boolean;
+    hideAds: boolean;
+    hideNonKeyword: boolean;
+    hideLiveStreams: boolean;
+    compactLayout: boolean;
+  };
   // Keyword-based auto-allow rules
   keywordRules: {
     enabled: boolean;

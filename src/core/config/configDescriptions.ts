@@ -166,6 +166,11 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
     description: '简化直播页面布局，减少干扰元素',
     type: 'boolean',
   },
+  searchSimplification: {
+    label: '搜索结果简化',
+    description: '简化搜索结果页面，隐藏广告和推荐内容',
+    type: 'boolean',
+  },
   keywordRules: {
     label: '关键词自动放行',
     description: '根据视频标题关键词自动放行',

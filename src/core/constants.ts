@@ -89,6 +89,14 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     hideSidebar: true,
     minimalPlayer: false,
   },
+  // Search results page simplification
+  searchSimplification: {
+    enabled: false,
+    hideAds: true,
+    hideNonKeyword: false,
+    hideLiveStreams: false,
+    compactLayout: false,
+  },
   // Keyword-based auto-allow rules
   keywordRules: {
     enabled: false,

@@ -15,6 +15,7 @@ import { GhostSettings } from './config/GhostSettings';
 import { QuotaSettings } from './config/QuotaSettings';
 import { DetectionSettings } from './config/DetectionSettings';
 import { StyleSimplificationSettings } from './config/StyleSimplificationSettings';
+import { SearchSimplificationSettings } from './config/SearchSimplificationSettings';
 import { DailyBypassSettings } from './config/DailyBypassSettings';
 import { NativeMessagingSettings } from './config/NativeMessagingSettings';
 
@@ -96,6 +97,7 @@ export function ConfigPanel(): React.JSX.Element {
         <DailyBypassSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <NativeMessagingSettings config={config} updateConfig={updateConfig} />
         <StyleSimplificationSettings config={config} updateConfig={updateConfig} />
+        <SearchSimplificationSettings config={config} updateConfig={updateConfig} />
       </div>
     </div>
   );
