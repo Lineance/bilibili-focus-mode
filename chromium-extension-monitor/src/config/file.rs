@@ -161,7 +161,7 @@ fn default_process_names() -> Vec<String> {
 }
 
 fn default_idle_check_interval() -> u64 {
-    5
+    30 // Chrome未运行时每30秒检查一次，减少资源消耗
 }
 
 /// 日志配置

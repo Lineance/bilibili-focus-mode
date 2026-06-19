@@ -175,45 +175,44 @@ impl MonitorService {
 
         self.start()?;
 
-        info!("以 Native Messaging 模式启动");
+        info!("以 Native Messaging 模式启动（仅Native Messaging，不运行文件系统扫描）");
 
         let handler = NativeMessagingHandler::new();
+        let running = self.running.clone();
 
-        // 启动 Native Messaging 监听（独立线程）
-        let handler_clone = handler.clone();
-        let native_handle = std::thread::spawn(move || {
-            let stdin = io::stdin();
-            let stdout = io::stdout();
-            let mut reader = stdin.lock();
-            let mut writer = stdout.lock();
+        // 启动 Native Messaging 监听（主线程，阻塞式）
+        let stdin = io::stdin();
+        let stdout = io::stdout();
+        let mut reader = stdin.lock();
+        let mut writer = stdout.lock();
 
-            loop {
-                match read_message(&mut reader) {
-                    Ok(msg) => {
-                        let response = handler_clone.handle_message(msg);
-                        if let Err(e) = write_message(&mut writer, &response) {
-                            error!("Native messaging write error: {}", e);
-                            break;
-                        }
-                    }
-                    Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => {
-                        // stdin EOF = 扩展被禁用/卸载/Chrome 关闭
-                        info!("扩展连接断开（EOF）");
-                        handler_clone.on_connection_lost();
-                        break;
-                    }
-                    Err(e) => {
-                        error!("Native messaging read error: {}", e);
+        while running.load(Ordering::SeqCst) {
+            match read_message(&mut reader) {
+                Ok(msg) => {
+                    let response = handler.handle_message(msg);
+                    if let Err(e) = write_message(&mut writer, &response) {
+                        error!("Native messaging write error: {}", e);
                         break;
                     }
                 }
+                Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => {
+                    // stdin EOF = 扩展被禁用/卸载/Chrome 关闭
+                    info!("扩展连接断开（EOF）");
+                    handler.on_connection_lost();
+
+                    // 连接断开后，可以切换到文件系统扫描模式
+                    info!("切换到文件系统扫描模式");
+                    self.run_monitoring_loop()?;
+                    break;
+                }
+                Err(e) => {
+                    error!("Native messaging read error: {}", e);
+                    break;
+                }
             }
-        });
+        }
 
-        // 运行监控循环（主线程）
-        self.run_monitoring_loop()?;
-
-        native_handle.join().ok();
+        self.stop()?;
         Ok(())
     }
 
@@ -228,6 +227,8 @@ impl MonitorService {
             check_interval, kill_delay, idle_check_interval
         );
 
+        let mut chrome_was_running = false;
+
         while self.running.load(Ordering::SeqCst) {
             // 检查是否暂停
             if self.paused.load(Ordering::SeqCst) {
@@ -240,10 +241,17 @@ impl MonitorService {
                 let chrome_running = self.process_manager.has_running_processes();
 
                 if !chrome_running {
-                    debug!("Chrome 未运行，进入休眠模式");
+                    if chrome_was_running {
+                        info!("Chrome 已关闭，进入休眠模式");
+                        chrome_was_running = false;
+                    }
                     self.state = MonitorState::Idle;
+                    // Chrome未运行时，使用更长的休眠间隔减少资源消耗
                     std::thread::sleep(idle_check_interval);
                     continue;
+                } else if !chrome_was_running {
+                    info!("Chrome 已启动，开始监控");
+                    chrome_was_running = true;
                 }
             }
 
