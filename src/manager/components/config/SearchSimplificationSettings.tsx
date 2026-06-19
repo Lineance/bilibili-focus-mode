@@ -56,7 +56,7 @@ export function SearchSimplificationSettings({ config, updateConfig }: SearchSim
               <span className="text-sm">隐藏标题不含关键词的结果</span>
             </label>
             <p className="text-xs text-gray-500 ml-6">
-              支持模糊匹配和拼音匹配（如输入"cs"匹配"测试"）
+              搜索词与标题有任意公共子串即匹配
             </p>
 
             {/* 隐藏直播 */}
