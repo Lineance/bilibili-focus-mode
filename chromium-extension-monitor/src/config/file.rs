@@ -254,9 +254,8 @@ impl Config {
         }
 
         let content = fs::read_to_string(path)?;
-        let config: Config = toml::from_str(&content).map_err(|e| {
-            crate::error::ConfigError::ParseError(format!("TOML 解析失败：{}", e))
-        })?;
+        let config: Config = toml::from_str(&content)
+            .map_err(|e| crate::error::ConfigError::ParseError(format!("TOML 解析失败：{}", e)))?;
 
         config.validate()?;
         Ok(config)

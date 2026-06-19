@@ -4,11 +4,13 @@ import { logger } from '@core/utils/logger';
 import { AlarmHandler } from './AlarmHandler';
 import { MessageRouter } from './MessageRouter';
 import { registerMessageHandlers } from './MessageHandlers';
+import { NativeMessagingClient } from './NativeMessagingClient';
 
 logger.debug('Background', 'Service worker started');
 
 const alarmHandler = new AlarmHandler();
 const messageRouter = new MessageRouter();
+const nativeClient = new NativeMessagingClient();
 
 function getConfigFromStorage(storage: Record<string, unknown>): ExtensionConfig {
   return (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
@@ -76,6 +78,22 @@ messageRouter.register('openOptionsPage', async () => {
 });
 
 messageRouter.listen();
+
+// Connect to native messaging host (non-blocking, failure is tolerated)
+nativeClient.connect();
+
+// Listen for native messaging events
+nativeClient.on('status', (message) => {
+  logger.debug('Background', 'Monitor status:', message.payload);
+});
+
+nativeClient.on('warning', (message) => {
+  logger.warn('Background', 'Monitor warning:', message.payload);
+});
+
+nativeClient.on('disconnected', () => {
+  logger.debug('Background', 'Native messaging disconnected');
+});
 
 // Schedule initial alarms from stored config
 chrome.storage.local.get('config').then((storage) => {

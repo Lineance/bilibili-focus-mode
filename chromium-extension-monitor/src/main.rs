@@ -1,5 +1,6 @@
 use chromium_extension_monitor::config::ConfigManager;
 use chromium_extension_monitor::monitor::MonitorService;
+use chromium_extension_monitor::native_messaging::{self, NativeMessagingHandler};
 use chromium_extension_monitor::utils;
 use chromium_extension_monitor::utils::logger;
 use chromium_extension_monitor::Result;
@@ -9,6 +10,18 @@ use tracing::{error, info};
 fn main() -> Result<()> {
     // 解析 CLI 参数
     let cli_args = chromium_extension_monitor::config::CliArgs::parse();
+
+    // 处理 Native Messaging 安装/卸载命令
+    if cli_args.install_native_host {
+        let extension_id = cli_args.extension_id.as_deref().ok_or_else(|| {
+            chromium_extension_monitor::AppError::other("需要指定 --extension-id")
+        })?;
+        return native_messaging::install_native_host(extension_id);
+    }
+
+    if cli_args.uninstall_native_host {
+        return native_messaging::uninstall_native_host();
+    }
 
     // 创建配置管理器
     let config_manager = ConfigManager::from_cli(cli_args.clone())?;
@@ -55,9 +68,16 @@ fn main() -> Result<()> {
         running_clone.store(false, std::sync::atomic::Ordering::SeqCst);
     })?;
 
-    // 运行监控循环
-    info!("开始监控循环");
-    monitor.run()?;
+    // 根据模式运行
+    if cli_args.native_messaging {
+        // Native Messaging 模式
+        info!("以 Native Messaging 主机模式运行");
+        monitor.run_with_native_messaging()?;
+    } else {
+        // 普通模式
+        info!("开始监控循环");
+        monitor.run()?;
+    }
 
     info!("监控服务已停止");
     Ok(())
@@ -68,6 +88,8 @@ fn ctrlc_handler<F: Fn() + Send + Sync + 'static>(f: F) -> Result<()> {
     ctrlc::set_handler(move || {
         f();
     })
-    .map_err(|e| chromium_extension_monitor::AppError::other(format!("设置 Ctrl+C 处理器失败：{}", e)))?;
+    .map_err(|e| {
+        chromium_extension_monitor::AppError::other(format!("设置 Ctrl+C 处理器失败：{}", e))
+    })?;
     Ok(())
 }

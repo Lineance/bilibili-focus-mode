@@ -20,7 +20,9 @@ pub fn init_logging(config: &LoggingConfig) -> crate::Result<LogGuard> {
     // 创建文件日志 writer
     let file_appender = tracing_appender::rolling::daily(
         log_path.parent().unwrap_or(Path::new(".")),
-        log_path.file_name().unwrap_or(std::ffi::OsStr::new("chromium-monitor.log")),
+        log_path
+            .file_name()
+            .unwrap_or(std::ffi::OsStr::new("chromium-monitor.log")),
     );
 
     let (file_writer, file_guard) = tracing_appender::non_blocking(file_appender);
@@ -29,8 +31,8 @@ pub fn init_logging(config: &LoggingConfig) -> crate::Result<LogGuard> {
     let stdout_writer = std::io::stdout;
 
     // 创建过滤器
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new(&config.level));
+    let filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(&config.level));
 
     // 创建格式化器
     let file_layer = fmt::layer()

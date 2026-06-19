@@ -165,7 +165,60 @@ impl MonitorService {
     /// 运行监控循环
     pub fn run(&mut self) -> crate::Result<()> {
         self.start()?;
+        self.run_monitoring_loop()
+    }
 
+    /// 运行 Native Messaging 模式
+    pub fn run_with_native_messaging(&mut self) -> crate::Result<()> {
+        use crate::native_messaging::{read_message, write_message, NativeMessagingHandler};
+        use std::io;
+
+        self.start()?;
+
+        info!("以 Native Messaging 模式启动");
+
+        let handler = NativeMessagingHandler::new();
+
+        // 启动 Native Messaging 监听（独立线程）
+        let handler_clone = handler.clone();
+        let native_handle = std::thread::spawn(move || {
+            let stdin = io::stdin();
+            let stdout = io::stdout();
+            let mut reader = stdin.lock();
+            let mut writer = stdout.lock();
+
+            loop {
+                match read_message(&mut reader) {
+                    Ok(msg) => {
+                        let response = handler_clone.handle_message(msg);
+                        if let Err(e) = write_message(&mut writer, &response) {
+                            error!("Native messaging write error: {}", e);
+                            break;
+                        }
+                    }
+                    Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => {
+                        // stdin EOF = 扩展被禁用/卸载/Chrome 关闭
+                        info!("扩展连接断开（EOF）");
+                        handler_clone.on_connection_lost();
+                        break;
+                    }
+                    Err(e) => {
+                        error!("Native messaging read error: {}", e);
+                        break;
+                    }
+                }
+            }
+        });
+
+        // 运行监控循环（主线程）
+        self.run_monitoring_loop()?;
+
+        native_handle.join().ok();
+        Ok(())
+    }
+
+    /// 内部监控循环实现
+    fn run_monitoring_loop(&mut self) -> crate::Result<()> {
         let check_interval = Duration::from_secs(self.config.monitor.check_interval);
         let kill_delay = Duration::from_secs(self.config.monitor.kill_delay);
         let idle_check_interval = Duration::from_secs(self.config.chromium.idle_check_interval);
@@ -244,8 +297,7 @@ impl MonitorService {
                                 self.state = MonitorState::Monitoring;
                             } else {
                                 // 更新状态
-                                let remaining =
-                                    self.config.monitor.kill_delay - elapsed.as_secs();
+                                let remaining = self.config.monitor.kill_delay - elapsed.as_secs();
                                 self.state = MonitorState::Warning {
                                     remaining_seconds: remaining,
                                 };
@@ -292,8 +344,7 @@ impl MonitorService {
                                 self.state = MonitorState::Monitoring;
                             } else {
                                 // 更新状态
-                                let remaining =
-                                    self.config.monitor.kill_delay - elapsed.as_secs();
+                                let remaining = self.config.monitor.kill_delay - elapsed.as_secs();
                                 self.state = MonitorState::Warning {
                                     remaining_seconds: remaining,
                                 };

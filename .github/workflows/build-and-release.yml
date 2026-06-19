@@ -47,21 +47,7 @@ jobs:
 
   build-rust:
     name: Build Rust Tool
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            artifact-name: chromium-extension-monitor-linux
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact-name: chromium-extension-monitor-windows.exe
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact-name: chromium-extension-monitor-macos
+    runs-on: windows-latest
     
     steps:
     - name: Checkout code
@@ -70,27 +56,21 @@ jobs:
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
       with:
-        targets: ${{ matrix.target }}
+        targets: x86_64-pc-windows-msvc
         
     - name: Build Rust binary (Release)
       working-directory: chromium-extension-monitor
-      run: cargo build --release --target ${{ matrix.target }}
+      run: cargo build --release --target x86_64-pc-windows-msvc
       
     - name: Prepare binary
       shell: bash
-      run: |
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          cp chromium-extension-monitor/target/${{ matrix.target }}/release/chromium-extension-monitor.exe ${{ matrix.artifact-name }}
-        else
-          cp chromium-extension-monitor/target/${{ matrix.target }}/release/chromium-extension-monitor ${{ matrix.artifact-name }}
-          chmod +x ${{ matrix.artifact-name }}
-        fi
+      run: cp chromium-extension-monitor/target/x86_64-pc-windows-msvc/release/chromium-extension-monitor.exe chromium-extension-monitor-windows.exe
         
     - name: Upload Rust artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.artifact-name }}
-        path: ${{ matrix.artifact-name }}
+        name: chromium-extension-monitor-windows.exe
+        path: chromium-extension-monitor-windows.exe
 
   release:
     name: Create Release
@@ -114,8 +94,6 @@ jobs:
         files: |
           extension-zip/*.zip
           chromium-extension-monitor-windows.exe/chromium-extension-monitor-windows.exe
-          chromium-extension-monitor-linux/chromium-extension-monitor-linux
-          chromium-extension-monitor-macos/chromium-extension-monitor-macos
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

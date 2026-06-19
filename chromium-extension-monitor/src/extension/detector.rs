@@ -1,8 +1,8 @@
+use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
-use serde_json::Value;
 use tracing::{debug, info, warn};
 
 /// 扩展信息
@@ -102,11 +102,13 @@ impl ExtensionDetector {
             });
 
             // 方法 2：如果 ID 没找到，尝试通过名称关键字匹配（模糊模式）
-            let found_by_name = if found_by_id.is_none() && (self.match_mode == "fuzzy" || self.match_mode == "mixed") {
+            let found_by_name = if found_by_id.is_none()
+                && (self.match_mode == "fuzzy" || self.match_mode == "mixed")
+            {
                 all_extensions.iter().find(|ext| {
-                    self.extension_name_keywords.iter().any(|keyword| {
-                        ext.name.to_lowercase().contains(&keyword.to_lowercase())
-                    })
+                    self.extension_name_keywords
+                        .iter()
+                        .any(|keyword| ext.name.to_lowercase().contains(&keyword.to_lowercase()))
                 })
             } else {
                 None
@@ -132,9 +134,9 @@ impl ExtensionDetector {
         // 如果使用模糊匹配，检查名称关键字
         if self.match_mode == "fuzzy" || self.match_mode == "mixed" {
             for keyword in &self.extension_name_keywords {
-                let found = all_extensions.iter().any(|ext| {
-                    ext.name.to_lowercase().contains(&keyword.to_lowercase())
-                });
+                let found = all_extensions
+                    .iter()
+                    .any(|ext| ext.name.to_lowercase().contains(&keyword.to_lowercase()));
 
                 if found {
                     info!("通过名称关键字找到匹配扩展：{}", keyword);
@@ -272,11 +274,16 @@ impl ExtensionDetector {
         }
 
         // 方法 2：从 Preferences 中读取未打包扩展
-        extensions.extend(self.scan_unpacked_extensions(profile_dir, profile_name, &enabled_status)?);
+        extensions.extend(self.scan_unpacked_extensions(
+            profile_dir,
+            profile_name,
+            &enabled_status,
+        )?);
 
         debug!(
             "在 Profile {} 中找到 {} 个扩展（包含未打包）",
-            profile_name, extensions.len()
+            profile_name,
+            extensions.len()
         );
         Ok(extensions)
     }
@@ -305,10 +312,18 @@ impl ExtensionDetector {
         if let Ok(content) = fs::read_to_string(&temp_preferences) {
             if let Ok(json) = content.parse::<Value>() {
                 // 检查 extensions.settings 中的所有扩展
-                if let Some(settings) = json.get("extensions").and_then(|e| e.get("settings")).and_then(|s| s.as_object()) {
+                if let Some(settings) = json
+                    .get("extensions")
+                    .and_then(|e| e.get("settings"))
+                    .and_then(|s| s.as_object())
+                {
                     for (ext_id, ext_data) in settings {
                         // 如果扩展不在 Extensions 目录中，可能是未打包扩展
-                        let ext_enabled = ext_data.get("state").and_then(|s| s.as_u64()).map(|s| s == 1).unwrap_or(false);
+                        let ext_enabled = ext_data
+                            .get("state")
+                            .and_then(|s| s.as_u64())
+                            .map(|s| s == 1)
+                            .unwrap_or(false);
                         let path = ext_data.get("path").and_then(|p| p.as_str());
 
                         if let Some(ext_path) = path {
@@ -317,8 +332,13 @@ impl ExtensionDetector {
 
                             // 检查 manifest.json 是否存在
                             if manifest_path.exists() {
-                                if let Some(mut ext_info) = self.parse_extension_from_manifest(&ext_path_obj, ext_id, profile_name) {
-                                    ext_info.enabled = enabled_status.get(ext_id).copied().unwrap_or(ext_enabled);
+                                if let Some(mut ext_info) = self.parse_extension_from_manifest(
+                                    &ext_path_obj,
+                                    ext_id,
+                                    profile_name,
+                                ) {
+                                    ext_info.enabled =
+                                        enabled_status.get(ext_id).copied().unwrap_or(ext_enabled);
                                     extensions.push(ext_info.clone());
                                     info!("检测到未打包扩展：{} ({})", ext_info.name, ext_id);
                                 }
@@ -358,11 +378,16 @@ impl ExtensionDetector {
                 .unwrap_or("unknown")
                 .to_string();
 
-            if let Some(mut ext_info) = self.parse_extension_from_manifest(ext_path, &dir_ext_id, "Configured") {
+            if let Some(mut ext_info) =
+                self.parse_extension_from_manifest(ext_path, &dir_ext_id, "Configured")
+            {
                 // 配置的未打包扩展默认启用
                 ext_info.enabled = true;
                 extensions.push(ext_info.clone());
-                info!("检测到配置的未打包扩展：{} ({})", ext_info.name, ext_info.id);
+                info!(
+                    "检测到配置的未打包扩展：{} ({})",
+                    ext_info.name, ext_info.id
+                );
             }
         }
 
@@ -400,7 +425,11 @@ impl ExtensionDetector {
                             if let Some(state) = ext_data.get("state").and_then(|s| s.as_u64()) {
                                 // state: 1 = 启用，0 = 禁用
                                 enabled_status.insert(ext_id.clone(), state == 1);
-                                debug!("扩展 {} 启用状态：{}", ext_id, if state == 1 { "启用" } else { "禁用" });
+                                debug!(
+                                    "扩展 {} 启用状态：{}",
+                                    ext_id,
+                                    if state == 1 { "启用" } else { "禁用" }
+                                );
                             }
                         }
                     }
@@ -455,10 +484,7 @@ impl ExtensionDetector {
             .unwrap_or("Unknown Extension")
             .to_string();
 
-        let version = manifest["version"]
-            .as_str()
-            .unwrap_or("0.0.0")
-            .to_string();
+        let version = manifest["version"].as_str().unwrap_or("0.0.0").to_string();
 
         Some(ExtensionInfo {
             id: ext_id,
@@ -493,10 +519,7 @@ impl ExtensionDetector {
             .unwrap_or("Unknown Extension")
             .to_string();
 
-        let version = manifest["version"]
-            .as_str()
-            .unwrap_or("0.0.0")
-            .to_string();
+        let version = manifest["version"].as_str().unwrap_or("0.0.0").to_string();
 
         Some(ExtensionInfo {
             id: ext_id.to_string(),

@@ -161,8 +161,6 @@ impl ProcessManager {
         false
     }
 
-
-
     /// 获取进程数量
     pub fn process_count(&mut self) -> usize {
         self.get_target_processes().len()

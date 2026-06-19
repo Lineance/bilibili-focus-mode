@@ -39,6 +39,22 @@ pub struct CliArgs {
     /// 隐藏控制台窗口（Windows）
     #[arg(long)]
     pub no_console: bool,
+
+    /// 以 Native Messaging 主机模式运行（stdio）
+    #[arg(long)]
+    pub native_messaging: bool,
+
+    /// 安装 Native Messaging 主机
+    #[arg(long)]
+    pub install_native_host: bool,
+
+    /// 卸载 Native Messaging 主机
+    #[arg(long)]
+    pub uninstall_native_host: bool,
+
+    /// 扩展 ID（用于 Native Messaging 注册）
+    #[arg(long, value_name = "EXT_ID")]
+    pub extension_id: Option<String>,
 }
 
 impl CliArgs {
@@ -93,9 +109,12 @@ mod tests {
         assert!(args.interval.is_none());
         assert!(args.path.is_none());
         assert!(args.extension.is_none());
-        assert!(!args.no_tray);
+        assert!(!args.no_console);
         assert!(!args.verbose);
         assert!(!args.quiet);
+        assert!(!args.native_messaging);
+        assert!(!args.install_native_host);
+        assert!(!args.uninstall_native_host);
     }
 
     #[test]
@@ -112,7 +131,7 @@ mod tests {
             "/path/to/chromium",
             "-e",
             "extension-id-123",
-            "--no-tray",
+            "--no-console",
             "-v",
         ]);
 
@@ -121,8 +140,29 @@ mod tests {
         assert_eq!(args.interval, Some(2));
         assert_eq!(args.path, Some(PathBuf::from("/path/to/chromium")));
         assert_eq!(args.extension, Some("extension-id-123".to_string()));
-        assert!(args.no_tray);
+        assert!(args.no_console);
         assert!(args.verbose);
+    }
+
+    #[test]
+    fn test_cli_args_native_messaging() {
+        let args = CliArgs::parse_from(["chromium-extension-monitor", "--native-messaging"]);
+        assert!(args.native_messaging);
+    }
+
+    #[test]
+    fn test_cli_args_install_native_host() {
+        let args = CliArgs::parse_from([
+            "chromium-extension-monitor",
+            "--install-native-host",
+            "--extension-id",
+            "abcdefghijklmnopqrstuvwx",
+        ]);
+        assert!(args.install_native_host);
+        assert_eq!(
+            args.extension_id,
+            Some("abcdefghijklmnopqrstuvwx".to_string())
+        );
     }
 
     #[test]

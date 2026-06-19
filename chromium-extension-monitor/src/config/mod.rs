@@ -2,8 +2,8 @@ mod cli;
 mod file;
 
 pub use cli::CliArgs;
-pub use file::Config;
 pub use file::ChromiumConfig;
+pub use file::Config;
 pub use file::ExtensionConfig;
 pub use file::LoggingConfig;
 pub use file::MonitorConfig;
@@ -79,8 +79,8 @@ impl ConfigManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::NamedTempFile;
     use std::io::Write;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn test_config_manager_default() {
@@ -92,11 +92,15 @@ mod tests {
     #[test]
     fn test_config_manager_from_file() {
         let mut temp_file = NamedTempFile::new().unwrap();
-        writeln!(temp_file, r#"
+        writeln!(
+            temp_file,
+            r#"
 [monitor]
 check_interval = 2
 kill_delay = 10
-"#).unwrap();
+"#
+        )
+        .unwrap();
 
         let manager = ConfigManager::new(temp_file.path().to_path_buf()).unwrap();
         assert_eq!(manager.config().monitor.check_interval, 2);

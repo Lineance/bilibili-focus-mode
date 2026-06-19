@@ -4,9 +4,8 @@ use std::path::{Path, PathBuf};
 
 /// 获取应用程序目录
 pub fn get_app_dir() -> crate::Result<PathBuf> {
-    std::env::current_dir().map_err(|e| {
-        crate::error::AppError::other(format!("获取应用程序目录失败：{}", e))
-    })
+    std::env::current_dir()
+        .map_err(|e| crate::error::AppError::other(format!("获取应用程序目录失败：{}", e)))
 }
 
 /// 获取配置文件路径
@@ -14,7 +13,9 @@ pub fn get_config_path(custom_path: Option<&Path>) -> PathBuf {
     if let Some(path) = custom_path {
         path.to_path_buf()
     } else {
-        get_app_dir().unwrap_or_else(|_| PathBuf::from(".")).join("config.toml")
+        get_app_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .join("config.toml")
     }
 }
 
@@ -36,14 +37,14 @@ pub fn is_admin() -> bool {
     unsafe {
         let mut token_handle: HANDLE = HANDLE::default();
         let process = GetCurrentProcess();
-        
+
         if OpenProcessToken(process, TOKEN_QUERY, &mut token_handle).is_err() {
             return false;
         }
 
         let mut elevation = TOKEN_ELEVATION::default();
         let mut size = 0u32;
-        
+
         let result = GetTokenInformation(
             token_handle,
             windows::Win32::Security::TokenElevation,
@@ -81,9 +82,7 @@ pub fn hide_console() {
 #[cfg(not(windows))]
 pub fn is_admin() -> bool {
     // 简单检查 UID
-    unsafe {
-        libc::geteuid() == 0
-    }
+    unsafe { libc::geteuid() == 0 }
 }
 
 /// 请求管理员权限（Windows）
@@ -103,26 +102,27 @@ pub fn request_admin() -> crate::Result<()> {
     ps_cmd.arg("-WindowStyle");
     ps_cmd.arg("Hidden");
     ps_cmd.arg("-Command");
-    
+
     // 构建 Start-Process 命令
     let mut start_cmd = format!(
         "Start-Process -FilePath '{}' -Verb RunAs -PassThru",
         exe.display()
     );
-    
+
     if !args.is_empty() {
-        let args_str = args.iter()
+        let args_str = args
+            .iter()
             .map(|arg| format!("'{}'", arg.replace("'", "''")))
             .collect::<Vec<_>>()
             .join(",");
         start_cmd.push_str(&format!(" -ArgumentList @({})", args_str));
     }
-    
+
     ps_cmd.arg(&start_cmd);
-    
+
     // 执行并等待完成
     let status = ps_cmd.status()?;
-    
+
     if !status.success() {
         return Err(crate::error::AppError::other(format!(
             "请求管理员权限失败，退出码：{}",
@@ -202,8 +202,14 @@ mod tests {
     fn test_format_duration() {
         assert_eq!(format_duration(std::time::Duration::from_secs(5)), "5s");
         assert_eq!(format_duration(std::time::Duration::from_secs(65)), "1m 5s");
-        assert_eq!(format_duration(std::time::Duration::from_secs(3665)), "1h 1m 5s");
-        assert_eq!(format_duration(std::time::Duration::from_secs(90065)), "1d 1h 1m 5s");
+        assert_eq!(
+            format_duration(std::time::Duration::from_secs(3665)),
+            "1h 1m 5s"
+        );
+        assert_eq!(
+            format_duration(std::time::Duration::from_secs(90065)),
+            "1d 1h 1m 5s"
+        );
     }
 
     #[test]
