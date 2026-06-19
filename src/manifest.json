@@ -35,7 +35,7 @@
   "web_accessible_resources": [
     {
       "resources": ["src/manager/index.html", "assets/*", "src/popup/index.html"],
-      "matches": ["<all_urls>"]
+      "matches": ["https://*.bilibili.com/*"]
     }
   ]
 }

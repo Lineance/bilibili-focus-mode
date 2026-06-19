@@ -35,30 +35,50 @@ export class BlockOverlayManager {
     const overlay = document.createElement('div');
     overlay.className = 'bilibili-focus-mode-block-overlay';
 
-    const boxContent = this.getBoxContent(isBankruptcy, isOutsideWindow, timeText);
     const boxBg = isBankruptcy ? 'rgba(239, 68, 68, 0.2)' : (isOutsideWindow ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.1)');
     const boxBorder = (isBankruptcy || isOutsideWindow) ? `1px solid ${isBankruptcy ? '#ef4444' : '#f59e0b'}` : 'none';
 
-    overlay.innerHTML = `
-      <div style="text-align: center; max-width: 500px; padding: 20px;">
-        <h2 style="margin-bottom: 16px; font-size: 24px;">🔒 视频未审批</h2>
-        <p style="margin-bottom: 8px; font-size: 16px; opacity: 0.9;">${metadata.title}</p>
-        <p style="margin-bottom: 24px; font-size: 14px; opacity: 0.7;">UP 主：${metadata.uploader}</p>
-        
-        <div style="margin-bottom: 24px; padding: 16px; background: ${boxBg}; border: ${boxBorder}; border-radius: 8px;">
-          ${boxContent}
-        </div>
+    // Create container safely using DOM APIs
+    const container = document.createElement('div');
+    container.style.cssText = 'text-align: center; max-width: 500px; padding: 20px;';
 
-        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
-          <div id="bfm-add-limbo" style="padding: 10px 24px !important; background: #00aeec !important; border-radius: 6px !important; color: white !important; cursor: pointer !important; font-size: 14px !important; font-weight: bold !important; display: inline-block !important; user-select: none !important; transition: opacity 0.2s !important;">
-            加入待审池
-          </div>
-          <div id="bfm-open-manager" style="padding: 10px 24px !important; background: transparent !important; border: 1px solid white !important; border-radius: 6px !important; color: white !important; cursor: pointer !important; font-size: 14px !important; display: inline-block !important; user-select: none !important; transition: opacity 0.2s !important;">
-            打开管理页
-          </div>
-        </div>
-      </div>
-    `;
+    const h2 = document.createElement('h2');
+    h2.style.cssText = 'margin-bottom: 16px; font-size: 24px;';
+    h2.textContent = '🔒 视频未审批';
+    container.appendChild(h2);
+
+    const titleP = document.createElement('p');
+    titleP.style.cssText = 'margin-bottom: 8px; font-size: 16px; opacity: 0.9;';
+    titleP.textContent = metadata.title;
+    container.appendChild(titleP);
+
+    const uploaderP = document.createElement('p');
+    uploaderP.style.cssText = 'margin-bottom: 24px; font-size: 14px; opacity: 0.7;';
+    uploaderP.textContent = `UP 主：${metadata.uploader}`;
+    container.appendChild(uploaderP);
+
+    const boxDiv = document.createElement('div');
+    boxDiv.style.cssText = `margin-bottom: 24px; padding: 16px; background: ${boxBg}; border: ${boxBorder}; border-radius: 8px;`;
+    this.appendBoxContent(boxDiv, isBankruptcy, isOutsideWindow, timeText);
+    container.appendChild(boxDiv);
+
+    const buttonsDiv = document.createElement('div');
+    buttonsDiv.style.cssText = 'display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 20px;';
+
+    const addBtn = document.createElement('div');
+    addBtn.id = 'bfm-add-limbo';
+    addBtn.style.cssText = 'padding: 10px 24px !important; background: #00aeec !important; border-radius: 6px !important; color: white !important; cursor: pointer !important; font-size: 14px !important; font-weight: bold !important; display: inline-block !important; user-select: none !important; transition: opacity 0.2s !important;';
+    addBtn.textContent = '加入待审池';
+    buttonsDiv.appendChild(addBtn);
+
+    const mgrBtn = document.createElement('div');
+    mgrBtn.id = 'bfm-open-manager';
+    mgrBtn.style.cssText = 'padding: 10px 24px !important; background: transparent !important; border: 1px solid white !important; border-radius: 6px !important; color: white !important; cursor: pointer !important; font-size: 14px !important; display: inline-block !important; user-select: none !important; transition: opacity 0.2s !important;';
+    mgrBtn.textContent = '打开管理页';
+    buttonsDiv.appendChild(mgrBtn);
+
+    container.appendChild(buttonsDiv);
+    overlay.appendChild(container);
 
     document.body.appendChild(overlay);
 
@@ -117,24 +137,44 @@ export class BlockOverlayManager {
   }
 
   /**
-   * Get box content based on state
+   * Append box content to element safely using DOM APIs
    */
-  private getBoxContent(isBankruptcy: boolean, isOutsideWindow: boolean, timeText: string): string {
+  private appendBoxContent(container: HTMLElement, isBankruptcy: boolean, isOutsideWindow: boolean, timeText: string): void {
     if (isBankruptcy) {
-      return `
-        <p style="margin-bottom: 8px; font-weight: bold; color: #ef4444;">❌ 破产锁定中</p>
-        <p style="font-size: 14px; opacity: 0.8;">破产期间禁止所有娱乐消费<br>虽然当前是审批时间，但你已陷入债务破产，请先前往管理页偿还债务。</p>
-      `;
+      const p1 = document.createElement('p');
+      p1.style.cssText = 'margin-bottom: 8px; font-weight: bold; color: #ef4444;';
+      p1.textContent = '❌ 破产锁定中';
+      container.appendChild(p1);
+
+      const p2 = document.createElement('p');
+      p2.style.cssText = 'font-size: 14px; opacity: 0.8;';
+      p2.textContent = '破产期间禁止所有娱乐消费。虽然当前是审批时间，但你已陷入债务破产，请先前往管理页偿还债务。';
+      container.appendChild(p2);
     } else if (isOutsideWindow) {
-      return `
-        <p style="margin-bottom: 8px; font-weight: bold; color: #f59e0b;">⏰ 当前不在审批时间</p>
-        <p style="font-size: 14px; opacity: 0.8;">距离下次审批时间：${timeText}<br><span style="font-size: 12px; opacity: 0.6; margin-top: 8px;">审批时间才能处理待审池视频</span></p>
-      `;
+      const p1 = document.createElement('p');
+      p1.style.cssText = 'margin-bottom: 8px; font-weight: bold; color: #f59e0b;';
+      p1.textContent = '⏰ 当前不在审批时间';
+      container.appendChild(p1);
+
+      const p2 = document.createElement('p');
+      p2.style.cssText = 'font-size: 14px; opacity: 0.8;';
+      p2.textContent = `距离下次审批时间：${timeText}`;
+      container.appendChild(p2);
+
+      const span = document.createElement('span');
+      span.style.cssText = 'font-size: 12px; opacity: 0.6; margin-top: 8px;';
+      span.textContent = '审批时间才能处理待审池视频';
+      container.appendChild(span);
     } else {
-      return `
-        <p style="margin-bottom: 8px; font-weight: bold; color: #10b981;">✅ 当前是审批时间</p>
-        <p style="font-size: 14px; opacity: 0.8;">你可以现在处理待审池视频。<br>请先将此视频"加入待审池"，然后在管理页点击通过即可开始观看。</p>
-      `;
+      const p1 = document.createElement('p');
+      p1.style.cssText = 'margin-bottom: 8px; font-weight: bold; color: #10b981;';
+      p1.textContent = '✅ 当前是审批时间';
+      container.appendChild(p1);
+
+      const p2 = document.createElement('p');
+      p2.style.cssText = 'font-size: 14px; opacity: 0.8;';
+      p2.textContent = '你可以现在处理待审池视频。请先将此视频"加入待审池"，然后在管理页点击通过即可开始观看。';
+      container.appendChild(p2);
     }
   }
 
@@ -188,27 +228,43 @@ export class BlockOverlayManager {
       z-index: 9999999;
     `;
 
-    dialog.innerHTML = `
-      <div style="background: #1a1a2e; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%;">
-        <h3 style="margin: 0 0 16px 0; font-size: 18px; color: white;">选择视频类型</h3>
-        <p style="margin: 0 0 20px 0; color: #aaa; font-size: 14px;">${metadata.title}</p>
-        <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
-          <button id="bfm-tag-learning" style="flex: 1; min-width: 100px; padding: 12px; background: #10b981; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
-            📚 学习
-          </button>
-          <button id="bfm-tag-music" style="flex: 1; min-width: 100px; padding: 12px; background: #3b82f6; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
-            🎵 音乐
-          </button>
-          <button id="bfm-tag-entertainment" style="flex: 1; min-width: 100px; padding: 12px; background: #f59e0b; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;">
-            🎮 娱乐
-          </button>
-        </div>
-        <button id="bfm-tag-cancel" style="width: 100%; padding: 10px; background: transparent; border: 1px solid #666; border-radius: 8px; color: #aaa; cursor: pointer; font-size: 14px;">
-          取消
-        </button>
-      </div>
-    `;
+    // Create dialog content safely using DOM APIs
+    const contentDiv = document.createElement('div');
+    contentDiv.style.cssText = 'background: #1a1a2e; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%;';
 
+    const h3 = document.createElement('h3');
+    h3.style.cssText = 'margin: 0 0 16px 0; font-size: 18px; color: white;';
+    h3.textContent = '选择视频类型';
+    contentDiv.appendChild(h3);
+
+    const titleP = document.createElement('p');
+    titleP.style.cssText = 'margin: 0 0 20px 0; color: #aaa; font-size: 14px;';
+    titleP.textContent = metadata.title;
+    contentDiv.appendChild(titleP);
+
+    const buttonsDiv = document.createElement('div');
+    buttonsDiv.style.cssText = 'display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;';
+
+    const createTagButton = (id: string, bg: string, text: string) => {
+      const btn = document.createElement('button');
+      btn.id = id;
+      btn.style.cssText = `flex: 1; min-width: 100px; padding: 12px; background: ${bg}; border: none; border-radius: 8px; color: white; cursor: pointer; font-size: 14px;`;
+      btn.textContent = text;
+      return btn;
+    };
+
+    buttonsDiv.appendChild(createTagButton('bfm-tag-learning', '#10b981', '📚 学习'));
+    buttonsDiv.appendChild(createTagButton('bfm-tag-music', '#3b82f6', '🎵 音乐'));
+    buttonsDiv.appendChild(createTagButton('bfm-tag-entertainment', '#f59e0b', '🎮 娱乐'));
+    contentDiv.appendChild(buttonsDiv);
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.id = 'bfm-tag-cancel';
+    cancelBtn.style.cssText = 'width: 100%; padding: 10px; background: transparent; border: 1px solid #666; border-radius: 8px; color: #aaa; cursor: pointer; font-size: 14px;';
+    cancelBtn.textContent = '取消';
+    contentDiv.appendChild(cancelBtn);
+
+    dialog.appendChild(contentDiv);
     document.body.appendChild(dialog);
 
     return new Promise<VideoTag | null>((resolve) => {

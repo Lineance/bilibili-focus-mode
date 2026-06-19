@@ -7,7 +7,7 @@ export class VideoMetadataExtractor {
    * Extract video metadata from page
    */
   extractVideoMetadata(collectionDetectionEnabled: boolean): VideoMetadata | null {
-    const bvidMatch = window.location.pathname.match(/\/video\/(BV\w+)/);
+    const bvidMatch = window.location.pathname.match(/\/video\/(BV\w{1,50})/);
     if (!bvidMatch) return null;
 
     const bvid = bvidMatch[1];
@@ -39,7 +39,7 @@ export class VideoMetadataExtractor {
    * Extract live metadata from page with retry mechanism
    */
   async extractLiveMetadataWithRetry(maxRetries = 5, delay = 1000): Promise<VideoMetadata | null> {
-    const roomIdMatch = window.location.pathname.match(/(?:\/live\/)?(\d+)/);
+    const roomIdMatch = window.location.pathname.match(/(?:\/live\/)?(\d{1,20})/);
     if (!roomIdMatch) {
       logger.warn('Content', 'No room ID found in pathname');
       return null;

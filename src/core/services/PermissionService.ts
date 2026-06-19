@@ -4,10 +4,7 @@ import { KeywordRule } from './KeywordRule';
 import { TimeWindowService } from './TimeWindowService';
 
 export class PermissionError extends Error {
-  constructor(
-    message: string,
-    public code: string
-  ) {
+  constructor(message: string, public code: string) {
     super(message);
     this.name = 'PermissionError';
   }
@@ -22,10 +19,6 @@ export class PermissionService {
     this.timeWindowService = new TimeWindowService(storage.config);
   }
 
-  /**
-   * Check if video can be watched
-   * Returns permission result and review window status
-   */
   check(bvid: string, uploaderName?: string, title?: string): PermissionResult & {
     inReviewWindow: boolean;
     timeUntilWindow: number;
@@ -34,145 +27,79 @@ export class PermissionService {
   } {
     try {
       const resolvedTag = this.getVideoTag(bvid) || 'ENTERTAINMENT';
-      // Check time window status
-      const windowStatus = this.timeWindowService.checkTimeWindow();
-      const inReviewWindow = windowStatus.isInWindow;
-      const timeUntilWindow = windowStatus.timeUntilWindow;
+      const { isInWindow: inReviewWindow, timeUntilWindow } = this.timeWindowService.checkTimeWindow();
+      const ctx = { inReviewWindow, timeUntilWindow, videoTag: resolvedTag };
 
-      // Check Permanent Groups FIRST - always allowed even during bankruptcy
-      const inPermanent = this.storage.permanentGroups.some(group =>
-        group.items.some(item => item.bvid === bvid)
-      );
-      if (inPermanent) {
-        return {
-          allowed: true,
-          reason: 'PERMANENT',
-          inReviewWindow,
-          timeUntilWindow,
-          videoTag: resolvedTag
-        };
+      const permanentResult = this.checkPermanentGroup(bvid);
+      if (permanentResult) return { ...permanentResult, ...ctx };
+
+      if (title) {
+        const keywordResult = this.checkKeywordRules(title);
+        if (keywordResult) return { ...keywordResult, ...ctx };
       }
 
-      // Check Keyword Rules - auto-allow based on title keywords
-      if (title && this.storage.config.keywordRules?.enabled) {
-        const keywordRule = new KeywordRule(this.storage.config.keywordRules);
-        const matchedTag = keywordRule.check(title);
-        if (matchedTag) {
-          return {
-            allowed: true,
-            reason: 'PERMANENT',
-            inReviewWindow,
-            timeUntilWindow,
-            videoTag: matchedTag
-          };
-        }
+      if (uploaderName) {
+        const uploaderResult = this.checkUploaderAllowlist(uploaderName);
+        if (uploaderResult) return { ...uploaderResult.result, ...ctx, uploaderAllowed: true, videoTag: uploaderResult.tag || resolvedTag };
       }
 
-      // Check if uploader is in allowlist
-      if (uploaderName && this.storage.allowedUploaders) {
-        const allowedUploader = this.storage.allowedUploaders.find(u => u.name === uploaderName);
-        if (allowedUploader) {
-          return {
-            allowed: true,
-            reason: 'PERMANENT',
-            inReviewWindow,
-            timeUntilWindow,
-            uploaderAllowed: true,
-            videoTag: allowedUploader.tag
-          };
-        }
-      }
+      const bankruptcyResult = this.checkBankruptcy();
+      if (bankruptcyResult) return { ...bankruptcyResult, ...ctx };
 
-      // Check Bankruptcy - blocks all new applications except permanent groups
-      if (this.storage.config.debtEnabled && this.storage.debtAccount?.bankruptcyEndTime) {
-        const now = Date.now();
-        if (now < this.storage.debtAccount.bankruptcyEndTime) {
-          return {
-            allowed: false,
-            reason: 'BANKRUPTCY',
-            inReviewWindow,
-            timeUntilWindow,
-            videoTag: resolvedTag
-          };
-        }
-      }
+      const instantResult = this.checkInstantList(bvid);
+      if (instantResult) return { ...instantResult, ...ctx };
 
-      // Check Instant List - allowed if not expired
-      const instantItem = this.storage.instantList.find(item => item.bvid === bvid);
-      if (instantItem) {
-        const now = Date.now();
-        if (now < instantItem.expiresAt) {
-          return {
-            allowed: true,
-            reason: 'INSTANT',
-            inReviewWindow,
-            timeUntilWindow,
-            videoTag: instantItem.tag
-          };
-        }
-      }
+      const coolingResult = this.checkCoolingList(bvid);
+      if (coolingResult) return { ...coolingResult, ...ctx };
 
-      // Check Cooling List - allowed if in available period
-      const coolingItem = this.storage.coolingList.find(item => item.bvid === bvid);
-      if (coolingItem) {
-        const now = Date.now();
-        if (now < coolingItem.availableAt) {
-          return {
-            allowed: false,
-            reason: 'COOLING_WAITING',
-            inReviewWindow,
-            timeUntilWindow,
-            videoTag: coolingItem.tag
-          };
-        } else if (now < coolingItem.expiresAt) {
-          return {
-            allowed: true,
-            reason: 'COOLING_AVAILABLE',
-            inReviewWindow,
-            timeUntilWindow,
-            videoTag: coolingItem.tag
-          };
-        } else {
-          return {
-            allowed: false,
-            reason: 'EXPIRED',
-            inReviewWindow,
-            timeUntilWindow,
-            videoTag: coolingItem.tag
-          };
-        }
-      }
-
-      // No permission - video is in limbo or not processed
-      return {
-        allowed: false,
-        reason: 'NO_PERMISSION',
-        inReviewWindow,
-        timeUntilWindow,
-        videoTag: resolvedTag
-      };
+      return { allowed: false, reason: 'NO_PERMISSION', ...ctx };
     } catch (error) {
       console.error('[PermissionService]', error);
       throw new PermissionError('Failed to check permission', 'CHECK_FAILED');
     }
   }
 
+  private checkPermanentGroup(bvid: string): PermissionResult | null {
+    return this.storage.permanentGroups.some(g => g.items.some(i => i.bvid === bvid))
+      ? { allowed: true, reason: 'PERMANENT' } : null;
+  }
+
+  private checkKeywordRules(title: string): PermissionResult | null {
+    if (!this.storage.config.keywordRules?.enabled) return null;
+    return new KeywordRule(this.storage.config.keywordRules).check(title)
+      ? { allowed: true, reason: 'PERMANENT' } : null;
+  }
+
+  private checkUploaderAllowlist(uploaderName: string): { result: PermissionResult; tag?: VideoTag } | null {
+    const found = this.storage.allowedUploaders?.find(u => u.name === uploaderName);
+    return found ? { result: { allowed: true, reason: 'PERMANENT' }, tag: found.tag } : null;
+  }
+
+  private checkBankruptcy(): PermissionResult | null {
+    const endTime = this.storage.debtAccount?.bankruptcyEndTime;
+    return this.storage.config.debtEnabled && endTime && Date.now() < endTime
+      ? { allowed: false, reason: 'BANKRUPTCY' } : null;
+  }
+
+  private checkInstantList(bvid: string): PermissionResult | null {
+    const item = this.storage.instantList.find(i => i.bvid === bvid);
+    return item && Date.now() < item.expiresAt ? { allowed: true, reason: 'INSTANT' } : null;
+  }
+
+  private checkCoolingList(bvid: string): PermissionResult | null {
+    const item = this.storage.coolingList.find(i => i.bvid === bvid);
+    if (!item) return null;
+    const now = Date.now();
+    if (now < item.availableAt) return { allowed: false, reason: 'COOLING_WAITING' };
+    if (now < item.expiresAt) return { allowed: true, reason: 'COOLING_AVAILABLE' };
+    return { allowed: false, reason: 'EXPIRED' };
+  }
+
   private getVideoTag(bvid: string): VideoTag | undefined {
-    const fromPermanent = this.storage.permanentGroups
-      .flatMap(group => group.items)
-      .find(item => item.bvid === bvid)?.tag;
-    if (fromPermanent) return fromPermanent;
-
-    const fromInstant = this.storage.instantList.find(item => item.bvid === bvid)?.tag;
-    if (fromInstant) return fromInstant;
-
-    const fromCooling = this.storage.coolingList.find(item => item.bvid === bvid)?.tag;
-    if (fromCooling) return fromCooling;
-
-    const fromLimbo = this.storage.limboList.find(item => item.bvid === bvid)?.tag;
-    if (fromLimbo) return fromLimbo;
-
-    const fromGhost = this.storage.ghostList.find(item => item.bvid === bvid)?.tag;
-    return fromGhost;
+    return this.storage.permanentGroups.flatMap(g => g.items).find(i => i.bvid === bvid)?.tag
+      ?? this.storage.instantList.find(i => i.bvid === bvid)?.tag
+      ?? this.storage.coolingList.find(i => i.bvid === bvid)?.tag
+      ?? this.storage.limboList.find(i => i.bvid === bvid)?.tag
+      ?? this.storage.ghostList.find(i => i.bvid === bvid)?.tag;
   }
 }

@@ -258,6 +258,8 @@ export class BehaviorLoggingService {
   }
 
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const array = new Uint8Array(9);
+    crypto.getRandomValues(array);
+    return `${Date.now()}-${Array.from(array, (b) => b.toString(36)).join('')}`;
   }
 }
