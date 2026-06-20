@@ -1,243 +1,97 @@
-# 项目架构文档
+# 项目架构文档（当前实现）
 
 ## 概述
 
-Bilibili Focus Mode 是一个基于 Manifest V3 的 Chrome 扩展，采用现代化的前端技术栈构建。
+Bilibili Focus Mode 是一个基于 Manifest V3 的 Chrome 扩展。项目采用「前后台分层 + 核心服务层」架构，业务规则集中在 `src/core`，页面注入与交互分布在 `content / manager / popup / background`。
 
-## 系统架构
+## 架构分层
 
-### 核心组件
+### Background（Service Worker）
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Chrome Extension                         │
-├──────────────┬──────────────┬──────────────┬────────────────┤
-│  Background  │   Content    │   Manager    │     Popup      │
-│  (Service    │   Script     │  (Options)   │                │
-│   Worker)    │              │              │                │
-└──────────────┴──────────────┴──────────────┴────────────────┘
-       │              │              │              │
-       └──────────────┴──────────────┴──────────────┘
-                          │
-                    ┌─────────────┐
-                    │  Core Layer │
-                    │  (Services) │
-                    └─────────────┘
-```
+- 入口：`src/background/index.ts`
+- 主要职责：
+  - 注册消息处理器（`src/background/MessageHandlers.ts`）
+  - 定时任务与提醒（`AlarmHandler`）
+  - 数据迁移（`DebtMigrationService`）
+  - 可选 Native Messaging 通道（`NativeMessagingClient`）
 
-### 1. Background (Service Worker)
+### Content Script（Bilibili 页面注入）
 
-- **职责**: 后台任务、定时提醒、跨页面通信
-- **关键功能**:
-  - 权限检查
-  - 债务计算
-  - 定时提醒（Limbo 审查）
-  - 存储管理
+- 入口：`src/content/index.tsx`
+- 主要职责：
+  - 页面样式净化与注入（`StyleOrchestrator` / `StyleInjector`）
+  - 视频元数据提取（`VideoMetadataExtractor`）
+  - 权限检查编排（`PermissionOrchestrator` / `PermissionChecker`）
+  - 拦截 UI（`components/BlockOverlay*`）
+  - SPA 路由监听（`NavigationWatcher`）
 
-### 2. Content Script
+### Manager（Options 管理页）
 
-- **职责**: 注入 Bilibili 播放页，拦截和净化
-- **关键功能**:
-  - 页面净化（移除评论/推荐）
-  - 权限检查
-  - Block Overlay 显示
-  - 视频元数据提取
+- 入口：`src/manager/main.tsx` + `src/manager/App.tsx`
+- 主要职责：
+  - 四态列表管理（Limbo / Cooling / Instant / Permanent / Ghost）
+  - 债务看板、熔断申请、时段与配置面板
+  - 主题与关键词规则设置
 
-### 3. Manager (Options Page)
+### Popup
 
-- **职责**: 管理界面，React 应用
-- **关键功能**:
-  - Limbo 审查
-  - 列表管理
-  - 债务仪表盘
-  - 配置中心
+- 入口：`src/popup/index.tsx`
+- 主要职责：快速打开管理页与查看当前状态
 
-### 4. Popup
+### 核心服务层（`src/core/services`）
 
-- **职责**: 快速操作入口
-- **关键功能**:
-  - 打开管理页
-  - 快速状态查看
+核心业务规则均为可测试的纯逻辑服务，典型服务如下：
 
-### 5. Core Layer
+- `PermissionService`：统一权限判定流程
+- `DebtService`：债务累计与偿还规则
+- `FuseService` / `FuseApplicationService`：熔断码生成与申请策略
+- `ExpirationService` / `GhostResurrectionService`：过期与招魂流程
+- `ConfigService` / `TimeWindowService`：配置与时段规则
+- `KeywordRule`：关键词自动放行
 
-- **职责**: 纯业务逻辑，可单元测试
-- **服务**:
-  - `PermissionService` - 权限检查
-  - `FuseService` - 熔断码生成与验证
-  - `DebtService` - 债务计算
-  - `ExpirationService` - 过期管理
+## 核心业务流
 
-## 数据流
+### 视频访问判定
 
-```
-用户点击视频
-    ↓
-Content Script 提取元数据
-    ↓
-发送消息到 Background
-    ↓
-PermissionService 检查权限
-    ↓
-返回结果到 Content Script
-    ↓
-允许播放 / 显示 Block Overlay
-```
+1. Content Script 提取视频元数据
+2. 通过 `webext-bridge` 发消息到 Background
+3. Background 调用 `PermissionService` 判定
+4. 返回结果给 Content Script，决定放行或显示拦截层
 
-## 存储结构
+### 四态许可流转
 
-```typescript
-interface ExtensionStorage {
-  version: 3;
-  limboList: LimboItem[];           // 待审池
-  coolingList: CoolingItem[];       // 冷静期
-  instantList: InstantItem[];       // 即时许可
-  permanentGroups: PermanentGroup[]; // 永久分组
-  ghostList: GhostItem[];           // 幽灵档案
-  behaviorLog: BehaviorLog;         // 行为日志
-  globalStats: GlobalStats;         // 全局统计
-  debtAccount: DebtAccount;         // 债务账户
-  config: ExtensionConfig;          // 配置
-}
-```
+`Limbo → Cooling / Instant / Permanent → (过期) Ghost`
 
-## 四态许可系统
+- `Cooling` 和 `Instant` 带时效性
+- `Permanent` 为长期许可
+- 过期条目由过期服务转入 `Ghost`
 
-```
-用户发现视频
-    ↓
-加入 Limbo (待审池)
-    ↓
-审查决策
-    ├─→ Cooling (24h冷静期 + 48h可用期)
-    ├─→ Instant (6h有效，需熔断码)
-    ├─→ Permanent (随时观看，偿还债务)
-    └─→ Delete (删除)
-    ↓
-过期视频 → Ghost (7天招魂期)
-```
+## 目录结构（精简）
 
-## 债务系统
-
-- **产生债务**: 观看 Entertainment 视频 (+2 分钟/分钟)
-- **偿还债务**: 观看 Learning 视频 (-1 分钟/分钟)
-- **破产阈值**: 60 分钟
-- **破产惩罚**: 24小时禁止新申请
-
-## 熔断码系统
-
-动态长度算法：
-- 基础长度: 8 位
-- 1次申请后10分钟内: 16 位
-- 2次申请: 32 位
-- 3次及以上: 64 位
-- 破产绕过: 64-128 位
-
-## 通信机制
-
-使用 `webext-bridge` 进行类型安全的跨上下文通信：
-
-```typescript
-// Content → Background
-const result = await sendMessage('check-permission', { bvid });
-
-// Background 处理
-onMessage('check-permission', async (message) => {
-  const data = message.data as ProtocolMap['check-permission']['req'];
-  return service.check(data.bvid);
-});
-```
-
-## 目录结构
-
-```
+```text
 src/
-├── background/
-│   └── index.ts              # Service Worker 入口
-├── content/
-│   ├── index.tsx             # Content Script 入口
-│   └── purify.css            # 净化样式
-├── manager/
-│   ├── index.html
-│   ├── main.tsx
-│   ├── App.tsx
-│   ├── components/           # 管理页组件
-│   └── hooks/                # 管理页 Hooks
-├── popup/
-│   ├── index.html
-│   ├── index.tsx
-│   └── index.css
-├── core/
-│   ├── services/             # 业务服务
-│   │   ├── PermissionService.ts
-│   │   ├── FuseService.ts
-│   │   ├── DebtService.ts
-│   │   ├── ExpirationService.ts
-│   │   └── *.test.ts         # 单元测试
+├── background/             # Service Worker 与消息处理
+├── content/                # 页面注入、拦截 UI、样式净化
+│   ├── components/
+│   └── services/
+├── manager/                # 管理页 React 应用
+│   ├── components/
+│   └── hooks/
+├── popup/                  # 扩展弹窗
+├── core/                   # 核心业务逻辑（可测试）
+│   ├── services/
+│   ├── storage/
 │   ├── types/
-│   │   └── index.ts          # 类型定义
-│   ├── protocol.ts           # 消息协议
-│   └── constants.ts          # 默认配置
-├── hooks/
-│   ├── useStorage.ts
-│   ├── usePermission.ts
-│   └── useFuseCode.ts
-├── components/               # 共享组件
-├── adapters/                 # 存储适配器
-└── manifest.json             # 扩展配置
+│   └── utils/
+├── hooks/                  # 共享 Hooks
+├── test/                   # 测试（unit / integration / e2e）
+└── manifest.json
 ```
 
-## 开发规范
+## 测试与质量保障
 
-1. **TypeScript**: 严格模式，显式返回类型
-2. **命名**: PascalCase(组件), camelCase(hooks/函数)
-3. **测试**: 核心逻辑必须包含单元测试
-4. **错误处理**: 使用自定义错误类，不静默吞错
-5. **导入顺序**: React → 核心 → Hooks → 组件 → 工具 → 样式
-
-## 构建配置
-
-### Vite 配置要点
-
-```typescript
-export default defineConfig({
-  plugins: [react(), crx({ manifest })],
-  build: {
-    rollupOptions: {
-      output: {
-        inlineDynamicImports: false, // CSP 合规
-      },
-    },
-  },
-});
-```
-
-### CSP 合规
-
-- 禁止内联脚本
-- 禁止 `eval()`
-- CSS 在 `document_start` 注入
-
-## 测试策略
-
-- **单元测试**: 覆盖 `core/services/` 所有服务
-- **测试框架**: Vitest
-- **覆盖率**: 核心逻辑 100% 覆盖
-
-## 已知限制
-
-1. **状态不同步**: Content Script 内存缓存与 Storage 修改不同步（页面刷新后同步）
-2. **软锁绕过**: 技术用户可通过禁用扩展绕过（依赖自律）
-3. **封面 URL 失效**: B站 CDN 链接可能 404
-
-## 路线图
-
-### Phase 2
-- [ ] 合集批量添加
-- [ ] CSV 导出增强
-- [ ] 保质期可视化
-
-### Phase 3
-- [ ] 全局快捷键
-- [ ] New Tab 看板
-- [ ] Streak 系统
+- 测试目录：`src/test/unit`, `src/test/integration`, `src/test/e2e`
+- 常用校验命令：
+  - `npm run lint`
+  - `npm run typecheck`
+  - `npm run test -- --run`
