@@ -34,11 +34,12 @@ export function ConfigPanel(): React.JSX.Element {
 
   const handleSave = async () => {
     const result = await configService.saveConfig(config);
-    if (result.success) {
+    if (result.ok) {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } else {
-      alert('保存失败：' + result.errors?.map(e => e.message).join(', '));
+      const errors = result.error.details as { field: string; message: string }[] | undefined;
+      alert('保存失败：' + errors?.map(e => e.message).join(', '));
     }
   };
 

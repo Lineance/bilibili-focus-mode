@@ -3,7 +3,7 @@ import type { ProtocolMap } from '@core/protocol';
 import type { VideoTag } from '@core/types';
 
 interface SafeSendMessage {
-  <T>(type: string, data?: unknown): Promise<T | null>;
+  <T>(type: keyof ProtocolMap, data?: unknown): Promise<T | null>;
 }
 
 export class VideoTracker {

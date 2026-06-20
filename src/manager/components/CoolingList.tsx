@@ -3,57 +3,36 @@ import React from 'react';
 import type { CoolingItem } from '@core/types';
 import { useNow } from '@hooks/useNow';
 import { useSelection } from '@hooks/useSelection';
+import { useStorageActions } from '../hooks/useStorageActions';
 
 import { BatchToolbar, ItemCard } from './shared';
 
-export function CoolingList({ items }: { items: readonly CoolingItem[] }): React.JSX.Element {
+export const CoolingList = React.memo(function CoolingList({ items }: { items: readonly CoolingItem[] }): React.JSX.Element {
   const allBvids = items.map((item) => item.bvid);
   const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
+  const { deleteFromList, batchDelete, clearList } = useStorageActions();
   const now = useNow(60000);
 
   const handleDelete = async (bvid: string) => {
     if (!confirm('确定要删除这个视频吗？')) return;
-
-    try {
-      const storage = await chrome.storage.local.get();
-      const coolingList = (storage.coolingList || []) as CoolingItem[];
-      const newCoolingList = coolingList.filter((item) => item.bvid !== bvid);
-      await chrome.storage.local.set({ coolingList: newCoolingList });
-
-      if (isSelected(bvid)) {
-        toggleSelection(bvid);
-      }
-    } catch (error) {
-      console.error('[CoolingList] Failed to delete:', error);
-      alert('删除失败，请重试');
-    }
+    const success = await deleteFromList('coolingList', bvid);
+    if (!success) { alert('删除失败，请重试'); return; }
+    if (isSelected(bvid)) toggleSelection(bvid);
   };
 
   const handleBatchDelete = async () => {
     if (selected.size === 0) return;
     if (!confirm(`确定要删除选中的 ${selected.size} 个视频吗？`)) return;
-
-    try {
-      const storage = await chrome.storage.local.get();
-      const coolingList = (storage.coolingList || []) as CoolingItem[];
-      const newCoolingList = coolingList.filter((item) => !selected.has(item.bvid));
-      await chrome.storage.local.set({ coolingList: newCoolingList });
-      clearSelection();
-    } catch (error) {
-      console.error('[CoolingList] Failed to batch delete:', error);
-      alert('批量删除失败，请重试');
-    }
+    const success = await batchDelete('coolingList', selected);
+    if (!success) alert('批量删除失败，请重试');
+    else clearSelection();
   };
 
   const handleClearAll = async () => {
     if (!confirm('确定要清空冷静期列表吗？')) return;
-    try {
-      await chrome.storage.local.set({ coolingList: [] });
-      clearSelection();
-    } catch (error) {
-      console.error('[CoolingList] Failed to clear list:', error);
-      alert('清空失败，请重试');
-    }
+    const success = await clearList('coolingList');
+    if (!success) alert('清空失败，请重试');
+    else clearSelection();
   };
 
   return (
@@ -108,4 +87,4 @@ export function CoolingList({ items }: { items: readonly CoolingItem[] }): React
       />
     </div>
   );
-}
+});

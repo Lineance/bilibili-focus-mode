@@ -3,10 +3,7 @@ import { PermissionService } from '@core/services';
 import { logger } from '@core/utils/logger';
 import { assertMessageType, ensureStorageDefaults, getStorageNumber, pickConfigSnapshot } from './utils';
 
-export async function handleCheckPermission(
-  request: unknown,
-  _sender: chrome.runtime.MessageSender
-): Promise<unknown> {
+export async function handleCheckPermission(request: unknown): Promise<unknown> {
   const data = assertMessageType<ProtocolMap['check-permission']['req']>(request);
   logger.debug('Background', 'Checking permission for:', data.bvid, 'uploader:', data.uploaderName);
 

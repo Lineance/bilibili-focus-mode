@@ -109,8 +109,10 @@ describe('GhostResurrectionService', () => {
 
       const result = await service.resurrect(ghost, 'some-code', 'Valid repentance reason that is long enough');
 
-      expect(result.success).toBe(false);
-      expect(result.message).toBe('招魂期已过，该视频已彻底消失');
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toBe('招魂期已过，该视频已彻底消失');
+      }
     });
 
     it('should fail if repentance reason too short', async () => {
@@ -118,8 +120,10 @@ describe('GhostResurrectionService', () => {
 
       const result = await service.resurrect(ghost, 'some-code', 'Too short');
 
-      expect(result.success).toBe(false);
-      expect(result.message).toBe('忏悔理由至少需要20个字');
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toBe('忏悔理由至少需要20个字');
+      }
     });
 
     it('should fail with wrong fuse code', async () => {
@@ -131,8 +135,10 @@ describe('GhostResurrectionService', () => {
         'This is a valid repentance reason with enough characters'
       );
 
-      expect(result.success).toBe(false);
-      expect(result.message).toBe('熔断码错误，请重新输入');
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toBe('熔断码错误，请重新输入');
+      }
     });
 
     it('should succeed with valid inputs', async () => {
@@ -152,9 +158,10 @@ describe('GhostResurrectionService', () => {
         'This is a valid repentance reason with enough characters'
       );
 
-      expect(result.success).toBe(true);
-      expect(result.message).toContain('招魂成功');
-      expect(result.coolingItem).toBeDefined();
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.data).toBeDefined();
+      }
     });
   });
 });

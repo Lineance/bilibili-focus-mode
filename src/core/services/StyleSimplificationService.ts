@@ -1,4 +1,3 @@
-import type { ExtensionConfig } from '@core/types';
 import { VideoPlayerCSSGenerator } from './css/VideoPlayerCSSGenerator';
 import { HomepageCSSGenerator } from './css/HomepageCSSGenerator';
 import { DynamicCSSGenerator } from './css/DynamicCSSGenerator';
@@ -39,8 +38,6 @@ export interface LiveSimplificationOptions {
 }
 
 export class StyleSimplificationService {
-  private globalStyleElement: HTMLStyleElement | null = null;
-  private pageStyleElement: HTMLStyleElement | null = null;
   private videoPlayerCSSGenerator = new VideoPlayerCSSGenerator();
   private homepageCSSGenerator = new HomepageCSSGenerator();
   private dynamicCSSGenerator = new DynamicCSSGenerator();
@@ -71,134 +68,27 @@ export class StyleSimplificationService {
       window.location.pathname.startsWith('/search');
   }
 
-  applyVideoPlayerSimplification(options: VideoPlayerSimplificationOptions): void {
-    if (!this.isVideoPlayerPage()) return;
-    this.removePageStyles();
-    const css = this.videoPlayerCSSGenerator.generate(options);
-    this.injectPageStyles(css);
+  generateGlobalStyles(): string {
+    return this.globalCSSGenerator.generate();
   }
 
-  applyHomepageSimplification(options: HomepageSimplificationOptions): void {
-    if (!this.isHomepage()) return;
-    this.removePageStyles();
-    const css = this.homepageCSSGenerator.generate(options);
-    this.injectPageStyles(css);
+  generateSearchPageStyles(): string {
+    return this.globalCSSGenerator.generateSearchPageSimplification();
   }
 
-  applyDynamicSimplification(options: DynamicSimplificationOptions): void {
-    if (!this.isDynamicPage()) return;
-    this.removePageStyles();
-    const css = this.dynamicCSSGenerator.generate(options);
-    this.injectPageStyles(css);
+  generateVideoPlayerStyles(options: VideoPlayerSimplificationOptions): string {
+    return this.videoPlayerCSSGenerator.generate(options);
   }
 
-  applyLiveSimplification(options: LiveSimplificationOptions): void {
-    if (!this.isLivePage()) return;
-    this.removePageStyles();
-    const css = this.liveCSSGenerator.generate(options);
-    this.injectPageStyles(css);
+  generateHomepageStyles(options: HomepageSimplificationOptions): string {
+    return this.homepageCSSGenerator.generate(options);
   }
 
-  applySearchPageSimplification(): void {
-    if (!this.isSearchPage()) return;
-    this.removePageStyles();
-    const css = this.globalCSSGenerator.generateSearchPageSimplification();
-    this.injectPageStyles(css);
+  generateDynamicStyles(options: DynamicSimplificationOptions): string {
+    return this.dynamicCSSGenerator.generate(options);
   }
 
-  removePageStyles(): void {
-    if (this.pageStyleElement) {
-      this.pageStyleElement.remove();
-      this.pageStyleElement = null;
-    }
-  }
-
-  removeGlobalStyles(): void {
-    if (this.globalStyleElement) {
-      this.globalStyleElement.remove();
-      this.globalStyleElement = null;
-    }
-  }
-
-  removeStyles(): void {
-    this.removePageStyles();
-    this.removeGlobalStyles();
-  }
-
-  applyGlobalStyles(): void {
-    this.removeGlobalStyles();
-    const css = this.globalCSSGenerator.generate();
-    this.injectGlobalStyles(css);
-  }
-
-  private injectGlobalStyles(css: string): void {
-    this.globalStyleElement = document.createElement('style');
-    this.globalStyleElement.id = 'bilibili-focus-mode-global-styles';
-    this.globalStyleElement.textContent = css;
-    document.head.appendChild(this.globalStyleElement);
-  }
-
-  private injectPageStyles(css: string): void {
-    this.pageStyleElement = document.createElement('style');
-    this.pageStyleElement.id = 'bilibili-focus-mode-page-styles';
-    this.pageStyleElement.textContent = css;
-    document.head.appendChild(this.pageStyleElement);
-  }
-
-  async applyFromConfig(config: ExtensionConfig): Promise<void> {
-    const { videoPlayerSimplification, homepageSimplification, dynamicSimplification } = config;
-
-    const isVideoEnabled = videoPlayerSimplification?.enabled && this.isVideoPlayerPage();
-    const isHomepageEnabled = homepageSimplification?.enabled && this.isHomepage();
-    const isDynamicEnabled = dynamicSimplification?.enabled && this.isDynamicPage();
-    const isSearchPage = this.isSearchPage();
-
-    // 搜索页面始终应用简化（只显示搜索框）
-    if (isSearchPage) {
-      this.applyGlobalStyles();
-      this.applySearchPageSimplification();
-      return;
-    }
-
-    if (!isVideoEnabled && !isHomepageEnabled && !isDynamicEnabled) {
-      this.removeStyles();
-      return;
-    }
-
-    this.applyGlobalStyles();
-
-    if (isVideoEnabled) {
-      this.applyVideoPlayerSimplification({
-        hideComments: videoPlayerSimplification.hideComments,
-        hideRecommendations: videoPlayerSimplification.hideRecommendations,
-        hideDanmaku: videoPlayerSimplification.hideDanmaku,
-        hideSidebar: videoPlayerSimplification.hideSidebar,
-        hideAds: videoPlayerSimplification.hideAds,
-        minimalPlayer: videoPlayerSimplification.minimalPlayer,
-      });
-      return;
-    }
-
-    if (isHomepageEnabled) {
-      this.applyHomepageSimplification({
-        hideRecommendations: homepageSimplification.hideRecommendations,
-        hideTrending: homepageSimplification.hideTrending,
-        hideAds: homepageSimplification.hideAds,
-        hideLiveStreams: homepageSimplification.hideLiveStreams,
-        compactLayout: homepageSimplification.compactLayout,
-      });
-      return;
-    }
-
-    if (isDynamicEnabled) {
-      this.applyDynamicSimplification({
-        hideLiveStreams: dynamicSimplification.hideLiveStreams,
-        hideRecommendations: dynamicSimplification.hideRecommendations,
-        hideAds: dynamicSimplification.hideAds,
-        showOnlyFollowing: dynamicSimplification.showOnlyFollowing,
-        compactLayout: dynamicSimplification.compactLayout,
-      });
-      return;
-    }
+  generateLiveStyles(options: LiveSimplificationOptions): string {
+    return this.liveCSSGenerator.generate(options);
   }
 }

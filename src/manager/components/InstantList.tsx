@@ -1,64 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import type { ExtensionConfig, InstantItem } from '@core/types';
 import { useSelection } from '@hooks/useSelection';
+import { useStorageActions } from '../hooks/useStorageActions';
 
 import { BatchToolbar, ItemCard } from './shared';
 import { FuseApplicationDialog } from './FuseApplicationDialog';
 
-export function InstantList({ items, config }: { items: readonly InstantItem[]; config: ExtensionConfig }): React.JSX.Element {
+export const InstantList = React.memo(function InstantList({ items, config }: { items: readonly InstantItem[]; config: ExtensionConfig }): React.JSX.Element {
   const allBvids = items.map((item) => item.bvid);
   const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
+  const { deleteFromList, batchDelete, clearList } = useStorageActions();
   const [showApplyDialog, setShowApplyDialog] = useState(false);
-  const now = Date.now();
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   const handleDelete = async (bvid: string) => {
     if (!confirm('确定要删除这个视频吗？')) return;
-
-    try {
-      const storage = await chrome.storage.local.get();
-      const instantList = (storage.instantList || []) as InstantItem[];
-      const newInstantList = instantList.filter((item) => item.bvid !== bvid);
-      await chrome.storage.local.set({ instantList: newInstantList });
-
-      if (isSelected(bvid)) {
-        toggleSelection(bvid);
-      }
-    } catch (error) {
-      console.error('[InstantList] Failed to delete:', error);
-      alert('删除失败，请重试');
-    }
+    const success = await deleteFromList('instantList', bvid);
+    if (!success) { alert('删除失败，请重试'); return; }
+    if (isSelected(bvid)) toggleSelection(bvid);
   };
 
   const handleBatchDelete = async () => {
     if (selected.size === 0) return;
     if (!confirm(`确定要删除选中的 ${selected.size} 个视频吗？`)) return;
-
-    try {
-      const storage = await chrome.storage.local.get();
-      const instantList = (storage.instantList || []) as InstantItem[];
-      const newInstantList = instantList.filter((item) => !selected.has(item.bvid));
-      await chrome.storage.local.set({ instantList: newInstantList });
-      clearSelection();
-    } catch (error) {
-      console.error('[InstantList] Failed to batch delete:', error);
-      alert('批量删除失败，请重试');
-    }
+    const success = await batchDelete('instantList', selected);
+    if (!success) alert('批量删除失败，请重试');
+    else clearSelection();
   };
 
   const handleClearAll = async () => {
     if (!confirm('确定要清空即时许可列表吗？')) return;
-    try {
-      await chrome.storage.local.set({ instantList: [] });
-      clearSelection();
-    } catch (error) {
-      console.error('[InstantList] Failed to clear list:', error);
-      alert('清空失败，请重试');
-    }
-  };
-
-  const handleApplyFuse = (_bvid: string, _fuseCode: string) => {
-    // Fuse code applied successfully, dialog will close
+    const success = await clearList('instantList');
+    if (!success) alert('清空失败，请重试');
+    else clearSelection();
   };
 
   return (
@@ -111,7 +91,7 @@ export function InstantList({ items, config }: { items: readonly InstantItem[]; 
       {showApplyDialog && (
         <FuseApplicationDialog
           instantDurationHours={config.instantDurationHours}
-          onApply={handleApplyFuse}
+          onApply={() => {}}
           onClose={() => setShowApplyDialog(false)}
         />
       )}
@@ -125,4 +105,4 @@ export function InstantList({ items, config }: { items: readonly InstantItem[]; 
       />
     </div>
   );
-}
+});

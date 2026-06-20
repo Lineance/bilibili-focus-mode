@@ -2,10 +2,7 @@ import type { ProtocolMap } from '@core/protocol';
 import { logger } from '@core/utils/logger';
 import { assertMessageType, ensureStorageDefaults } from './utils';
 
-export async function handleAddToLimbo(
-  request: unknown,
-  _sender: chrome.runtime.MessageSender
-): Promise<unknown> {
+export async function handleAddToLimbo(request: unknown): Promise<unknown> {
   const data = assertMessageType<ProtocolMap['add-to-limbo']['req']>(request);
   logger.debug('Background', 'Adding to limbo:', data.metadata.bvid);
 

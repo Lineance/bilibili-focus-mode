@@ -1,5 +1,6 @@
 import type { LimboItem } from '@core/types';
 import { getVideoUrl } from '@core/utils/videoUrl';
+import React from 'react';
 
 import { VideoCover } from './shared';
 
@@ -13,7 +14,7 @@ interface LimboReviewItemProps {
   onDelete: (bvid: string) => void;
 }
 
-export function LimboReviewItem({
+export const LimboReviewItem = React.memo(function LimboReviewItem({
   item,
   isSelected,
   isInReviewWindow,
@@ -102,4 +103,4 @@ export function LimboReviewItem({
       </div>
     </div>
   );
-}
+});

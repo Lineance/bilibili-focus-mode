@@ -182,31 +182,24 @@ describe('Background Script', () => {
   });
 
   describe('Open Options Page', () => {
-    it('should open options page in new tab', async () => {
+    it('should register open-options-page handler via webext-bridge', async () => {
+      const { onMessage } = await import('webext-bridge/background');
       await import('@background/index');
 
-      const onMessageListener = vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0]?.[0];
-      expect(onMessageListener).toBeDefined();
+      // Find the handler registered for 'open-options-page'
+      const calls = vi.mocked(onMessage).mock.calls;
+      const openPageCall = calls.find(([key]) => key === 'open-options-page');
+      expect(openPageCall).toBeDefined();
 
-      const sendResponse = vi.fn();
-      const result = onMessageListener?.(
-        { action: 'openOptionsPage' },
-        {},
-        sendResponse
-      );
-
-      // Should return true to keep channel open
-      expect(result).toBe(true);
-
-      // Wait for async
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      const handler = openPageCall![1] as (message: { data: unknown }) => Promise<unknown>;
+      const result = await handler({ data: {} });
 
       expect(chrome.tabs.create).toHaveBeenCalledWith(
         { url: 'chrome-extension://test-id/src/manager/index.html' },
         expect.any(Function)
       );
 
-      expect(sendResponse).toHaveBeenCalledWith({ success: true, tabId: 123 });
+      expect(result).toEqual({ success: true, tabId: 123 });
     });
 
     it('should handle error when opening options page', async () => {
@@ -217,18 +210,15 @@ describe('Background Script', () => {
         return Promise.resolve(undefined as unknown as chrome.tabs.Tab);
       });
 
+      const { onMessage } = await import('webext-bridge/background');
       await import('@background/index');
 
-      const onMessageListener = vi.mocked(chrome.runtime.onMessage.addListener).mock.calls[0]?.[0];
-      const sendResponse = vi.fn();
+      const calls = vi.mocked(onMessage).mock.calls;
+      const openPageCall = calls.find(([key]) => key === 'open-options-page');
+      const handler = openPageCall![1] as (message: { data: unknown }) => Promise<unknown>;
+      const result = await handler({ data: {} });
 
-      onMessageListener?.({ action: 'openOptionsPage' }, {}, sendResponse);
-
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      expect(sendResponse).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false })
-      );
+      expect(result).toEqual(expect.objectContaining({ success: false }));
     });
   });
 });

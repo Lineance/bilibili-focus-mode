@@ -38,8 +38,6 @@ vi.mock('@core/utils/logger', () => ({
 }));
 
 describe('handleDailyBypass', () => {
-  const mockSender = {} as chrome.runtime.MessageSender;
-
   beforeEach(() => {
     Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
 
@@ -68,7 +66,7 @@ describe('handleDailyBypass', () => {
       dailyBypassEnabled: false,
     };
 
-    const result = await handleDailyBypass({}, mockSender);
+    const result = await handleDailyBypass();
 
     expect(result.success).toBe(false);
     expect(result.message).toBe('每日放行功能未启用');
@@ -78,7 +76,7 @@ describe('handleDailyBypass', () => {
     const futureTime = Date.now() + 60000;
     mockStorage.dailyBypassUntil = futureTime;
 
-    const result = await handleDailyBypass({}, mockSender);
+    const result = await handleDailyBypass();
 
     expect(result.success).toBe(false);
     expect(result.message).toBe('当前已有生效的放行');
@@ -92,14 +90,14 @@ describe('handleDailyBypass', () => {
       lastQuotaResetDate: '2026-01-15',
     };
 
-    const result = await handleDailyBypass({}, mockSender);
+    const result = await handleDailyBypass();
 
     expect(result.success).toBe(false);
     expect(result.message).toContain('今日放行次数已用完');
   });
 
   it('should successfully activate bypass', async () => {
-    const result = await handleDailyBypass({}, mockSender);
+    const result = await handleDailyBypass();
 
     expect(result.success).toBe(true);
     expect(result.message).toContain('已放行 30 分钟');
@@ -108,14 +106,14 @@ describe('handleDailyBypass', () => {
   });
 
   it('should increment daily bypass counter', async () => {
-    await handleDailyBypass({}, mockSender);
+    await handleDailyBypass();
 
     const updatedLog = mockStorage.behaviorLog as Record<string, unknown>;
     expect(updatedLog.dailyBypassesUsedToday).toBe(1);
   });
 
   it('should set dailyBypassUntil in storage', async () => {
-    await handleDailyBypass({}, mockSender);
+    await handleDailyBypass();
 
     const expectedExpiry = Date.now() + 30 * 60 * 1000;
     expect(mockStorage.dailyBypassUntil).toBe(expectedExpiry);
@@ -127,7 +125,7 @@ describe('handleDailyBypass', () => {
       dailyBypassDurationMinutes: 60,
     };
 
-    const result = await handleDailyBypass({}, mockSender);
+    const result = await handleDailyBypass();
 
     expect(result.success).toBe(true);
     expect(result.expiresAt).toBe(Date.now() + 60 * 60 * 1000);
@@ -140,32 +138,32 @@ describe('handleDailyBypass', () => {
       lastQuotaResetDate: '2026-01-14',
     };
 
-    const result = await handleDailyBypass({}, mockSender);
+    const result = await handleDailyBypass();
 
     expect(result.success).toBe(true);
     expect(result.message).toContain('今日剩余 2 次');
   });
 
   it('should handle multiple bypasses in same day', async () => {
-    const result1 = await handleDailyBypass({}, mockSender);
+    const result1 = await handleDailyBypass();
     expect(result1.success).toBe(true);
     expect(result1.message).toContain('今日剩余 2 次');
 
     delete mockStorage.dailyBypassUntil;
 
-    const result2 = await handleDailyBypass({}, mockSender);
+    const result2 = await handleDailyBypass();
     expect(result2.success).toBe(true);
     expect(result2.message).toContain('今日剩余 1 次');
 
     delete mockStorage.dailyBypassUntil;
 
-    const result3 = await handleDailyBypass({}, mockSender);
+    const result3 = await handleDailyBypass();
     expect(result3.success).toBe(true);
     expect(result3.message).toContain('今日剩余 0 次');
 
     delete mockStorage.dailyBypassUntil;
 
-    const result4 = await handleDailyBypass({}, mockSender);
+    const result4 = await handleDailyBypass();
     expect(result4.success).toBe(false);
     expect(result4.message).toContain('今日放行次数已用完');
   });

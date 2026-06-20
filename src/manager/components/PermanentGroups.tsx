@@ -1,9 +1,9 @@
 import React from 'react';
-import type { PermanentGroup, VideoMetadata } from '@core/types';
-import { getVideoUrl } from '@core/utils/videoUrl';
+import type { PermanentGroup } from '@core/types';
+import { StorageRepository } from '@core/storage/StorageRepository';
 import { useSelection } from '@hooks/useSelection';
 
-import { BatchToolbar, VideoCover } from './shared';
+import { BatchToolbar, ItemCard } from './shared';
 
 export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }): React.JSX.Element {
   // Flatten all items from all groups and separate by tag
@@ -19,8 +19,7 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
     if (!confirm('确定要删除这个视频吗？')) return;
 
     try {
-      const storage = await chrome.storage.local.get();
-      const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
+      const { permanentGroups } = await StorageRepository.getKeys('permanentGroups');
 
       // Remove item from whichever group it belongs to
       const updatedGroups = permanentGroups.map((group) => ({
@@ -28,7 +27,7 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
         items: group.items.filter((item) => item.bvid !== bvid),
       }));
 
-      await chrome.storage.local.set({ permanentGroups: updatedGroups });
+      await StorageRepository.set({ permanentGroups: updatedGroups });
 
       if (isSelected(bvid)) {
         toggleSelection(bvid);
@@ -44,15 +43,14 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
     if (!confirm(`确定要删除选中的 ${selected.size} 个视频吗？`)) return;
 
     try {
-      const storage = await chrome.storage.local.get();
-      const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
+      const { permanentGroups } = await StorageRepository.getKeys('permanentGroups');
 
       const updatedGroups = permanentGroups.map((group) => ({
         ...group,
         items: group.items.filter((item) => !selected.has(item.bvid)),
       }));
 
-      await chrome.storage.local.set({ permanentGroups: updatedGroups });
+      await StorageRepository.set({ permanentGroups: updatedGroups });
       clearSelection();
     } catch (error) {
       console.error('[PermanentGroups] Failed to batch delete:', error);
@@ -63,7 +61,7 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
   const handleClearAll = async () => {
     if (!confirm('确定要清空所有永久分组吗？')) return;
     try {
-      await chrome.storage.local.set({ permanentGroups: [] });
+      await StorageRepository.set({ permanentGroups: [] });
       clearSelection();
     } catch (error) {
       console.error('[PermanentGroups] Failed to clear groups:', error);
@@ -71,48 +69,17 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
     }
   };
 
-  const renderItemCard = (item: VideoMetadata) => {
-    // Skip items with undefined bvid
+  const renderCard = (item: { bvid: string; title: string; uploader: string; coverUrl: string }) => {
     if (!item.bvid) return null;
-    const videoUrl = getVideoUrl(item.bvid);
-
     return (
-      <div
+      <ItemCard
         key={item.bvid}
-        className={`flex gap-3 items-center bg-tertiary p-3 rounded ${selected.has(item.bvid) ? 'ring-2 ring-blue-500' : ''}`}
-      >
-        <input
-          type="checkbox"
-          checked={selected.has(item.bvid)}
-          onChange={() => toggleSelection(item.bvid)}
-          className="w-4 h-4 rounded border-primary text-blue-600 focus:ring-blue-500"
-        />
-        <a
-          href={videoUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:opacity-80 transition-opacity"
-        >
-          <VideoCover url={item.coverUrl} title={item.title} small />
-        </a>
-        <div className="flex-1 min-w-0">
-          <a
-            href={videoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-sm truncate hover:text-blue-400 transition-colors block"
-          >
-            {item.title}
-          </a>
-          <p className="text-xs text-secondary">{item.uploader}</p>
-        </div>
-        <button
-          onClick={() => handleDeleteItem(item.bvid)}
-          className="px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 flex-shrink-0 transition-colors"
-        >
-          删除
-        </button>
-      </div>
+        item={item}
+        selected={selected.has(item.bvid)}
+        onSelect={() => toggleSelection(item.bvid)}
+        onDelete={() => handleDeleteItem(item.bvid)}
+        small
+      />
     );
   }
 
@@ -151,7 +118,7 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
               {learningItems.length === 0 ? (
                 <p className="text-muted text-sm">暂无学习类视频</p>
               ) : (
-                learningItems.map(renderItemCard)
+                learningItems.map(renderCard)
               )}
             </div>
           </div>
@@ -166,7 +133,7 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
               {entertainmentItems.length === 0 ? (
                 <p className="text-muted text-sm">暂无娱乐类视频</p>
               ) : (
-                entertainmentItems.map(renderItemCard)
+                entertainmentItems.map(renderCard)
               )}
             </div>
           </div>

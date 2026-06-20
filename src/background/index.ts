@@ -2,14 +2,12 @@ import { DEFAULT_STORAGE } from '@core/constants';
 import type { ExtensionConfig } from '@core/types';
 import { logger } from '@core/utils/logger';
 import { AlarmHandler } from './AlarmHandler';
-import { MessageRouter } from './MessageRouter';
 import { registerMessageHandlers } from './MessageHandlers';
 import { NativeMessagingClient } from './NativeMessagingClient';
 
 logger.debug('Background', 'Service worker started');
 
 const alarmHandler = new AlarmHandler();
-const messageRouter = new MessageRouter();
 const nativeClient = new NativeMessagingClient();
 
 function getConfigFromStorage(storage: Record<string, unknown>): ExtensionConfig {
@@ -58,26 +56,6 @@ alarmHandler.listen();
 
 // Register webext-bridge message handlers
 registerMessageHandlers();
-
-// Register chrome.runtime.onMessage handlers
-messageRouter.register('openOptionsPage', async () => {
-  logger.debug('Background', 'Opening options page');
-  return new Promise((resolve) => {
-    chrome.tabs.create({
-      url: chrome.runtime.getURL('src/manager/index.html')
-    }, (tab) => {
-      if (chrome.runtime.lastError) {
-        console.error('[Background] Error opening options page:', chrome.runtime.lastError);
-        resolve({ success: false, error: chrome.runtime.lastError.message });
-      } else {
-        logger.debug('Background', 'Options page opened in tab:', tab?.id);
-        resolve({ success: true, tabId: tab?.id });
-      }
-    });
-  });
-});
-
-messageRouter.listen();
 
 // Connect to native messaging host if enabled (non-blocking, failure is tolerated)
 chrome.storage.local.get('config').then((storage) => {

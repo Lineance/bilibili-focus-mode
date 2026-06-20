@@ -2,7 +2,8 @@ import { DEFAULT_CONFIG } from '@core/constants';
 import { logger } from '@core/utils/logger';
 import { useStorage } from '@hooks/useStorage';
 import { ThemeService } from '@core/services';
-import React, { useEffect, useRef, useState } from 'react';
+import { StorageRepository } from '@core/storage/StorageRepository';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { sendMessage } from 'webext-bridge/options';
 
 import {
@@ -50,19 +51,29 @@ export function App(): React.JSX.Element {
     });
   }, []);
 
+  const tabCounts = useMemo(() => ({
+    limbo: storage.limboList?.length || 0,
+    cooling: storage.coolingList?.length || 0,
+    instant: storage.instantList?.length || 0,
+    permanent: storage.permanentGroups?.reduce((sum, g) => sum + g.items.length, 0) || 0,
+    ghost: storage.ghostList?.length || 0,
+    uploaders: storage.allowedUploaders?.length || 0,
+    keywords: storage.config?.keywordRules?.keywords?.length || 0,
+  }), [storage.limboList, storage.coolingList, storage.instantList, storage.permanentGroups, storage.ghostList, storage.allowedUploaders, storage.config?.keywordRules?.keywords]);
+
   const handleExport = async () => {
     try {
-      const storage = await chrome.storage.local.get();
+      const storage = await StorageRepository.get();
       const exportData = {
         version: 3,
         exportDate: new Date().toISOString(),
         config: storage.config,
-        limboList: storage.limboList || [],
-        coolingList: storage.coolingList || [],
-        instantList: storage.instantList || [],
-        permanentGroups: storage.permanentGroups || [],
-        ghostList: storage.ghostList || [],
-        allowedUploaders: storage.allowedUploaders || [],
+        limboList: storage.limboList,
+        coolingList: storage.coolingList,
+        instantList: storage.instantList,
+        permanentGroups: storage.permanentGroups,
+        ghostList: storage.ghostList,
+        allowedUploaders: storage.allowedUploaders,
         debtAccount: storage.debtAccount,
         globalStats: storage.globalStats,
         behaviorLog: storage.behaviorLog,
@@ -100,7 +111,7 @@ export function App(): React.JSX.Element {
         return;
       }
 
-      await chrome.storage.local.set({
+      await StorageRepository.set({
         config: data.config,
         limboList: data.limboList || [],
         coolingList: data.coolingList || [],
@@ -143,18 +154,14 @@ export function App(): React.JSX.Element {
 
       <nav className="flex gap-4 mb-6 border-b border-secondary pb-4 flex-wrap">
         {[
-          { id: 'limbo', label: '待审池', count: storage.limboList?.length || 0 },
-          { id: 'cooling', label: '冷静期', count: storage.coolingList?.length || 0 },
-          { id: 'instant', label: '即时许可', count: storage.instantList?.length || 0 },
-          {
-            id: 'permanent',
-            label: '永久分组',
-            count: storage.permanentGroups?.reduce((sum, group) => sum + group.items.length, 0) || 0,
-          },
-          { id: 'ghost', label: '幽灵档案', count: storage.ghostList?.length || 0 },
+          { id: 'limbo', label: '待审池', count: tabCounts.limbo },
+          { id: 'cooling', label: '冷静期', count: tabCounts.cooling },
+          { id: 'instant', label: '即时许可', count: tabCounts.instant },
+          { id: 'permanent', label: '永久分组', count: tabCounts.permanent },
+          { id: 'ghost', label: '幽灵档案', count: tabCounts.ghost },
           { id: 'debt', label: '债务', count: null },
-          { id: 'uploaders', label: 'UP 主白名单', count: storage.allowedUploaders?.length || 0 },
-          { id: 'keywords', label: '关键词规则', count: storage.config?.keywordRules?.keywords?.length || 0 },
+          { id: 'uploaders', label: 'UP 主白名单', count: tabCounts.uploaders },
+          { id: 'keywords', label: '关键词规则', count: tabCounts.keywords },
           { id: 'config', label: '配置', count: null },
           { id: 'theme', label: '主题', count: null },
         ].map((tab) => (

@@ -61,4 +61,8 @@ export interface ProtocolMap {
     req: {};
     res: { success: boolean; message: string; expiresAt?: number };
   };
+  'open-options-page': {
+    req: {};
+    res: { success: boolean; tabId?: number; error?: string };
+  };
 }

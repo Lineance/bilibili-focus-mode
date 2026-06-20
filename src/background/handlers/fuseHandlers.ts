@@ -8,21 +8,19 @@ import { assertMessageType, ensureStorageDefaults, getStorageNumber, getStorageS
 const TIME_WINDOW_FUSE_KEY = 'timeWindowFuse';
 const TIME_WINDOW_FUSE_EXPIRES_KEY = 'timeWindowFuseExpiresAt';
 
-export async function handleVerifyFuse(
-  request: unknown,
-  _sender: chrome.runtime.MessageSender
-): Promise<unknown> {
+export async function handleVerifyFuse(request: unknown): Promise<unknown> {
   const data = assertMessageType<ProtocolMap['verify-fuse']['req']>(request);
   const storage = ensureStorageDefaults(await chrome.storage.local.get());
   const config = storage.config;
   const service = new FuseApplicationService(config);
-  return service.verifyFuse(data.bvid, data.fuseCode);
+  const result = await service.verifyFuse(data.bvid, data.fuseCode);
+  if (!result.ok) {
+    return { success: false, message: result.error.message };
+  }
+  return { success: true, message: '熔断码验证成功，可以观看视频' };
 }
 
-export async function handleApplyFuse(
-  request: unknown,
-  _sender: chrome.runtime.MessageSender
-): Promise<unknown> {
+export async function handleApplyFuse(request: unknown): Promise<unknown> {
   const data = assertMessageType<ProtocolMap['apply-fuse']['req']>(request);
   const storage = ensureStorageDefaults(await chrome.storage.local.get());
   const config = storage.config;
@@ -64,19 +62,8 @@ export async function handleApplyFuse(
     remainingBankruptcyMinutes
   );
 
-  if (!result.success) {
-    return { success: false, message: result.reason };
-  }
-
-  // Mark bankruptcy fuse items so they can override bankruptcy block (Issue #2)
-  if (data.isBankruptcy) {
-    const updatedStorage = ensureStorageDefaults(await chrome.storage.local.get());
-    const instantList = updatedStorage.instantList;
-    const item = instantList.find(i => i.bvid === data.metadata.bvid);
-    if (item) {
-      item.bankruptcyOverride = true;
-      await chrome.storage.local.set({ instantList });
-    }
+  if (!result.ok) {
+    return { success: false, message: result.error.message };
   }
 
   const globalStats: GlobalStats = storage.globalStats || DEFAULT_GLOBAL_STATS;
@@ -89,15 +76,12 @@ export async function handleApplyFuse(
   return {
     success: true,
     message: '熔断码申请成功',
-    fuseCode: result.item.fuseCode,
-    expiresAt: result.item.expiresAt,
+    fuseCode: result.data.fuseCode,
+    expiresAt: result.data.expiresAt,
   };
 }
 
-export async function handleApplyTimeWindowFuse(
-  _request: unknown,
-  _sender: chrome.runtime.MessageSender
-): Promise<unknown> {
+export async function handleApplyTimeWindowFuse(): Promise<unknown> {
   const storage = ensureStorageDefaults(await chrome.storage.local.get());
   const config = storage.config;
 
@@ -129,10 +113,7 @@ export async function handleApplyTimeWindowFuse(
   };
 }
 
-export async function handleVerifyTimeWindowFuse(
-  request: unknown,
-  _sender: chrome.runtime.MessageSender
-): Promise<unknown> {
+export async function handleVerifyTimeWindowFuse(request: unknown): Promise<unknown> {
   const data = assertMessageType<ProtocolMap['verify-time-window-fuse']['req']>(request);
   const storage = ensureStorageDefaults(await chrome.storage.local.get());
   const config = storage.config;

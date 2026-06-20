@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { VideoTag, type AllowedUploader } from '@core/types';
+import { StorageRepository } from '@core/storage/StorageRepository';
 
 const TAG_OPTIONS: { value: VideoTag; label: string; emoji: string }[] = [
   { value: 'LEARNING', label: '学习', emoji: '📚' },
@@ -22,10 +23,8 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
     if (!newUploaderName.trim()) return;
 
     try {
-      const storage = await chrome.storage.local.get();
-      const currentUploaders = (storage.allowedUploaders || []) as AllowedUploader[];
+      const { allowedUploaders: currentUploaders } = await StorageRepository.getKeys('allowedUploaders');
 
-      // Check if already exists
       if (currentUploaders.some((u) => u.name === newUploaderName.trim())) {
         console.warn('[UploaderAllowlist] 该 UP 主已在白名单中');
         return;
@@ -38,7 +37,7 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
         addedAt: Date.now(),
       };
 
-      await chrome.storage.local.set({
+      await StorageRepository.set({
         allowedUploaders: [...currentUploaders, newUploader],
       });
 
@@ -54,12 +53,9 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
     if (!confirm('确定要移除这个 UP 主吗？')) return;
 
     try {
-      const storage = await chrome.storage.local.get();
-      const currentUploaders = (storage.allowedUploaders || []) as AllowedUploader[];
-
-      await chrome.storage.local.set({
-        allowedUploaders: currentUploaders.filter((u) => u.id !== id),
-      });
+      await StorageRepository.update('allowedUploaders', (current) =>
+        current.filter((u) => u.id !== id)
+      );
     } catch (error) {
       console.error('[UploaderAllowlist] Failed to delete uploader:', error);
       alert('删除失败，请重试');
@@ -68,14 +64,9 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
 
   const handleTagChange = async (id: string, newTag: VideoTag) => {
     try {
-      const storage = await chrome.storage.local.get();
-      const currentUploaders = (storage.allowedUploaders || []) as AllowedUploader[];
-
-      await chrome.storage.local.set({
-        allowedUploaders: currentUploaders.map((u) =>
-          u.id === id ? { ...u, tag: newTag } : u
-        ),
-      });
+      await StorageRepository.update('allowedUploaders', (current) =>
+        current.map((u) => u.id === id ? { ...u, tag: newTag } : u)
+      );
 
       setEditingId(null);
     } catch (error) {
@@ -87,7 +78,7 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
   const handleClearAll = async () => {
     if (!confirm('确定要清空所有UP主吗？')) return;
     try {
-      await chrome.storage.local.set({ allowedUploaders: [] });
+      await StorageRepository.set({ allowedUploaders: [] });
     } catch (error) {
       console.error('[UploaderAllowlist] Failed to clear uploaders:', error);
       alert('清空失败，请重试');

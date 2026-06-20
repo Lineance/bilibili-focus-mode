@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export function VideoCover({ url, title, small = false }: { url: string; title: string; small?: boolean }): React.JSX.Element {
+export const VideoCover = React.memo(function VideoCover({ url, title, small = false }: { url: string; title: string; small?: boolean }): React.JSX.Element {
   const [error, setError] = useState(false);
   const sizeClass = small ? 'w-20 h-12' : 'w-32 h-20';
 
@@ -21,4 +21,4 @@ export function VideoCover({ url, title, small = false }: { url: string; title: 
       crossOrigin="anonymous"
     />
   );
-}
+});

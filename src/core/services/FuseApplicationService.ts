@@ -1,5 +1,6 @@
 import { MS_PER_HOUR, MS_PER_MINUTE } from '@core/constants';
 import type { BehaviorLogState, ExtensionConfig, InstantItem, VideoMetadata } from '@core/types';
+import { type Result, ok, failure } from '@core/types/result';
 import { getTodayKey, resetQuotaIfNeeded } from '@core/utils/dateUtils';
 import { ExpirationService } from './ExpirationService';
 import { FuseService } from './FuseService';
@@ -36,7 +37,7 @@ export class FuseApplicationService {
     behaviorLog: BehaviorLogState,
     isBankruptcy: boolean,
     remainingBankruptcyMinutes: number = 0
-  ): Promise<{ success: true; item: InstantItem } | { success: false; reason: string }> {
+  ): Promise<Result<InstantItem>> {
     const normalizedBehaviorLog = this.resetBehaviorLogQuotaIfNeeded({
       ...behaviorLog,
       lastQuotaResetDate: behaviorLog.lastQuotaResetDate || getTodayKey(),
@@ -47,17 +48,11 @@ export class FuseApplicationService {
       this.config.dailyInstantQuota > 0
       && normalizedBehaviorLog.instantApplicationsToday >= this.config.dailyInstantQuota
     ) {
-      return {
-        success: false,
-        reason: '已达到今日即时配额',
-      };
+      return failure('QUOTA_EXCEEDED', '已达到今日即时配额');
     }
 
     if (normalizedBehaviorLog.currentCooldownUntil && Date.now() < normalizedBehaviorLog.currentCooldownUntil) {
-      return {
-        success: false,
-        reason: '冷静期未结束，暂时无法申请',
-      };
+      return failure('COOLDOWN_ACTIVE', '冷静期未结束，暂时无法申请');
     }
 
     // Atomic check-and-create pattern to prevent race conditions
@@ -72,10 +67,7 @@ export class FuseApplicationService {
     );
 
     if (existingInstant) {
-      return {
-        success: false,
-        reason: '已存在有效的即时许可',
-      };
+      return failure('ALREADY_EXISTS', '已存在有效的即时许可');
     }
 
     // Calculate fuse length based on recent applications
@@ -95,6 +87,9 @@ export class FuseApplicationService {
 
     // Create instant item
     const instantItem = this.expirationService.createInstantItem(metadata, fuseCode);
+    if (isBankruptcy) {
+      instantItem.bankruptcyOverride = true;
+    }
 
     // Update behavior log
     const updatedBehaviorLog: BehaviorLogState = {
@@ -111,17 +106,14 @@ export class FuseApplicationService {
       behaviorLog: updatedBehaviorLog,
     });
 
-    return {
-      success: true,
-      item: instantItem,
-    };
+    return ok(instantItem);
   }
 
   /**
    * Verify a fuse code and activate the instant permission
    * Uses atomic check-and-set pattern to prevent race conditions
    */
-  async verifyFuse(bvid: string, inputCode: string): Promise<{ success: boolean; message: string }> {
+  async verifyFuse(bvid: string, inputCode: string): Promise<Result> {
     // Use atomic update pattern: read -> check -> update in one operation
     const result = await chrome.storage.local.get('instantList');
     const instantList = (result.instantList || []) as InstantItem[];
@@ -129,37 +121,25 @@ export class FuseApplicationService {
     const itemIndex = instantList.findIndex((item) => item.bvid === bvid);
 
     if (itemIndex === -1) {
-      return {
-        success: false,
-        message: '未找到该视频的即时许可申请',
-      };
+      return failure('NOT_FOUND', '未找到该视频的即时许可申请');
     }
 
     const instantItem = instantList[itemIndex];
     const now = Date.now();
 
     if (now >= instantItem.expiresAt) {
-      return {
-        success: false,
-        message: '熔断码已过期，请重新申请',
-      };
+      return failure('EXPIRED', '熔断码已过期，请重新申请');
     }
 
     // Atomic check: if already used, reject immediately
     if (instantItem.usedFuse) {
-      return {
-        success: false,
-        message: '熔断码已被使用',
-      };
+      return failure('ALREADY_USED', '熔断码已被使用');
     }
 
     const isValid = this.fuseService.verifyFuseCode(inputCode, instantItem.fuseCode);
 
     if (!isValid) {
-      return {
-        success: false,
-        message: '熔断码错误，请重新输入',
-      };
+      return failure('INVALID_CODE', '熔断码错误，请重新输入');
     }
 
     // Atomic update: mark as used and save immediately
@@ -167,10 +147,7 @@ export class FuseApplicationService {
     instantList[itemIndex] = { ...instantItem, usedFuse: true };
     await chrome.storage.local.set({ instantList });
 
-    return {
-      success: true,
-      message: '熔断码验证成功，可以观看视频',
-    };
+    return ok();
   }
 
   /**

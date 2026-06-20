@@ -1,5 +1,6 @@
 import { MIN_REPENTANCE_LENGTH } from '@core/constants';
 import type { GhostItem, CoolingItem, VideoMetadata, ExtensionConfig, GlobalStats } from '@core/types';
+import { type Result, ok, failure } from '@core/types/result';
 import { ExpirationService } from './ExpirationService';
 import { FuseService } from './FuseService';
 import { storageQueue } from '@core/utils/storageQueue';
@@ -71,7 +72,7 @@ export class GhostResurrectionService {
     ghostItem: GhostItem,
     fuseCodeInput: string,
     repentanceReason: string
-  ): Promise<ResurrectionResult> {
+  ): Promise<Result<CoolingItem>> {
     const expectedFuseCode = this.fuseService.generateFuseCode(this.config.ghostResurrectFuseLength);
     return this.performResurrection(ghostItem, fuseCodeInput, expectedFuseCode, repentanceReason);
   }
@@ -81,7 +82,7 @@ export class GhostResurrectionService {
     expectedFuseCode: string,
     userFuseCode: string,
     repentanceReason: string
-  ): Promise<ResurrectionResult> {
+  ): Promise<Result<CoolingItem>> {
     return this.performResurrection(ghostItem, userFuseCode, expectedFuseCode, repentanceReason);
   }
 
@@ -90,19 +91,19 @@ export class GhostResurrectionService {
     fuseCodeToVerify: string,
     expectedFuseCode: string,
     repentanceReason: string
-  ): Promise<ResurrectionResult> {
+  ): Promise<Result<CoolingItem>> {
     const canResurrectCheck = this.canResurrect(ghostItem);
     if (!canResurrectCheck.canResurrect) {
-      return { success: false, message: canResurrectCheck.reason || '无法招魂' };
+      return failure('CANNOT_RESURRECT', canResurrectCheck.reason || '无法招魂');
     }
 
     if (!repentanceReason || repentanceReason.trim().length < MIN_REPENTANCE_LENGTH) {
-      return { success: false, message: '忏悔理由至少需要20个字' };
+      return failure('REPENTANCE_TOO_SHORT', '忏悔理由至少需要20个字');
     }
 
     const isValid = this.fuseService.verifyFuseCode(fuseCodeToVerify, expectedFuseCode);
     if (!isValid) {
-      return { success: false, message: '熔断码错误，请重新输入' };
+      return failure('INVALID_FUSE_CODE', '熔断码错误，请重新输入');
     }
 
     const metadata: VideoMetadata = {
@@ -140,10 +141,6 @@ export class GhostResurrectionService {
       })
     );
 
-    return {
-      success: true,
-      message: `招魂成功！视频已进入冷静期${this.config.ghostDoublePenalty ? '（双倍冷静期惩罚）' : ''}`,
-      coolingItem,
-    };
+    return ok(coolingItem);
   }
 }

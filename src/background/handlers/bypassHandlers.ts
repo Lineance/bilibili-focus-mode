@@ -1,10 +1,7 @@
 import { ensureStorageDefaults, getStorageNumber, resetQuotaIfNeeded } from './utils';
 import { logger } from '@core/utils/logger';
 
-export async function handleDailyBypass(
-  _message: unknown,
-  _sender: chrome.runtime.MessageSender
-): Promise<{ success: boolean; message: string; expiresAt?: number }> {
+export async function handleDailyBypass(): Promise<{ success: boolean; message: string; expiresAt?: number }> {
   try {
     const storage = ensureStorageDefaults(await chrome.storage.local.get());
     const config = storage.config;

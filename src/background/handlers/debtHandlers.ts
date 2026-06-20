@@ -7,10 +7,7 @@ import { storageQueue } from '@core/utils/storageQueue';
 import { migrateDebtAccount, syncCurrentDebt } from '../DebtMigrationService';
 import { assertMessageType, ensureStorageDefaults } from './utils';
 
-export async function handleUpdateDebt(
-  request: unknown,
-  _sender: chrome.runtime.MessageSender
-): Promise<unknown> {
+export async function handleUpdateDebt(request: unknown): Promise<unknown> {
   const data = assertMessageType<ProtocolMap['update-debt']['req']>(request);
   logger.debug('Background', 'Updating debt:', data);
 
@@ -18,7 +15,7 @@ export async function handleUpdateDebt(
   const config = storage.config;
   let debtAccount: DebtAccount = migrateDebtAccount(storage.debtAccount || DEFAULT_STORAGE.debtAccount);
 
-  const { account: syncedAccount, changed } = syncCurrentDebt(debtAccount, config);
+  const { account: syncedAccount, changed } = syncCurrentDebt(debtAccount);
   if (changed) {
     logger.debug('Background', 'Current debt synced with totals');
   }
@@ -74,15 +71,12 @@ export async function handleUpdateDebt(
   return { currentDebt: updatedAccount.currentDebt, bankruptcyEndTime };
 }
 
-export async function handleSyncDebt(
-  _request: unknown,
-  _sender: chrome.runtime.MessageSender
-): Promise<unknown> {
+export async function handleSyncDebt(): Promise<unknown> {
   const storage = ensureStorageDefaults(await chrome.storage.local.get());
   const config = storage.config;
   let debtAccount: DebtAccount = migrateDebtAccount(storage.debtAccount || DEFAULT_STORAGE.debtAccount);
 
-  const { account: syncedAccount, changed: syncChanged } = syncCurrentDebt(debtAccount, config);
+  const { account: syncedAccount, changed: syncChanged } = syncCurrentDebt(debtAccount);
   debtAccount = syncedAccount;
   let changed = syncChanged;
 

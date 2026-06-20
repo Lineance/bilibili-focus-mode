@@ -2,7 +2,14 @@ import { DEFAULT_STORAGE } from '@core/constants';
 import type { BehaviorLogState, ExtensionConfig, ExtensionStorage } from '@core/types';
 
 export function ensureStorageDefaults(data: Partial<ExtensionStorage>): ExtensionStorage {
-  return { ...DEFAULT_STORAGE, ...data };
+  return {
+    ...DEFAULT_STORAGE,
+    ...data,
+    config: { ...DEFAULT_STORAGE.config, ...(data.config || {}) },
+    debtAccount: { ...DEFAULT_STORAGE.debtAccount, ...(data.debtAccount || {}) },
+    behaviorLog: { ...DEFAULT_STORAGE.behaviorLog, ...(data.behaviorLog || {}) },
+    globalStats: { ...DEFAULT_STORAGE.globalStats, ...(data.globalStats || {}) },
+  };
 }
 
 export function getTodayKey(): string {

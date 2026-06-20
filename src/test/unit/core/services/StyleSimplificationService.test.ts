@@ -1,24 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { StyleSimplificationService } from '@core/services/';
-import type { ExtensionConfig } from '@core/types';
 
 describe('StyleSimplificationService', () => {
   let service: StyleSimplificationService;
 
   beforeEach(() => {
     service = new StyleSimplificationService();
-    // Clean up any existing styles
-    document.head.innerHTML = '';
-    document.body.innerHTML = '';
-  });
-
-  afterEach(() => {
-    service.removeStyles();
   });
 
   describe('isVideoPlayerPage', () => {
     it('should return true for video player pages', () => {
-      // Mock window.location
       Object.defineProperty(window, 'location', {
         value: { pathname: '/video/BV1xx411c7mD' },
         writable: true,
@@ -71,450 +62,8 @@ describe('StyleSimplificationService', () => {
     });
   });
 
-  describe('applyVideoPlayerSimplification', () => {
-    beforeEach(() => {
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/video/BV1xx411c7mD' },
-        writable: true,
-      });
-    });
-
-    it('should inject styles when on video player page', () => {
-      service.applyVideoPlayerSimplification({
-        hideComments: true,
-        hideRecommendations: true,
-        hideDanmaku: true,
-        hideSidebar: true,
-        hideAds: true,
-        minimalPlayer: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement).toBeTruthy();
-      expect(styleElement?.tagName).toBe('STYLE');
-    });
-
-    it('should not inject styles when not on video player page', () => {
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/' },
-        writable: true,
-      });
-
-      service.applyVideoPlayerSimplification({
-        hideComments: true,
-        hideRecommendations: true,
-        hideDanmaku: true,
-        hideSidebar: true,
-        hideAds: true,
-        minimalPlayer: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement).toBeFalsy();
-    });
-
-    it('should hide comments when hideComments is true', () => {
-      service.applyVideoPlayerSimplification({
-        hideComments: true,
-        hideRecommendations: false,
-        hideDanmaku: false,
-        hideSidebar: false,
-        hideAds: false,
-        minimalPlayer: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('#comment');
-      expect(styleElement?.textContent).toContain('.comment-area');
-    });
-
-    it('should hide recommendations when hideRecommendations is true', () => {
-      service.applyVideoPlayerSimplification({
-        hideComments: false,
-        hideRecommendations: true,
-        hideDanmaku: false,
-        hideSidebar: false,
-        hideAds: false,
-        minimalPlayer: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.recommend-list');
-      expect(styleElement?.textContent).toContain('.next-play');
-    });
-
-    it('should hide danmaku when hideDanmaku is true', () => {
-      service.applyVideoPlayerSimplification({
-        hideComments: false,
-        hideRecommendations: false,
-        hideDanmaku: true,
-        hideSidebar: false,
-        hideAds: false,
-        minimalPlayer: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('#danmakuBox');
-      expect(styleElement?.textContent).toContain('.danmaku-box');
-    });
-
-    it('should hide sidebar when hideSidebar is true', () => {
-      service.applyVideoPlayerSimplification({
-        hideComments: false,
-        hideRecommendations: false,
-        hideDanmaku: false,
-        hideSidebar: true,
-        hideAds: false,
-        minimalPlayer: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.right-container');
-      expect(styleElement?.textContent).toContain('.video-sections');
-    });
-
-    it('should hide ads when hideAds is true', () => {
-      service.applyVideoPlayerSimplification({
-        hideComments: false,
-        hideRecommendations: false,
-        hideDanmaku: false,
-        hideSidebar: false,
-        hideAds: true,
-        minimalPlayer: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.ad-report');
-      expect(styleElement?.textContent).toContain('.strip-ad');
-    });
-
-    it('should apply minimal player styles when minimalPlayer is true', () => {
-      service.applyVideoPlayerSimplification({
-        hideComments: false,
-        hideRecommendations: false,
-        hideDanmaku: false,
-        hideSidebar: false,
-        hideAds: false,
-        minimalPlayer: true,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.player-wrap');
-      expect(styleElement?.textContent).toContain('max-width: 100%');
-      // Should keep controls visible
-      expect(styleElement?.textContent).toContain('.bilibili-player-control');
-      expect(styleElement?.textContent).toContain('display: flex');
-    });
-
-    it('should remove existing styles before applying new ones', () => {
-      // First application
-      service.applyVideoPlayerSimplification({
-        hideComments: true,
-        hideRecommendations: false,
-        hideDanmaku: false,
-        hideSidebar: false,
-        hideAds: false,
-        minimalPlayer: false,
-      });
-
-      const firstStyleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(firstStyleElement).toBeTruthy();
-
-      // Second application with different options
-      service.applyVideoPlayerSimplification({
-        hideComments: false,
-        hideRecommendations: true,
-        hideDanmaku: false,
-        hideSidebar: false,
-        hideAds: false,
-        minimalPlayer: false,
-      });
-
-      const styleElements = document.querySelectorAll('#bilibili-focus-mode-page-styles');
-      expect(styleElements.length).toBe(1);
-
-      const secondStyleElement = styleElements[0];
-      expect(secondStyleElement?.textContent).not.toContain('#comment');
-      expect(secondStyleElement?.textContent).toContain('.recommend-list');
-    });
-  });
-
-  describe('removeStyles', () => {
-    it('should remove injected styles', () => {
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/video/BV1xx411c7mD' },
-        writable: true,
-      });
-
-      service.applyVideoPlayerSimplification({
-        hideComments: true,
-        hideRecommendations: true,
-        hideDanmaku: true,
-        hideSidebar: true,
-        hideAds: true,
-        minimalPlayer: false,
-      });
-
-      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeTruthy();
-
-      service.removeStyles();
-
-      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeFalsy();
-    });
-
-    it('should not throw when no styles are applied', () => {
-      expect(() => service.removeStyles()).not.toThrow();
-    });
-  });
-
-  describe('applyFromConfig', () => {
-    beforeEach(() => {
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/video/BV1xx411c7mD' },
-        writable: true,
-      });
-    });
-
-    it('should apply styles when enabled and on video player page', async () => {
-      const config: ExtensionConfig = {
-        videoPlayerSimplification: {
-          enabled: true,
-          hideComments: true,
-          hideRecommendations: true,
-          hideDanmaku: false,
-          hideSidebar: false,
-          hideAds: false,
-          minimalPlayer: false,
-        },
-      } as ExtensionConfig;
-
-      await service.applyFromConfig(config);
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement).toBeTruthy();
-      expect(styleElement?.textContent).toContain('#comment');
-    });
-
-    it('should not apply styles when disabled', async () => {
-      const config: ExtensionConfig = {
-        videoPlayerSimplification: {
-          enabled: false,
-          hideComments: true,
-          hideRecommendations: true,
-          hideDanmaku: true,
-          hideSidebar: true,
-          hideAds: true,
-          minimalPlayer: true,
-        },
-      } as ExtensionConfig;
-
-      await service.applyFromConfig(config);
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement).toBeFalsy();
-    });
-
-    it('should remove styles when not on video player page', async () => {
-      // First apply styles on video page
-      const config: ExtensionConfig = {
-        videoPlayerSimplification: {
-          enabled: true,
-          hideComments: true,
-          hideRecommendations: true,
-          hideDanmaku: true,
-          hideSidebar: true,
-          hideAds: true,
-          minimalPlayer: false,
-        },
-      } as ExtensionConfig;
-
-      await service.applyFromConfig(config);
-      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeTruthy();
-
-      // Change to non-video page
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/' },
-        writable: true,
-      });
-
-      // Re-apply (should remove)
-      await service.applyFromConfig(config);
-      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeFalsy();
-    });
-
-    it('should handle missing videoPlayerSimplification config', async () => {
-      const config: ExtensionConfig = {} as ExtensionConfig;
-
-      await expect(service.applyFromConfig(config)).resolves.not.toThrow();
-      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeFalsy();
-    });
-
-    it('should apply homepage simplification when on homepage', async () => {
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/' },
-        writable: true,
-      });
-
-      const config: ExtensionConfig = {
-        homepageSimplification: {
-          enabled: true,
-          hideRecommendations: true,
-          hideTrending: false,
-          hideAds: false,
-          hideLiveStreams: false,
-          compactLayout: false,
-        },
-      } as ExtensionConfig;
-
-      await service.applyFromConfig(config);
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement).toBeTruthy();
-      expect(styleElement?.textContent).toContain('.recommended-container');
-    });
-
-    it('should not apply homepage simplification when disabled', async () => {
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/' },
-        writable: true,
-      });
-
-      const config: ExtensionConfig = {
-        homepageSimplification: {
-          enabled: false,
-          hideRecommendations: true,
-          hideTrending: true,
-          hideAds: true,
-          hideLiveStreams: true,
-          compactLayout: true,
-        },
-      } as ExtensionConfig;
-
-      await service.applyFromConfig(config);
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement).toBeFalsy();
-    });
-  });
-
-  describe('applyHomepageSimplification', () => {
-    beforeEach(() => {
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/' },
-        writable: true,
-      });
-    });
-
-    it('should inject styles when on homepage', () => {
-      service.applyHomepageSimplification({
-        hideRecommendations: true,
-        hideTrending: true,
-        hideAds: true,
-        hideLiveStreams: true,
-        compactLayout: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement).toBeTruthy();
-      expect(styleElement?.tagName).toBe('STYLE');
-    });
-
-    it('should not inject styles when not on homepage', () => {
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/video/BV1xx' },
-        writable: true,
-      });
-
-      service.applyHomepageSimplification({
-        hideRecommendations: true,
-        hideTrending: true,
-        hideAds: true,
-        hideLiveStreams: true,
-        compactLayout: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement).toBeFalsy();
-    });
-
-    it('should hide recommendations when hideRecommendations is true', () => {
-      service.applyHomepageSimplification({
-        hideRecommendations: true,
-        hideTrending: false,
-        hideAds: false,
-        hideLiveStreams: false,
-        compactLayout: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.recommended-container');
-      expect(styleElement?.textContent).toContain('.feed-card');
-    });
-
-    it('should hide trending when hideTrending is true', () => {
-      service.applyHomepageSimplification({
-        hideRecommendations: false,
-        hideTrending: true,
-        hideAds: false,
-        hideLiveStreams: false,
-        compactLayout: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.rank-list');
-      expect(styleElement?.textContent).toContain('.popular-videos');
-    });
-
-    it('should hide ads when hideAds is true', () => {
-      service.applyHomepageSimplification({
-        hideRecommendations: false,
-        hideTrending: false,
-        hideAds: true,
-        hideLiveStreams: false,
-        compactLayout: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.ad-report');
-      expect(styleElement?.textContent).toContain('.banner-ad');
-    });
-
-    it('should hide live streams when hideLiveStreams is true', () => {
-      service.applyHomepageSimplification({
-        hideRecommendations: false,
-        hideTrending: false,
-        hideAds: false,
-        hideLiveStreams: true,
-        compactLayout: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.live-card');
-      expect(styleElement?.textContent).toContain('.live-box');
-    });
-
-    it('should apply compact layout when compactLayout is true', () => {
-      service.applyHomepageSimplification({
-        hideRecommendations: false,
-        hideTrending: false,
-        hideAds: false,
-        hideLiveStreams: false,
-        compactLayout: true,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.header-channel');
-      expect(styleElement?.textContent).toContain('padding: 4px');
-      expect(styleElement?.textContent).toContain('.header-banner');
-    });
-  });
-
   describe('isDynamicPage', () => {
     it('should return true for dynamic pages', () => {
-      Object.defineProperty(window, 'location', {
-        value: { pathname: '/' },
-        writable: true,
-      });
       Object.defineProperty(window, 'location', {
         value: { host: 't.bilibili.com', pathname: '/' },
         writable: true,
@@ -537,56 +86,226 @@ describe('StyleSimplificationService', () => {
     });
   });
 
-  describe('applyDynamicSimplification', () => {
-    beforeEach(() => {
+  describe('isLivePage', () => {
+    it('should return true for live pages', () => {
       Object.defineProperty(window, 'location', {
-        value: { host: 't.bilibili.com', pathname: '/' },
+        value: { host: 'live.bilibili.com', pathname: '/12345' },
         writable: true,
       });
-    });
+      expect(service.isLivePage()).toBe(true);
 
-    it('should inject styles when on dynamic page', () => {
-      service.applyDynamicSimplification({
-        hideRecommendations: true,
-        hideLiveStreams: true,
-        hideAds: true,
-        showOnlyFollowing: false,
-        compactLayout: false,
+      Object.defineProperty(window, 'location', {
+        value: { host: 'www.bilibili.com', pathname: '/live/12345' },
+        writable: true,
       });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement).toBeTruthy();
-      expect(styleElement?.tagName).toBe('STYLE');
+      expect(service.isLivePage()).toBe(true);
     });
 
-    it('should not inject styles when not on dynamic page', () => {
-      // Temporarily change location to non-dynamic page
-      const originalLocation = { host: window.location.host, pathname: window.location.pathname };
+    it('should return false for non-live pages', () => {
       Object.defineProperty(window, 'location', {
         value: { host: 'www.bilibili.com', pathname: '/video/BV1xx' },
         writable: true,
       });
+      expect(service.isLivePage()).toBe(false);
+    });
+  });
 
-      service.applyDynamicSimplification({
-        hideRecommendations: true,
-        hideLiveStreams: true,
-        hideAds: true,
-        showOnlyFollowing: false,
-        compactLayout: false,
-      });
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement).toBeFalsy();
-
-      // Restore location for subsequent tests
+  describe('isSearchPage', () => {
+    it('should return true for search pages', () => {
       Object.defineProperty(window, 'location', {
-        value: originalLocation,
+        value: { host: 'search.bilibili.com', pathname: '/' },
         writable: true,
       });
+      expect(service.isSearchPage()).toBe(true);
+
+      Object.defineProperty(window, 'location', {
+        value: { host: 'www.bilibili.com', pathname: '/search' },
+        writable: true,
+      });
+      expect(service.isSearchPage()).toBe(true);
+    });
+
+    it('should return false for non-search pages', () => {
+      Object.defineProperty(window, 'location', {
+        value: { host: 'www.bilibili.com', pathname: '/video/BV1xx' },
+        writable: true,
+      });
+      expect(service.isSearchPage()).toBe(false);
+    });
+  });
+
+  describe('generateGlobalStyles', () => {
+    it('should return a CSS string', () => {
+      const css = service.generateGlobalStyles();
+      expect(typeof css).toBe('string');
+      expect(css.length).toBeGreaterThan(0);
+    });
+
+    it('should contain header hiding rules', () => {
+      const css = service.generateGlobalStyles();
+      expect(css).toContain('#bili-header-container');
+    });
+  });
+
+  describe('generateVideoPlayerStyles', () => {
+    it('should hide comments when hideComments is true', () => {
+      const css = service.generateVideoPlayerStyles({
+        hideComments: true,
+        hideRecommendations: false,
+        hideDanmaku: false,
+        hideSidebar: false,
+        hideAds: false,
+        minimalPlayer: false,
+      });
+
+      expect(css).toContain('#comment');
+      expect(css).toContain('.comment-area');
     });
 
     it('should hide recommendations when hideRecommendations is true', () => {
-      service.applyDynamicSimplification({
+      const css = service.generateVideoPlayerStyles({
+        hideComments: false,
+        hideRecommendations: true,
+        hideDanmaku: false,
+        hideSidebar: false,
+        hideAds: false,
+        minimalPlayer: false,
+      });
+
+      expect(css).toContain('.recommend-list');
+      expect(css).toContain('.next-play');
+    });
+
+    it('should hide danmaku when hideDanmaku is true', () => {
+      const css = service.generateVideoPlayerStyles({
+        hideComments: false,
+        hideRecommendations: false,
+        hideDanmaku: true,
+        hideSidebar: false,
+        hideAds: false,
+        minimalPlayer: false,
+      });
+
+      expect(css).toContain('#danmakuBox');
+      expect(css).toContain('.danmaku-box');
+    });
+
+    it('should hide sidebar when hideSidebar is true', () => {
+      const css = service.generateVideoPlayerStyles({
+        hideComments: false,
+        hideRecommendations: false,
+        hideDanmaku: false,
+        hideSidebar: true,
+        hideAds: false,
+        minimalPlayer: false,
+      });
+
+      expect(css).toContain('.right-container');
+      expect(css).toContain('.video-sections');
+    });
+
+    it('should hide ads when hideAds is true', () => {
+      const css = service.generateVideoPlayerStyles({
+        hideComments: false,
+        hideRecommendations: false,
+        hideDanmaku: false,
+        hideSidebar: false,
+        hideAds: true,
+        minimalPlayer: false,
+      });
+
+      expect(css).toContain('.ad-report');
+      expect(css).toContain('.strip-ad');
+    });
+
+    it('should apply minimal player styles when minimalPlayer is true', () => {
+      const css = service.generateVideoPlayerStyles({
+        hideComments: false,
+        hideRecommendations: false,
+        hideDanmaku: false,
+        hideSidebar: false,
+        hideAds: false,
+        minimalPlayer: true,
+      });
+
+      expect(css).toContain('.player-wrap');
+      expect(css).toContain('max-width: 100%');
+      expect(css).toContain('.bilibili-player-control');
+      expect(css).toContain('display: flex');
+    });
+  });
+
+  describe('generateHomepageStyles', () => {
+    it('should hide recommendations when hideRecommendations is true', () => {
+      const css = service.generateHomepageStyles({
+        hideRecommendations: true,
+        hideTrending: false,
+        hideAds: false,
+        hideLiveStreams: false,
+        compactLayout: false,
+      });
+
+      expect(css).toContain('.recommended-container');
+      expect(css).toContain('.feed-card');
+    });
+
+    it('should hide trending when hideTrending is true', () => {
+      const css = service.generateHomepageStyles({
+        hideRecommendations: false,
+        hideTrending: true,
+        hideAds: false,
+        hideLiveStreams: false,
+        compactLayout: false,
+      });
+
+      expect(css).toContain('.rank-list');
+      expect(css).toContain('.popular-videos');
+    });
+
+    it('should hide ads when hideAds is true', () => {
+      const css = service.generateHomepageStyles({
+        hideRecommendations: false,
+        hideTrending: false,
+        hideAds: true,
+        hideLiveStreams: false,
+        compactLayout: false,
+      });
+
+      expect(css).toContain('.ad-report');
+      expect(css).toContain('.banner-ad');
+    });
+
+    it('should hide live streams when hideLiveStreams is true', () => {
+      const css = service.generateHomepageStyles({
+        hideRecommendations: false,
+        hideTrending: false,
+        hideAds: false,
+        hideLiveStreams: true,
+        compactLayout: false,
+      });
+
+      expect(css).toContain('.live-card');
+      expect(css).toContain('.live-box');
+    });
+
+    it('should apply compact layout when compactLayout is true', () => {
+      const css = service.generateHomepageStyles({
+        hideRecommendations: false,
+        hideTrending: false,
+        hideAds: false,
+        hideLiveStreams: false,
+        compactLayout: true,
+      });
+
+      expect(css).toContain('.header-channel');
+      expect(css).toContain('padding: 4px');
+      expect(css).toContain('.header-banner');
+    });
+  });
+
+  describe('generateDynamicStyles', () => {
+    it('should hide recommendations when hideRecommendations is true', () => {
+      const css = service.generateDynamicStyles({
         hideRecommendations: true,
         hideLiveStreams: false,
         hideAds: false,
@@ -594,13 +313,12 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.rcmd-box');
-      expect(styleElement?.textContent).toContain('.bili-dyn-item[data-type="recommend"]');
+      expect(css).toContain('.rcmd-box');
+      expect(css).toContain('.bili-dyn-item[data-type="recommend"]');
     });
 
     it('should hide live streams when hideLiveStreams is true', () => {
-      service.applyDynamicSimplification({
+      const css = service.generateDynamicStyles({
         hideRecommendations: false,
         hideLiveStreams: true,
         hideAds: false,
@@ -608,13 +326,12 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.bili-dyn-item[data-type="live"]');
-      expect(styleElement?.textContent).toContain('.live-card');
+      expect(css).toContain('.bili-dyn-item[data-type="live"]');
+      expect(css).toContain('.live-card');
     });
 
     it('should hide ads when hideAds is true', () => {
-      service.applyDynamicSimplification({
+      const css = service.generateDynamicStyles({
         hideRecommendations: false,
         hideLiveStreams: false,
         hideAds: true,
@@ -622,13 +339,12 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.bili-dyn-item[data-type="ad"]');
-      expect(styleElement?.textContent).toContain('.ad-report');
+      expect(css).toContain('.bili-dyn-item[data-type="ad"]');
+      expect(css).toContain('.ad-report');
     });
 
     it('should show only following when showOnlyFollowing is true', () => {
-      service.applyDynamicSimplification({
+      const css = service.generateDynamicStyles({
         hideRecommendations: false,
         hideLiveStreams: false,
         hideAds: false,
@@ -636,12 +352,11 @@ describe('StyleSimplificationService', () => {
         compactLayout: false,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.bili-dyn-item:not([data-type="following"])');
+      expect(css).toContain('.bili-dyn-item:not([data-type="following"])');
     });
 
     it('should apply compact layout when compactLayout is true', () => {
-      service.applyDynamicSimplification({
+      const css = service.generateDynamicStyles({
         hideRecommendations: false,
         hideLiveStreams: false,
         hideAds: false,
@@ -649,102 +364,84 @@ describe('StyleSimplificationService', () => {
         compactLayout: true,
       });
 
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement?.textContent).toContain('.bili-dyn-item');
-      expect(styleElement?.textContent).toContain('padding: 8px 0');
+      expect(css).toContain('.bili-dyn-item');
+      expect(css).toContain('padding: 8px 0');
     });
   });
 
-  describe('applyFromConfig with dynamic page', () => {
-    it('should apply dynamic simplification when on dynamic page', async () => {
-      Object.defineProperty(window, 'location', {
-        value: { host: 't.bilibili.com', pathname: '/' },
-        writable: true,
+  describe('generateLiveStyles', () => {
+    it('should hide comments when hideComments is true', () => {
+      const css = service.generateLiveStyles({
+        hideComments: true,
+        hideGiftEffects: false,
+        hideAds: false,
+        hideSidebar: false,
+        minimalPlayer: false,
       });
 
-      const config: ExtensionConfig = {
-        dynamicSimplification: {
-          enabled: true,
-          hideRecommendations: true,
-          hideLiveStreams: false,
-          hideAds: false,
-          showOnlyFollowing: false,
-          compactLayout: false,
-        },
-      } as ExtensionConfig;
-
-      await service.applyFromConfig(config);
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement).toBeTruthy();
-      expect(styleElement?.textContent).toContain('.rcmd-box');
+      expect(css).toContain('#chat-control-panel-vm');
+      expect(css).toContain('#chat-history-panel');
     });
 
-    it('should not apply dynamic simplification when disabled', async () => {
-      Object.defineProperty(window, 'location', {
-        value: { host: 't.bilibili.com', pathname: '/' },
-        writable: true,
+    it('should hide gift effects when hideGiftEffects is true', () => {
+      const css = service.generateLiveStyles({
+        hideComments: false,
+        hideGiftEffects: true,
+        hideAds: false,
+        hideSidebar: false,
+        minimalPlayer: false,
       });
 
-      const config: ExtensionConfig = {
-        dynamicSimplification: {
-          enabled: false,
-          hideRecommendations: true,
-          hideLiveStreams: true,
-          hideAds: true,
-          showOnlyFollowing: true,
-          compactLayout: true,
-        },
-      } as ExtensionConfig;
-
-      await service.applyFromConfig(config);
-
-      const styleElement = document.getElementById('bilibili-focus-mode-page-styles');
-      expect(styleElement).toBeFalsy();
+      expect(css).toContain('#gift-control-vm');
+      expect(css).toContain('.gift-box');
     });
 
-    it('should remove styles when not on dynamic page', async () => {
-      // First apply styles on dynamic page
-      Object.defineProperty(window, 'location', {
-        value: { host: 't.bilibili.com', pathname: '/' },
-        writable: true,
+    it('should hide ads when hideAds is true', () => {
+      const css = service.generateLiveStyles({
+        hideComments: false,
+        hideGiftEffects: false,
+        hideAds: true,
+        hideSidebar: false,
+        minimalPlayer: false,
       });
 
-      const config: ExtensionConfig = {
-        dynamicSimplification: {
-          enabled: true,
-          hideRecommendations: true,
-          hideLiveStreams: true,
-          hideAds: true,
-          showOnlyFollowing: false,
-          compactLayout: false,
-        },
-      } as ExtensionConfig;
-
-      await service.applyFromConfig(config);
-      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeTruthy();
-
-      // Change to non-dynamic page
-      Object.defineProperty(window, 'location', {
-        value: { host: 'www.bilibili.com', pathname: '/video/BV1xx' },
-        writable: true,
-      });
-
-      // Re-apply (should remove)
-      await service.applyFromConfig(config);
-      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeFalsy();
+      expect(css).toContain('.ad-report');
     });
 
-    it('should handle missing dynamicSimplification config', async () => {
-      Object.defineProperty(window, 'location', {
-        value: { host: 't.bilibili.com', pathname: '/' },
-        writable: true,
+    it('should hide sidebar when hideSidebar is true', () => {
+      const css = service.generateLiveStyles({
+        hideComments: false,
+        hideGiftEffects: false,
+        hideAds: false,
+        hideSidebar: true,
+        minimalPlayer: false,
       });
 
-      const config: ExtensionConfig = {} as ExtensionConfig;
+      expect(css).toContain('#aside-area-vm');
+      expect(css).toContain('.aside-area');
+    });
 
-      await expect(service.applyFromConfig(config)).resolves.not.toThrow();
-      expect(document.getElementById('bilibili-focus-mode-page-styles')).toBeFalsy();
+    it('should apply minimal player styles when minimalPlayer is true', () => {
+      const css = service.generateLiveStyles({
+        hideComments: false,
+        hideGiftEffects: false,
+        hideAds: false,
+        hideSidebar: false,
+        minimalPlayer: true,
+      });
+
+      expect(css).toContain('#head-info-vm');
+      expect(css).toContain('#live-player');
+      expect(css).toContain('width: 100%');
+      expect(css).toContain('height: 100vh');
+    });
+  });
+
+  describe('generateSearchPageStyles', () => {
+    it('should return CSS for hiding search page content', () => {
+      const css = service.generateSearchPageStyles();
+      expect(css).toContain('.search-entry-page');
+      expect(css).toContain('.search-panel-popover');
     });
   });
 });

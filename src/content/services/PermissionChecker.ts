@@ -2,7 +2,7 @@ import type { ProtocolMap } from '@core/protocol';
 import type { ExtensionConfig, VideoMetadata } from '@core/types';
 
 interface SafeSendMessage {
-  <T>(type: string, data?: unknown): Promise<T | null>;
+  <T>(type: keyof ProtocolMap, data?: unknown): Promise<T | null>;
 }
 
 interface PermissionCheckResult {
@@ -93,7 +93,7 @@ export class PermissionChecker {
    */
   async getFullConfig(): Promise<ExtensionConfig | null> {
     try {
-      const response = await this.safeSendMessage<{ config: ExtensionConfig }>('get-full-config', {});
+      const response = await this.safeSendMessage<ProtocolMap['get-full-config']['res']>('get-full-config', {});
       return response?.config || null;
     } catch (error) {
       console.error('[Content] Failed to get full config:', error);

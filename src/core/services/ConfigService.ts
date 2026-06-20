@@ -1,4 +1,5 @@
 import type { ExtensionConfig, FieldDescription } from '@core/types';
+import { type Result, ok, failure } from '@core/types/result';
 import { DEFAULT_CONFIG } from '@core/constants';
 import { CONFIG_DESCRIPTIONS } from '@core/config/configDescriptions';
 
@@ -30,25 +31,22 @@ export class ConfigService {
   /**
    * Save configuration to storage
    */
-  async saveConfig(config: ExtensionConfig): Promise<{ success: boolean; errors?: ConfigValidationError[] }> {
+  async saveConfig(config: ExtensionConfig): Promise<Result<ConfigValidationError[]>> {
     // Validate config before saving
     const errors = this.validateConfig(config);
-    
+
     if (errors.length > 0) {
-      return {
-        success: false,
-        errors,
-      };
+      return failure('VALIDATION_ERROR', '配置验证失败', errors);
     }
 
     await chrome.storage.local.set({ config });
-    return { success: true };
+    return ok();
   }
 
   /**
    * Update specific configuration fields
    */
-  async updateConfig(updates: Partial<ExtensionConfig>): Promise<{ success: boolean; errors?: ConfigValidationError[] }> {
+  async updateConfig(updates: Partial<ExtensionConfig>): Promise<Result<ConfigValidationError[]>> {
     const currentConfig = await this.loadConfig();
     const newConfig = { ...currentConfig, ...updates };
     

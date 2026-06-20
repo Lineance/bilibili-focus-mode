@@ -54,8 +54,7 @@ describe('ConfigService', () => {
 
       const result = await service.saveConfig(config);
 
-      expect(result.success).toBe(true);
-      expect(result.errors).toBeUndefined();
+      expect(result.ok).toBe(true);
       expect(chrome.storage.local.set).toHaveBeenCalledWith({ config });
     });
 
@@ -64,9 +63,11 @@ describe('ConfigService', () => {
 
       const result = await service.saveConfig(config);
 
-      expect(result.success).toBe(false);
-      expect(result.errors).toBeDefined();
-      expect(result.errors!.length).toBeGreaterThan(0);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.details).toBeDefined();
+        expect((result.error.details as unknown[]).length).toBeGreaterThan(0);
+      }
     });
   });
 
@@ -76,7 +77,7 @@ describe('ConfigService', () => {
 
       const result = await service.updateConfig({ limboCapacity: 7 });
 
-      expect(result.success).toBe(true);
+      expect(result.ok).toBe(true);
       expect(chrome.storage.local.set).toHaveBeenCalledWith(
         expect.objectContaining({
           config: expect.objectContaining({

@@ -4,16 +4,13 @@ import { DEFAULT_BEHAVIOR_LOG } from '@core/constants';
 import { ExpirationService } from '@core/services';
 import type {
   BehaviorLogState,
-  CoolingItem,
   ExtensionConfig,
-  InstantItem,
   LimboItem,
-  PermanentGroup,
   VideoMetadata,
 } from '@core/types';
+import { StorageRepository } from '@core/storage/StorageRepository';
 import { getTodayKey, resetQuotaIfNeeded } from '@core/utils/dateUtils';
 import { logger } from '@core/utils/logger';
-import { storageQueue } from '@core/utils/storageQueue';
 
 function normalizeBehaviorLog(raw: unknown): BehaviorLogState {
   return {
@@ -39,9 +36,9 @@ export function useLimboActions(config: ExtensionConfig) {
     async (item: LimboItem, action: 'permanent' | 'cooling' | 'instant') => {
       setProcessingBvid(item.bvid);
       try {
-        const storage = await chrome.storage.local.get();
+        const storage = await StorageRepository.get();
         const behaviorLog = resetBehaviorLogQuotaIfNeeded(normalizeBehaviorLog(storage.behaviorLog));
-        const limboList = (storage.limboList || []) as LimboItem[];
+        const limboList = storage.limboList;
         const newLimboList = limboList.filter((i) => i.bvid !== item.bvid);
 
         const metadata: VideoMetadata = {
@@ -66,19 +63,17 @@ export function useLimboActions(config: ExtensionConfig) {
             config.ghostLifespanDays
           );
           const coolingItem = expirationService.createCoolingItem(metadata);
-          const coolingList = (storage.coolingList || []) as CoolingItem[];
+          const coolingList = storage.coolingList;
           const filteredCoolingList = coolingList.filter(i => i.bvid !== item.bvid);
           const updatedBehaviorLog = {
             ...behaviorLog,
             coolingApplicationsToday: behaviorLog.coolingApplicationsToday + 1,
           };
-          await storageQueue.enqueue(() =>
-            chrome.storage.local.set({
-              limboList: newLimboList,
-              coolingList: [...filteredCoolingList, coolingItem],
-              behaviorLog: updatedBehaviorLog,
-            })
-          );
+          await StorageRepository.set({
+            limboList: newLimboList,
+            coolingList: [...filteredCoolingList, coolingItem],
+            behaviorLog: updatedBehaviorLog,
+          });
           alert(`已加入冷静期，将在 ${config.coolingCooldownHours} 小时后可用`);
         } else if (action === 'instant') {
           if (config.dailyInstantQuota > 0 && behaviorLog.instantApplicationsToday >= config.dailyInstantQuota) {
@@ -93,23 +88,21 @@ export function useLimboActions(config: ExtensionConfig) {
             config.ghostLifespanDays
           );
           const instantItem = expirationService.createInstantItem(metadata, '');
-          const instantList = (storage.instantList || []) as InstantItem[];
+          const instantList = storage.instantList;
           const filteredInstantList = instantList.filter(i => i.bvid !== item.bvid);
           const updatedBehaviorLog = {
             ...behaviorLog,
             instantApplicationsToday: behaviorLog.instantApplicationsToday + 1,
             lastInstantApplication: Date.now(),
           };
-          await storageQueue.enqueue(() =>
-            chrome.storage.local.set({
-              limboList: newLimboList,
-              instantList: [...filteredInstantList, instantItem],
-              behaviorLog: updatedBehaviorLog,
-            })
-          );
+          await StorageRepository.set({
+            limboList: newLimboList,
+            instantList: [...filteredInstantList, instantItem],
+            behaviorLog: updatedBehaviorLog,
+          });
           alert(`已加入即时许可，有效期 ${config.instantDurationHours} 小时`);
         } else {
-          const permanentGroups = (storage.permanentGroups || []) as PermanentGroup[];
+          const permanentGroups = storage.permanentGroups;
 
           const existsInAnyGroup = permanentGroups.some(g =>
             g.items.some(i => i.bvid === item.bvid)
@@ -152,12 +145,10 @@ export function useLimboActions(config: ExtensionConfig) {
             targetGroup.items.push(metadata);
           }
 
-          await storageQueue.enqueue(() =>
-            chrome.storage.local.set({
-              limboList: newLimboList,
-              permanentGroups,
-            })
-          );
+          await StorageRepository.set({
+            limboList: newLimboList,
+            permanentGroups,
+          });
 
           const tagText = item.tag === 'LEARNING' ? '学习' : '娱乐';
           alert(`已加入永久分组（${tagText}）`);
@@ -179,10 +170,9 @@ export function useLimboActions(config: ExtensionConfig) {
     if (!confirm('确定要删除这个视频吗？')) return false;
 
     try {
-      const storage = await chrome.storage.local.get();
-      const limboList = (storage.limboList || []) as LimboItem[];
+      const { limboList } = await StorageRepository.getKeys('limboList');
       const newLimboList = limboList.filter((item) => item.bvid !== bvid);
-      await chrome.storage.local.set({ limboList: newLimboList });
+      await StorageRepository.set({ limboList: newLimboList });
       logger.debug('LimboReview', 'Deleted:', bvid);
       return true;
     } catch (error) {
@@ -196,10 +186,9 @@ export function useLimboActions(config: ExtensionConfig) {
     if (!confirm(`确定要删除选中的 ${bvids.size} 个视频吗？`)) return false;
 
     try {
-      const storage = await chrome.storage.local.get();
-      const limboList = (storage.limboList || []) as LimboItem[];
+      const { limboList } = await StorageRepository.getKeys('limboList');
       const newLimboList = limboList.filter((item) => !bvids.has(item.bvid));
-      await chrome.storage.local.set({ limboList: newLimboList });
+      await StorageRepository.set({ limboList: newLimboList });
       logger.debug('LimboReview', 'Batch deleted:', bvids.size);
       return true;
     } catch (error) {
@@ -212,7 +201,7 @@ export function useLimboActions(config: ExtensionConfig) {
     if (!confirm('确定要清空待审池吗？')) return false;
 
     try {
-      await chrome.storage.local.set({ limboList: [] });
+      await StorageRepository.set({ limboList: [] });
       logger.debug('LimboReview', 'Cleared all');
       return true;
     } catch (error) {

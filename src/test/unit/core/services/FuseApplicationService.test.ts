@@ -72,13 +72,13 @@ describe('FuseApplicationService', () => {
     it('should successfully apply for a fuse code', async () => {
       const result = await service.applyForFuse(mockVideo, mockBehaviorLog, false);
 
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.item.bvid).toBe('BV1xx');
-        expect(result.item.fuseCode).toBeTruthy();
-        expect(result.item.fuseCode.length).toBeGreaterThan(0);
-        expect(result.item.usedFuse).toBe(false);
-        expect(result.item.expiresAt).toBeGreaterThan(Date.now());
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.data.bvid).toBe('BV1xx');
+        expect(result.data.fuseCode).toBeTruthy();
+        expect(result.data.fuseCode.length).toBeGreaterThan(0);
+        expect(result.data.usedFuse).toBe(false);
+        expect(result.data.expiresAt).toBeGreaterThan(Date.now());
       }
     });
 
@@ -89,16 +89,16 @@ describe('FuseApplicationService', () => {
       // Second application should fail
       const result = await service.applyForFuse(mockVideo, mockBehaviorLog, false);
 
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.reason).toBe('已存在有效的即时许可');
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toBe('已存在有效的即时许可');
       }
     });
 
     it('should increase fuse length with recent applications', async () => {
       // First application
       const result1 = await service.applyForFuse(mockVideo, mockBehaviorLog, false);
-      expect(result1.success).toBe(true);
+      expect(result1.ok).toBe(true);
 
       // Update behavior log to simulate recent application
       mockBehaviorLog.lastInstantApplication = Date.now();
@@ -107,21 +107,21 @@ describe('FuseApplicationService', () => {
       // Create new video
       const video2 = { ...mockVideo, bvid: 'BV2xx' };
       const result2 = await service.applyForFuse(video2, mockBehaviorLog, false);
-      expect(result2.success).toBe(true);
+      expect(result2.ok).toBe(true);
 
-      if (result1.success && result2.success) {
+      if (result1.ok && result2.ok) {
         // Second fuse code should be longer or equal
-        expect(result2.item.fuseCode.length).toBeGreaterThanOrEqual(result1.item.fuseCode.length);
+        expect(result2.data.fuseCode.length).toBeGreaterThanOrEqual(result1.data.fuseCode.length);
       }
     });
 
     it('should use bankruptcy fuse length when in bankruptcy', async () => {
       const result = await service.applyForFuse(mockVideo, mockBehaviorLog, true, 720); // 12 hours remaining
 
-      expect(result.success).toBe(true);
-      if (result.success) {
+      expect(result.ok).toBe(true);
+      if (result.ok) {
         // Bankruptcy fuse should be longer (64 + 24 = 88 for 12 hours)
-        expect(result.item.fuseCode.length).toBeGreaterThan(20);
+        expect(result.data.fuseCode.length).toBeGreaterThan(20);
       }
     });
 
@@ -143,16 +143,15 @@ describe('FuseApplicationService', () => {
     it('should verify correct fuse code', async () => {
       // First apply for fuse
       const applyResult = await service.applyForFuse(mockVideo, mockBehaviorLog, false);
-      expect(applyResult.success).toBe(true);
+      expect(applyResult.ok).toBe(true);
 
-      if (applyResult.success) {
-        const fuseCode = applyResult.item.fuseCode;
+      if (applyResult.ok) {
+        const fuseCode = applyResult.data.fuseCode;
 
         // Verify the fuse code
         const verifyResult = await service.verifyFuse('BV1xx', fuseCode);
 
-        expect(verifyResult.success).toBe(true);
-        expect(verifyResult.message).toBe('熔断码验证成功，可以观看视频');
+        expect(verifyResult.ok).toBe(true);
       }
     });
 
@@ -163,40 +162,46 @@ describe('FuseApplicationService', () => {
       // Try to verify with wrong code
       const verifyResult = await service.verifyFuse('BV1xx', 'WRONG-CODE');
 
-      expect(verifyResult.success).toBe(false);
-      expect(verifyResult.message).toBe('熔断码错误，请重新输入');
+      expect(verifyResult.ok).toBe(false);
+      if (!verifyResult.ok) {
+        expect(verifyResult.error.message).toBe('熔断码错误，请重新输入');
+      }
     });
 
     it('should reject if no instant item exists', async () => {
       const result = await service.verifyFuse('BV1xx', 'SOME-CODE');
 
-      expect(result.success).toBe(false);
-      expect(result.message).toBe('未找到该视频的即时许可申请');
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.message).toBe('未找到该视频的即时许可申请');
+      }
     });
 
     it('should reject if fuse code already used', async () => {
       // Apply and verify once
       const applyResult = await service.applyForFuse(mockVideo, mockBehaviorLog, false);
-      expect(applyResult.success).toBe(true);
+      expect(applyResult.ok).toBe(true);
 
-      if (applyResult.success) {
-        const fuseCode = applyResult.item.fuseCode;
+      if (applyResult.ok) {
+        const fuseCode = applyResult.data.fuseCode;
         await service.verifyFuse('BV1xx', fuseCode);
 
         // Try to verify again
         const secondVerify = await service.verifyFuse('BV1xx', fuseCode);
 
-        expect(secondVerify.success).toBe(false);
-        expect(secondVerify.message).toBe('熔断码已被使用');
+        expect(secondVerify.ok).toBe(false);
+        if (!secondVerify.ok) {
+          expect(secondVerify.error.message).toBe('熔断码已被使用');
+        }
       }
     });
 
     it('should mark fuse as used after successful verification', async () => {
       const applyResult = await service.applyForFuse(mockVideo, mockBehaviorLog, false);
-      expect(applyResult.success).toBe(true);
+      expect(applyResult.ok).toBe(true);
 
-      if (applyResult.success) {
-        const fuseCode = applyResult.item.fuseCode;
+      if (applyResult.ok) {
+        const fuseCode = applyResult.data.fuseCode;
         await service.verifyFuse('BV1xx', fuseCode);
 
         // Check storage was updated
@@ -218,10 +223,10 @@ describe('FuseApplicationService', () => {
     it('should return true for active instant with used fuse', async () => {
       // Apply and verify
       const applyResult = await service.applyForFuse(mockVideo, mockBehaviorLog, false);
-      expect(applyResult.success).toBe(true);
+      expect(applyResult.ok).toBe(true);
 
-      if (applyResult.success) {
-        await service.verifyFuse('BV1xx', applyResult.item.fuseCode);
+      if (applyResult.ok) {
+        await service.verifyFuse('BV1xx', applyResult.data.fuseCode);
 
         const hasActive = await service.hasActiveInstant('BV1xx');
         expect(hasActive).toBe(true);
@@ -244,11 +249,11 @@ describe('FuseApplicationService', () => {
   describe('getFuseCode', () => {
     it('should return fuse code for existing instant', async () => {
       const applyResult = await service.applyForFuse(mockVideo, mockBehaviorLog, false);
-      expect(applyResult.success).toBe(true);
+      expect(applyResult.ok).toBe(true);
 
-      if (applyResult.success) {
+      if (applyResult.ok) {
         const code = await service.getFuseCode('BV1xx');
-        expect(code).toBe(applyResult.item.fuseCode);
+        expect(code).toBe(applyResult.data.fuseCode);
       }
     });
 

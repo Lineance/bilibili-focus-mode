@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { logger } from '@core/utils/logger';
 
 import type { ExtensionConfig, VideoTag } from '@core/types';
-import { DEFAULT_STORAGE } from '@core/constants';
+import { StorageRepository } from '@core/storage/StorageRepository';
 
 interface KeywordItem {
   keyword: string;
@@ -25,6 +25,25 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }): Reac
   const [enabled, setEnabled] = useState(config.keywordRules?.enabled ?? true);
   const [message, setMessage] = useState('');
 
+  const saveToStorage = useCallback(async (items: KeywordItem[], newEnabled: boolean) => {
+    try {
+      await StorageRepository.update('config', (current) => ({
+        ...current,
+        keywordRules: {
+          enabled: newEnabled,
+          keywords: items.map(item => item.keyword),
+          tag: 'LEARNING',
+          items: items,
+        },
+      }));
+      setMessage('保存成功');
+      setTimeout(() => setMessage(''), 2000);
+    } catch (error) {
+      logger.error('KeywordRulesPanel', 'Failed to save keyword rules:', error);
+      setMessage('保存失败');
+    }
+  }, []);
+
   // 迁移旧格式数据：如果有 keywords 但没有 items，自动保存一次
   useEffect(() => {
     const needsMigration = config.keywordRules?.keywords?.length > 0 && 
@@ -33,28 +52,8 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }): Reac
       logger.info('KeywordRulesPanel', 'Migrating keyword rules to items format');
       saveToStorage(keywordItems, enabled);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const saveToStorage = async (items: KeywordItem[], newEnabled: boolean) => {
-    try {
-      const storage = await chrome.storage.local.get();
-      const newConfig: ExtensionConfig = {
-        ...(storage.config as ExtensionConfig) || DEFAULT_STORAGE.config,
-        keywordRules: {
-          enabled: newEnabled,
-          keywords: items.map(item => item.keyword),
-          tag: 'LEARNING', // 保留字段以兼容旧版本
-          items: items, // 保存每个关键词的独立标签
-        },
-      };
-      await chrome.storage.local.set({ config: newConfig });
-      setMessage('保存成功');
-      setTimeout(() => setMessage(''), 2000);
-    } catch (error) {
-      logger.error('KeywordRulesPanel', 'Failed to save keyword rules:', error);
-      setMessage('保存失败');
-    }
-  };
 
   const handleAdd = async () => {
     const trimmed = newKeyword.trim();

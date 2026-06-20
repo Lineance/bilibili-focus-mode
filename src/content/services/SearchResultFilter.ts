@@ -59,7 +59,10 @@ export class SearchResultFilter {
       const title = titleEl?.textContent || '';
       const link = card.querySelector('a');
       const isAd = link?.href?.includes('gaoneng.bilibili.com') ||
-                   card.querySelector('.bili-video-card__stats--ad');
+                   link?.href?.includes('cm.bilibili.com') ||
+                   card.querySelector('.bili-video-card__stats--ad') ||
+                   card.querySelector('.bili-video-card__info--ad-creative') ||
+                   card.querySelector('[data-target-url*="creative_id"]');
 
       // 广告和推广直接隐藏
       if (config.hideAds && isAd) {

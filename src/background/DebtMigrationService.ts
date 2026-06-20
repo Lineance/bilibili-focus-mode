@@ -31,8 +31,7 @@ export function migrateDebtAccount(debtAccount: DebtAccount): DebtAccount {
 }
 
 export function syncCurrentDebt(
-  debtAccount: DebtAccount,
-  _config: { entertainmentRatio: number; learningRepayRatio: number }
+  debtAccount: DebtAccount
 ): { account: DebtAccount; changed: boolean } {
   if (!isFinite(debtAccount.currentDebt)) {
     logger.debug('DebtMigrationService', 'Resetting corrupted currentDebt:', debtAccount.currentDebt, '-> 0');

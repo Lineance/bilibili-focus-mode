@@ -4,57 +4,36 @@ import { GhostResurrectionService } from '@core/services';
 import type { ExtensionConfig, GhostItem } from '@core/types';
 import { useNow } from '@hooks/useNow';
 import { useSelection } from '@hooks/useSelection';
+import { useStorageActions } from '../hooks/useStorageActions';
 
 import { BatchToolbar, ItemCard } from './shared';
 
-export function GhostList({ items, config }: { items: readonly GhostItem[]; config: ExtensionConfig }): React.JSX.Element {
+export const GhostList = React.memo(function GhostList({ items, config }: { items: readonly GhostItem[]; config: ExtensionConfig }): React.JSX.Element {
   const allBvids = items.map((item) => item.bvid);
   const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
+  const { deleteFromList, batchDelete, clearList } = useStorageActions();
   const now = useNow(60000);
 
   const handleDelete = async (bvid: string) => {
     if (!confirm('确定要彻底删除这个视频吗？（无法恢复）')) return;
-
-    try {
-      const storage = await chrome.storage.local.get();
-      const ghostList = (storage.ghostList || []) as GhostItem[];
-      const newGhostList = ghostList.filter((item) => item.bvid !== bvid);
-      await chrome.storage.local.set({ ghostList: newGhostList });
-
-      if (isSelected(bvid)) {
-        toggleSelection(bvid);
-      }
-    } catch (error) {
-      console.error('[GhostList] Failed to delete:', error);
-      alert('删除失败，请重试');
-    }
+    const success = await deleteFromList('ghostList', bvid);
+    if (!success) { alert('删除失败，请重试'); return; }
+    if (isSelected(bvid)) toggleSelection(bvid);
   };
 
   const handleBatchDelete = async () => {
     if (selected.size === 0) return;
     if (!confirm(`确定要彻底删除选中的 ${selected.size} 个视频吗？（无法恢复）`)) return;
-
-    try {
-      const storage = await chrome.storage.local.get();
-      const ghostList = (storage.ghostList || []) as GhostItem[];
-      const newGhostList = ghostList.filter((item) => !selected.has(item.bvid));
-      await chrome.storage.local.set({ ghostList: newGhostList });
-      clearSelection();
-    } catch (error) {
-      console.error('[GhostList] Failed to batch delete:', error);
-      alert('批量删除失败，请重试');
-    }
+    const success = await batchDelete('ghostList', selected);
+    if (!success) alert('批量删除失败，请重试');
+    else clearSelection();
   };
 
   const handleClearAll = async () => {
     if (!confirm('确定要清空幽灵档案吗？（无法恢复）')) return;
-    try {
-      await chrome.storage.local.set({ ghostList: [] });
-      clearSelection();
-    } catch (error) {
-      console.error('[GhostList] Failed to clear list:', error);
-      alert('清空失败，请重试');
-    }
+    const success = await clearList('ghostList');
+    if (!success) alert('清空失败，请重试');
+    else clearSelection();
   };
 
   const handleResurrect = async (item: GhostItem) => {
@@ -66,12 +45,12 @@ export function GhostList({ items, config }: { items: readonly GhostItem[]; conf
 
     const service = new GhostResurrectionService(config);
     const result = await service.resurrect(item, fuseCodeInput, repentanceReason);
-    if (!result.success) {
-      alert(result.message);
+    if (!result.ok) {
+      alert(result.error.message);
       return;
     }
 
-    alert(result.message);
+    alert(`招魂成功！视频已进入冷静期${config.ghostDoublePenalty ? '（双倍冷静期惩罚）' : ''}`);
   };
 
   return (
@@ -129,4 +108,4 @@ export function GhostList({ items, config }: { items: readonly GhostItem[]; conf
       />
     </div>
   );
-}
+});

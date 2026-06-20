@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function BatchToolbar({
+export const BatchToolbar = React.memo(function BatchToolbar({
   selectedCount,
   onSelectAll,
   onDeleteSelected,
@@ -40,4 +40,4 @@ export function BatchToolbar({
       </div>
     </div>
   );
-}
+});

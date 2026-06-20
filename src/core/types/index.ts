@@ -264,5 +264,8 @@ export interface VisualDecayState {
   lastPurgeCheck: number;
 }
 
+// Export result types
+export * from './result';
+
 // Export theme types
 export * from './theme';
