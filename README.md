@@ -35,10 +35,9 @@ npm run build
 
 ## 🛠️ 技术栈
 
-- **React 18** + **TypeScript 5** - 前端框架
-- **Vite 6** + **@crxjs/vite-plugin** - 构建工具
-- **Tailwind CSS 3.4** - 样式框架
-- **Zustand** - 状态管理
+- **React + TypeScript** - 前端框架
+- **Vite + @crxjs/vite-plugin** - Chrome 扩展构建工具链
+- **Tailwind CSS** - 样式系统
 - **webext-bridge** - 跨上下文通信
 - **Vitest** - 单元测试
 
@@ -48,21 +47,25 @@ npm run build
 src/
 ├── background/        # Service Worker (MV3)
 ├── content/           # Content Scripts (注入B站)
+│   ├── components/    # 拦截层 UI 组件
+│   └── services/      # 页面检测、样式注入、权限检查等
 ├── manager/           # 管理页 (Options Page)
+│   └── components/    # 配置、债务、审查等管理组件
 ├── popup/             # 弹出窗口
 ├── core/              # 纯逻辑层
 │   ├── services/      # 业务逻辑服务
 │   ├── types/         # TypeScript 类型定义
 │   └── constants.ts   # 默认配置
+├── test/              # 单元/集成/E2E 测试
 ├── hooks/             # React Hooks
 └── manifest.json      # 扩展配置
 ```
 
 ## 📚 文档
 
-- [技术栈参考](./docs/tech-stack.md) - 技术选型与参考项目
-- [架构设计](./docs/architecture-design.md) - 完整架构设计文档
-- [架构文档](./ARCHITECTURE.md) - 项目架构说明
+- [开发文档索引](./docs/README.md) - 文档导航入口
+- [架构文档](./docs/ARCHITECTURE.md) - 当前代码结构与模块职责
+- [GitHub Actions 指南](./docs/github-action.md) - CI / Release 使用说明
 - [AI 代理指南](./AGENTS.md) - 开发规范与指南
 
 ## 🧪 测试
@@ -72,7 +75,7 @@ src/
 npm run test
 
 # 运行单个测试文件
-npm run test -- src/core/services/PermissionService.test.ts
+npm run test -- src/test/unit/core/services/PermissionService.test.ts
 
 # 测试覆盖率
 npm run test:coverage
