@@ -42,7 +42,7 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
       });
 
       setNewUploaderName('');
-      console.warn('[UploaderAllowlist] 添加成功！');
+      console.info('[UploaderAllowlist] 添加成功！');
     } catch (error) {
       console.error('[UploaderAllowlist] Failed to add uploader:', error);
       alert('添加失败，请重试');
