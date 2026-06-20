@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { UploaderAllowlist } from '@manager/components/UploaderAllowlist';
 
 describe('UploaderAllowlist', () => {
   const mockGet = vi.fn();
   const mockSet = vi.fn();
-  const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
-  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  let infoSpy: ReturnType<typeof vi.spyOn>;
+  let warnSpy: ReturnType<typeof vi.spyOn>;
 
   vi.stubGlobal('chrome', {
     storage: {
@@ -19,8 +19,15 @@ describe('UploaderAllowlist', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     mockGet.mockResolvedValue({ allowedUploaders: [] });
     mockSet.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    infoSpy.mockRestore();
+    warnSpy.mockRestore();
   });
 
   it('should log add success as info instead of warning', async () => {
