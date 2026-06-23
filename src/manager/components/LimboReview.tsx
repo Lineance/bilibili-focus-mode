@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-import type { ExtensionConfig, LimboItem } from '@core/types';
+import type { ExtensionConfig, LimboItem, VideoTag } from '@core/types';
+import { extractBvid } from '@core/utils/videoUrl';
 import { useLimboActions } from '@hooks/useLimboActions';
 import { useSelection } from '@hooks/useSelection';
 
@@ -11,7 +12,11 @@ import { BatchToolbar } from './shared';
 export function LimboReview({ items, config }: { items: readonly LimboItem[]; config: ExtensionConfig }): React.JSX.Element {
   const allBvids = items.map((item) => item.bvid);
   const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
-  const { processingBvid, handleAction, handleDelete, handleBatchDelete, handleClearAll } = useLimboActions(config);
+  const { processingBvid, handleAction, handleDelete, handleBatchDelete, handleClearAll, handleAddByUrl } = useLimboActions(config);
+
+  const [urlInput, setUrlInput] = useState('');
+  const [urlTag, setUrlTag] = useState<VideoTag>('ENTERTAINMENT');
+  const [isAdding, setIsAdding] = useState(false);
 
   const [windowStartHour, windowStartMinute] = config.windowStart.split(':').map(Number);
   const [windowEndHour, windowEndMinute] = config.windowEnd.split(':').map(Number);
@@ -83,6 +88,23 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
     }
   };
 
+  const onAddByUrl = async () => {
+    const bvid = extractBvid(urlInput);
+    if (!bvid) {
+      alert('无法识别 BV 号，请检查输入\n支持格式：BV号 或 B站视频链接');
+      return;
+    }
+    setIsAdding(true);
+    try {
+      const success = await handleAddByUrl(urlInput, urlTag);
+      if (success) {
+        setUrlInput('');
+      }
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   return (
     <div>
       <ReviewWindowBanner
@@ -90,6 +112,37 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
         isInReviewWindow={isInReviewWindow}
         onFuseApplied={() => setIsInReviewWindow(true)}
       />
+
+      <div className="bg-secondary rounded-lg p-4 mb-4">
+        <h3 className="text-sm font-medium mb-3">手动添加视频</h3>
+        <div className="flex gap-2 items-center flex-wrap">
+          <input
+            type="text"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && onAddByUrl()}
+            placeholder="粘贴 BV 号或 B站视频链接"
+            className="flex-1 min-w-[240px] px-3 py-2 bg-primary border border-secondary rounded text-sm"
+            disabled={isAdding}
+          />
+          <select
+            value={urlTag}
+            onChange={(e) => setUrlTag(e.target.value as VideoTag)}
+            className="px-3 py-2 bg-primary border border-secondary rounded text-sm"
+          >
+            <option value="ENTERTAINMENT">娱乐</option>
+            <option value="LEARNING">学习</option>
+            <option value="MUSIC">音乐</option>
+          </select>
+          <button
+            onClick={onAddByUrl}
+            disabled={isAdding || !urlInput.trim()}
+            className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isAdding ? '添加中...' : '添加'}
+          </button>
+        </div>
+      </div>
 
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">待审池 ({items.length})</h2>

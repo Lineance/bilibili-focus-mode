@@ -7,9 +7,11 @@ import type {
   ExtensionConfig,
   LimboItem,
   VideoMetadata,
+  VideoTag,
 } from '@core/types';
 import { StorageRepository } from '@core/storage/StorageRepository';
 import { getTodayKey, resetQuotaIfNeeded } from '@core/utils/dateUtils';
+import { extractBvid, getVideoUrl } from '@core/utils/videoUrl';
 import { logger } from '@core/utils/logger';
 
 function normalizeBehaviorLog(raw: unknown): BehaviorLogState {
@@ -210,11 +212,67 @@ export function useLimboActions(config: ExtensionConfig) {
     }
   }, []);
 
+  const handleAddByUrl = useCallback(async (input: string, tag: VideoTag): Promise<boolean> => {
+    const bvid = extractBvid(input);
+    if (!bvid) {
+      alert('无法识别 BV 号，请检查输入');
+      return false;
+    }
+
+    try {
+      const { limboList } = await StorageRepository.getKeys('limboList');
+
+      if (limboList.some((item) => item.bvid === bvid)) {
+        alert('该视频已在待审池中');
+        return false;
+      }
+
+      if (limboList.length >= config.limboCapacity) {
+        alert(`待审池已满（${config.limboCapacity}个），请先处理后再添加`);
+        return false;
+      }
+
+      let title = bvid;
+      let uploader = '未知UP主';
+      let coverUrl = '';
+
+      try {
+        const resp = await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${bvid}`);
+        const json = await resp.json();
+        if (json.code === 0 && json.data) {
+          title = json.data.title || bvid;
+          uploader = json.data.owner?.name || '未知UP主';
+          coverUrl = json.data.pic || '';
+        }
+      } catch {
+        logger.debug('LimboReview', 'Failed to fetch video info, using defaults');
+      }
+
+      const newItem: LimboItem = {
+        bvid,
+        title,
+        uploader,
+        coverUrl,
+        tag,
+        addedAt: Date.now(),
+        sourceUrl: getVideoUrl(bvid),
+      };
+
+      await StorageRepository.set({ limboList: [...limboList, newItem] });
+      logger.debug('LimboReview', 'Added by URL:', bvid);
+      return true;
+    } catch (error) {
+      logger.error('LimboReview', 'Failed to add by URL:', error);
+      return false;
+    }
+  }, [config.limboCapacity]);
+
   return {
     processingBvid,
     handleAction,
     handleDelete,
     handleBatchDelete,
     handleClearAll,
+    handleAddByUrl,
   };
 }
