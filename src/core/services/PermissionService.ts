@@ -64,7 +64,11 @@ export class PermissionService {
 
       if (title) {
         const keywordResult = this.checkKeywordRules(title);
-        if (keywordResult) return { ...keywordResult, ...ctx };
+        if (keywordResult) {
+          // 使用关键词规则返回的videoTag，如果有的话
+          const keywordTag = keywordResult.videoTag || resolvedTag;
+          return { ...keywordResult, ...ctx, videoTag: keywordTag };
+        }
       }
 
       if (uploaderName) {
@@ -90,10 +94,11 @@ export class PermissionService {
       ? { allowed: true, reason: 'PERMANENT' } : null;
   }
 
-  private checkKeywordRules(title: string): PermissionResult | null {
+  private checkKeywordRules(title: string): (PermissionResult & { videoTag?: VideoTag }) | null {
     if (!this.storage.config.keywordRules?.enabled) return null;
-    return this.keywordRule.check(title)
-      ? { allowed: true, reason: 'KEYWORD' } : null;
+    const matchedTag = this.keywordRule.check(title);
+    return matchedTag
+      ? { allowed: true, reason: 'KEYWORD', videoTag: matchedTag } : null;
   }
 
   private checkUploaderAllowlist(uploaderName: string): { result: PermissionResult; tag?: VideoTag } | null {

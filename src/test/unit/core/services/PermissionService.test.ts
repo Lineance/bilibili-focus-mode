@@ -329,5 +329,70 @@ describe('PermissionService', () => {
       expect(result.allowed).toBe(false);
       expect(result.reason).toBe('BANKRUPTCY');
     });
+
+    it('should return MUSIC videoTag when keyword rule matches MUSIC tag', () => {
+      mockStorage = {
+        ...mockStorage,
+        config: {
+          ...mockStorage.config,
+          keywordRules: {
+            enabled: true,
+            keywords: ['歌单', 'playlist'],
+            tag: 'MUSIC' as const,
+          },
+        },
+      };
+      service = new PermissionService(mockStorage);
+
+      const result = service.check('BV1xx', undefined, '我的歌单 2024');
+      expect(result.allowed).toBe(true);
+      expect(result.reason).toBe('KEYWORD');
+      expect(result.videoTag).toBe('MUSIC');
+    });
+
+    it('should return LEARNING videoTag when keyword rule matches LEARNING tag', () => {
+      mockStorage = {
+        ...mockStorage,
+        config: {
+          ...mockStorage.config,
+          keywordRules: {
+            enabled: true,
+            keywords: ['tutorial', '教程'],
+            tag: 'LEARNING' as const,
+          },
+        },
+      };
+      service = new PermissionService(mockStorage);
+
+      const result = service.check('BV1xx', undefined, 'Python 教程');
+      expect(result.allowed).toBe(true);
+      expect(result.reason).toBe('KEYWORD');
+      expect(result.videoTag).toBe('LEARNING');
+    });
+
+    it('should return correct videoTag for items-based keyword rules', () => {
+      mockStorage = {
+        ...mockStorage,
+        config: {
+          ...mockStorage.config,
+          keywordRules: {
+            enabled: true,
+            keywords: ['歌单', 'playlist'],
+            tag: 'MUSIC' as const,
+            items: [
+              { keyword: '歌单', tag: 'MUSIC' as const },
+              { keyword: 'tutorial', tag: 'LEARNING' as const },
+            ],
+          },
+        },
+      };
+      service = new PermissionService(mockStorage);
+
+      const musicResult = service.check('BV1xx', undefined, '我的歌单');
+      expect(musicResult.videoTag).toBe('MUSIC');
+
+      const learningResult = service.check('BV2xx', undefined, 'Python Tutorial');
+      expect(learningResult.videoTag).toBe('LEARNING');
+    });
   });
 });
