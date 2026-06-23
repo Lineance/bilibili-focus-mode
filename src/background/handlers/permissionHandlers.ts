@@ -23,6 +23,16 @@ export async function handleCheckPermission(request: unknown): Promise<unknown> 
   const isBypassActive = now < bypassUntil;
   const isVirtuallyInWindow = now < breakUntil || isBypassActive;
 
+  if (isBypassActive && !result.allowed && result.reason !== 'BANKRUPTCY') {
+    return {
+      allowed: true,
+      reason: 'DAILY_BYPASS',
+      inReviewWindow: result.inReviewWindow || isVirtuallyInWindow,
+      videoTag: result.videoTag,
+      config: pickConfigSnapshot(config),
+    };
+  }
+
   return {
     ...result,
     inReviewWindow: result.inReviewWindow || isVirtuallyInWindow,

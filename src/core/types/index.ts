@@ -253,7 +253,7 @@ export interface ExtensionStorage {
 }
 
 export type PermissionResult =
-  | { allowed: true; reason: 'PERMANENT' | 'INSTANT' | 'COOLING_AVAILABLE' | 'KEYWORD' }
+  | { allowed: true; reason: 'PERMANENT' | 'INSTANT' | 'COOLING_AVAILABLE' | 'KEYWORD' | 'DAILY_BYPASS' }
   | { allowed: false; reason: 'NO_PERMISSION' | 'COOLING_WAITING' | 'EXPIRED' | 'BANKRUPTCY' };
 
 export type DecayLevel = 'FRESH' | 'SLIGHT' | 'MODERATE' | 'SEVERE' | 'CRITICAL';
