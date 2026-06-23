@@ -173,9 +173,9 @@ export class PermissionOrchestrator {
       }
 
       if (result.success) {
-        const tagText = tagSelection === 'LEARNING' ? '学习' : '娱乐';
+        const tagText = tagSelection === 'LEARNING' ? '学习' : tagSelection === 'MUSIC' ? '音乐' : '娱乐';
         alert(`已加入待审池！标签：${tagText}\n请在审批时间前往管理页处理`);
-        this.blockOverlayManager.remove();
+        this.checkPermission();
       } else {
         alert('添加失败，待审池可能已满，请重试');
       }

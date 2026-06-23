@@ -114,8 +114,8 @@ export function BlockOverlay({
           )}
           {!isBankruptcy && (
             <button
-              id="bfm-add-limbo"
-              className="bfm-btn bfm-btn--add"
+              id="bfm-submit-limbo"
+              className="bfm-btn bfm-btn--submit"
               onClick={() => onAddToLimbo(metadata)}
             >
               加入待审池

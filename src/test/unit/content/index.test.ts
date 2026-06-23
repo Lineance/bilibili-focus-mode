@@ -225,7 +225,7 @@ describe('Content Script', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Check that add to limbo button exists
-      const addButton = document.querySelector('#bfm-add-limbo') as HTMLElement;
+      const addButton = document.querySelector('#bfm-submit-limbo') as HTMLElement;
       expect(addButton).toBeTruthy();
       expect(addButton?.textContent).toContain('加入待审池');
     });
