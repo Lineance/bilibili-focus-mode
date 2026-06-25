@@ -62,6 +62,10 @@ export class StyleOrchestrator {
           minimalPlayer: ls.minimalPlayer,
         }));
       }
+
+      if (this.styleService.isSearchPage() && config.searchSimplification?.enabled) {
+        this.styleInjector.injectPage(this.styleService.generateSearchPageStyles());
+      }
     } catch (error) {
       logger.error('Content', 'Failed to apply style simplification:', error);
     }

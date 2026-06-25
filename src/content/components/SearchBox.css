@@ -1,0 +1,86 @@
+.bfm-searchbox-host {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 999998 !important;
+  display: flex !important;
+  justify-content: center !important;
+  padding: 12px 16px !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.bfm-searchbox-host--center {
+  position: relative !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  min-height: 50vh !important;
+  align-items: center !important;
+}
+
+.bfm-searchbox {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 520px !important;
+}
+
+.bfm-searchbox-host--center .bfm-searchbox {
+  max-width: 600px !important;
+}
+
+.bfm-searchbox__input {
+  flex: 1 !important;
+  height: 40px !important;
+  padding: 0 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  font-size: 14px !important;
+  outline: none !important;
+  transition: border-color 0.2s, background 0.2s !important;
+}
+
+.bfm-searchbox__input::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.bfm-searchbox__input:focus {
+  border-color: #00a1d6 !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.bfm-searchbox-host--center .bfm-searchbox__input {
+  height: 48px !important;
+  font-size: 16px !important;
+  border-radius: 12px !important;
+}
+
+.bfm-searchbox__btn {
+  height: 40px !important;
+  padding: 0 20px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: #00a1d6 !important;
+  color: white !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: background 0.2s !important;
+}
+
+.bfm-searchbox__btn:hover {
+  background: #0091c2 !important;
+}
+
+.bfm-searchbox-host--center .bfm-searchbox__btn {
+  height: 48px !important;
+  padding: 0 28px !important;
+  font-size: 16px !important;
+  border-radius: 12px !important;
+}

@@ -6,6 +6,7 @@ import { StyleSimplificationService } from '@core/services';
 import { sendMessage } from 'webext-bridge/content-script';
 import { VideoMetadataExtractor } from './services/VideoMetadataExtractor';
 import { BlockOverlayManager } from './components/BlockOverlayHost';
+import { SearchBoxManager } from './components/SearchBoxManager';
 import { VideoTracker } from './services/VideoTracker';
 import { PermissionChecker } from './services/PermissionChecker';
 import { SearchPageHandler } from './services/SearchPageHandler';
@@ -48,11 +49,13 @@ if (typeof chrome === 'undefined' || !chrome.runtime?.id) {
     metadataExtractor, blockOverlayManager, permissionChecker, videoTracker, safeSendMessage
   );
   const styleOrchestrator = new StyleOrchestrator(styleService, styleInjector, permissionChecker, metadataExtractor);
+  const searchBoxManager = new SearchBoxManager();
 
   function onNavigate() {
     styleOrchestrator.checkHomepageRedirect();
     styleOrchestrator.applyStyleSimplification();
     permissionOrchestrator.checkPermission();
+    searchBoxManager.check();
   }
 
   const searchPageHandler = new SearchPageHandler();

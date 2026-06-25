@@ -19,8 +19,14 @@ export class GlobalCSSGenerator {
    */
   generateSearchPageSimplification(): string {
     return `
-      /* 隐藏搜索页面主体内容 */
+      /* 隐藏搜索入口页主体内容 */
       #app > div > div.search-entry-page.p_relative > div > div > div > div > div {
+        display: none !important;
+      }
+
+      /* 隐藏原生搜索栏（入口页 + 结果页） */
+      .search-entry-page .search-input-container,
+      .search-header .search-input-container {
         display: none !important;
       }
 
@@ -29,6 +35,12 @@ export class GlobalCSSGenerator {
       .search-panel,
       .trending,
       .trendings-double {
+        display: none !important;
+      }
+
+      /* 隐藏搜索历史 */
+      .search-panel-popover .history-item,
+      .search-panel-popover .history {
         display: none !important;
       }
 
@@ -43,39 +55,6 @@ export class GlobalCSSGenerator {
       .biliMainFooterWrapper,
       .bili-footer {
         display: none !important;
-      }
-
-      /* 隐藏搜索结果区域 */
-      .search-page,
-      .search-page .video-list,
-      .search-page .user-list,
-      .search-page .bangumi-list,
-      .search-page .pgc-list,
-      .search-page .live-list,
-      .search-page .article-list,
-      .search-page .topic-list,
-      .search-page .activity-list {
-        display: none !important;
-      }
-
-      /* 隐藏侧边栏 */
-      .search-page .aside,
-      .search-page .right-side {
-        display: none !important;
-      }
-
-      /* 隐藏筛选器 */
-      .search-page .filter-wrap,
-      .search-page .search-filter {
-        display: none !important;
-      }
-
-      /* 确保搜索框可见且居中 */
-      .search-entry-page .search-input-container {
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        min-height: 50vh !important;
       }
 
       /* 隐藏搜索框旁边的logo */
