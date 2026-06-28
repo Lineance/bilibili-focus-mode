@@ -182,6 +182,36 @@ describe('Manager App', () => {
     expect(screen.getByText('⚠️ 已破产！24小时内禁止新申请')).toBeTruthy();
   });
 
+  it('should show detailed bankruptcy history', () => {
+    const now = Date.now();
+    mockStorage.debtAccount = {
+      currentDebt: 70,
+      bankruptcyCount: 2,
+      bankruptcyEndTime: null,
+      totalEntertainmentMinutes: 35,
+      totalLearningMinutes: 0,
+      totalMusicMinutes: 0,
+    };
+    mockStorage.globalStats = {
+      fuseApplicationsTotal: 0,
+      fuseOverridesTotal: 0,
+      ghostResurrectionsTotal: 0,
+      lifecycleTransitions: {},
+      bankruptcyHistory: [
+        { timestamp: now - 3600000, debtAtBankruptcy: 65, bypassed: false },
+        { timestamp: now, debtAtBankruptcy: 82.5, bypassed: true },
+      ],
+    };
+
+    render(<App />);
+    fireEvent.click(screen.getByText('债务'));
+
+    expect(screen.getByText('破产历史记录')).toBeTruthy();
+    expect(screen.getByText('共 2 次破产')).toBeTruthy();
+    expect(screen.getByText('触发债务：82.5 分钟')).toBeTruthy();
+    expect(screen.getByText('触发债务：65.0 分钟')).toBeTruthy();
+  });
+
   describe('Limbo Review Actions', () => {
     const mockItem = {
       bvid: 'BV1xx',

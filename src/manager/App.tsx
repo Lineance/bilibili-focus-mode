@@ -186,7 +186,13 @@ export function App(): React.JSX.Element {
         {activeTab === 'instant' && <InstantList items={storage.instantList || []} config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'permanent' && <PermanentGroups groups={storage.permanentGroups || []} />}
         {activeTab === 'ghost' && <GhostList items={storage.ghostList || []} config={storage.config || DEFAULT_CONFIG} />}
-        {activeTab === 'debt' && <DebtDashboard account={storage.debtAccount} config={storage.config || DEFAULT_CONFIG} />}
+        {activeTab === 'debt' && (
+          <DebtDashboard
+            account={storage.debtAccount}
+            bankruptcyHistory={storage.globalStats?.bankruptcyHistory}
+            config={storage.config || DEFAULT_CONFIG}
+          />
+        )}
         {activeTab === 'uploaders' && <UploaderAllowlist uploaders={storage.allowedUploaders || []} />}
         {activeTab === 'keywords' && <KeywordRulesPanel config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'config' && <ConfigPanel />}

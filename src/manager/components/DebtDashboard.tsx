@@ -1,15 +1,17 @@
 import { MS_PER_MINUTE } from '@core/constants';
 import React from 'react';
 
-import type { ExtensionConfig } from '@core/types';
+import type { BankruptcyRecord, ExtensionConfig } from '@core/types';
 import { useNow } from '@hooks/useNow';
 
 export function DebtDashboard({
   account,
+  bankruptcyHistory = [],
   config,
 }: {
   account?: {
     currentDebt: number;
+    bankruptcyCount?: number;
     totalEntertainmentMinutes?: number;
     totalLearningMinutes?: number;
     totalMusicMinutes?: number;
@@ -18,6 +20,7 @@ export function DebtDashboard({
     totalAccrued?: number;
     totalRepaid?: number;
   };
+  bankruptcyHistory?: BankruptcyRecord[];
   config: ExtensionConfig;
 }): React.JSX.Element {
   const now = useNow(MS_PER_MINUTE);
@@ -127,6 +130,35 @@ export function DebtDashboard({
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Bankruptcy History */}
+      <div className="mt-4 bg-tertiary p-4 rounded-lg">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-sm font-medium text-primary">破产历史记录</h3>
+          <span className="text-xs text-secondary">
+            共 {bankruptcyHistory.length} 次破产
+          </span>
+        </div>
+
+        {bankruptcyHistory.length === 0 ? (
+          <p className="text-sm text-secondary">暂无破产记录，继续保持！</p>
+        ) : (
+          <div className="space-y-2">
+            {[...bankruptcyHistory].reverse().map((record, index) => (
+              <div key={`${record.timestamp}-${index}`} className="bg-secondary p-3 rounded-lg text-sm">
+                <div className="flex justify-between text-primary">
+                  <span>第 {bankruptcyHistory.length - index} 次破产</span>
+                  <span>{new Date(record.timestamp).toLocaleString('zh-CN')}</span>
+                </div>
+                <div className="mt-1 flex justify-between text-secondary">
+                  <span>触发债务：{record.debtAtBankruptcy.toFixed(1)} 分钟</span>
+                  <span>{record.bypassed ? '已绕过' : '未绕过'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
