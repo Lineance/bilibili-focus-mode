@@ -111,10 +111,10 @@ export class ConfigService {
     }
 
     // Validate instant duration
-    if (config.instantDurationHours < 1 || config.instantDurationHours > 24) {
+    if (config.instantDurationHours < 1 || config.instantDurationHours > 2160) {
       errors.push({
         field: 'instantDurationHours',
-        message: '即时许可有效期应在 1-24 小时之间',
+        message: '即时许可有效期应在 1-2160 小时（3个月）之间',
       });
     }
 

@@ -34,7 +34,7 @@ export function useLimboActions(config: ExtensionConfig) {
   const [processingBvid, setProcessingBvid] = useState<string | null>(null);
 
   const handleAction = useCallback(
-    async (item: LimboItem, action: 'permanent' | 'instant') => {
+    async (item: LimboItem, action: 'permanent' | 'instant', durationHours?: number) => {
       setProcessingBvid(item.bvid);
       try {
         const storage = await StorageRepository.get();
@@ -57,9 +57,8 @@ export function useLimboActions(config: ExtensionConfig) {
             return false;
           }
 
-          const expirationService = new ExpirationService(
-            config.instantDurationHours
-          );
+          const hours = durationHours || config.instantDurationHours;
+          const expirationService = new ExpirationService(hours);
           const instantItem = expirationService.createInstantItem(metadata, '');
           const instantList = storage.instantList;
           const filteredInstantList = instantList.filter(i => i.bvid !== item.bvid);
@@ -73,7 +72,7 @@ export function useLimboActions(config: ExtensionConfig) {
             instantList: [...filteredInstantList, instantItem],
             behaviorLog: updatedBehaviorLog,
           });
-          alert(`已加入即时许可，有效期 ${config.instantDurationHours} 小时`);
+          alert(`已加入即时许可，有效期 ${hours} 小时`);
         } else {
           const permanentGroups = storage.permanentGroups;
 
