@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { InstantItem } from '@core/types';
 
 interface InstantSectionProps {
@@ -6,9 +6,15 @@ interface InstantSectionProps {
 }
 
 export function InstantSection({ items }: InstantSectionProps): React.JSX.Element {
-  const formatExpiry = (expiresAt: number): string => {
-    const now = Date.now();
-    const remaining = expiresAt - now;
+  const [currentTime, setCurrentTime] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatExpiry = useCallback((expiresAt: number): string => {
+    const remaining = expiresAt - currentTime;
     if (remaining <= 0) return '已过期';
 
     const hours = Math.floor(remaining / (1000 * 60 * 60));
@@ -19,7 +25,7 @@ export function InstantSection({ items }: InstantSectionProps): React.JSX.Elemen
       return `${days}天后过期`;
     }
     return hours > 0 ? `${hours}小时${minutes}分钟后过期` : `${minutes}分钟后过期`;
-  };
+  }, [currentTime]);
 
   const openVideo = (bvid: string) => {
     window.open(`https://www.bilibili.com/video/${bvid}`, '_blank');

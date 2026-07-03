@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import type { BehaviorLogState, ExtensionConfig } from '@core/types';
 import { getTodayKey, resetQuotaIfNeeded } from '@core/utils/dateUtils';
 
@@ -9,6 +9,7 @@ interface BypassStatusProps {
 
 export function BypassStatus({ config, behaviorLog }: BypassStatusProps): React.JSX.Element {
   const [bypassUntil, setBypassUntil] = useState<number>(0);
+  const [currentTime, setCurrentTime] = useState<number>(() => Date.now());
 
   useEffect(() => {
     const loadBypassUntil = async () => {
@@ -17,22 +18,28 @@ export function BypassStatus({ config, behaviorLog }: BypassStatusProps): React.
     };
     loadBypassUntil();
 
+    const timer = setInterval(() => setCurrentTime(Date.now()), 60000);
+
     const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
       if (area === 'local' && changes.dailyBypassUntil) {
         setBypassUntil((changes.dailyBypassUntil.newValue as number) || 0);
       }
     };
     chrome.storage.onChanged.addListener(listener);
-    return () => chrome.storage.onChanged.removeListener(listener);
+    return () => {
+      chrome.storage.onChanged.removeListener(listener);
+      clearInterval(timer);
+    };
   }, []);
 
-  const now = Date.now();
-  const isBypassActive = now < bypassUntil;
+  const isBypassActive = currentTime < bypassUntil;
 
-  const today = getTodayKey();
-  const needsReset = resetQuotaIfNeeded(behaviorLog.lastQuotaResetDate, today);
-  const dailyBypassesUsedToday = needsReset ? 0 : (behaviorLog.dailyBypassesUsedToday || 0);
-  const remainingUses = Math.max(0, config.dailyBypassQuota - dailyBypassesUsedToday);
+  const { remainingUses } = useMemo(() => {
+    const today = getTodayKey();
+    const needsReset = resetQuotaIfNeeded(behaviorLog.lastQuotaResetDate, today);
+    const dailyBypassesUsedToday = needsReset ? 0 : (behaviorLog.dailyBypassesUsedToday || 0);
+    return { remainingUses: Math.max(0, config.dailyBypassQuota - dailyBypassesUsedToday) };
+  }, [behaviorLog, config.dailyBypassQuota]);
 
   const formatTime = (ms: number): string => {
     const minutes = Math.ceil(ms / (1000 * 60));
@@ -41,6 +48,8 @@ export function BypassStatus({ config, behaviorLog }: BypassStatusProps): React.
     const mins = minutes % 60;
     return mins > 0 ? `${hours}小时${mins}分钟` : `${hours}小时`;
   };
+
+  const remainingTime = bypassUntil - currentTime;
 
   const handleBypass = async () => {
     try {
@@ -84,7 +93,7 @@ export function BypassStatus({ config, behaviorLog }: BypassStatusProps): React.
           <div className="bg-success/20 border border-success/50 rounded-lg p-3">
             <p className="text-success font-medium">✅ 放行中</p>
             <p className="text-sm text-secondary mt-1">
-              剩余 {formatTime(bypassUntil - now)}
+              剩余 {formatTime(remainingTime)}
             </p>
           </div>
         ) : (

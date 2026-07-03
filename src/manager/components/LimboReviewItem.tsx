@@ -35,9 +35,10 @@ export const LimboReviewItem = React.memo(function LimboReviewItem({
   onAction,
   onDelete,
 }: LimboReviewItemProps): React.JSX.Element | null {
+  const [showDurationPicker, setShowDurationPicker] = useState(false);
+  
   if (!item.bvid) return null;
 
-  const [showDurationPicker, setShowDurationPicker] = useState(false);
   const videoUrl = getVideoUrl(item.bvid);
 
   const handleInstantClick = () => {
