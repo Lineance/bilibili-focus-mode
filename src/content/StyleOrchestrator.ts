@@ -77,6 +77,7 @@ export class StyleOrchestrator {
       if (this.styleService.isVideoPlayerPage()) {
         this.migratedOrchestrator.applyVideoPlayerEnhancement(config.videoPlayerEnhancement);
       }
+      this.migratedOrchestrator.applyThemeEnhancement(config.themeEnhancement);
     } catch (error) {
       logger.error('Content', 'Failed to apply style simplification:', error);
     }
