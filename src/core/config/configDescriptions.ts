@@ -210,4 +210,9 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
     description: '增强视频播放器功能',
     type: 'boolean',
   },
+  themeEnhancement: {
+    label: '主题增强',
+    description: '主题和封面相关增强功能',
+    type: 'boolean',
+  },
 };

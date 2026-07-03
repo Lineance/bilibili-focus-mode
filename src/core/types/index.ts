@@ -22,11 +22,6 @@ export interface LimboItem extends VideoMetadata {
   sourceUrl: string;
 }
 
-export interface CoolingItem extends VideoMetadata {
-  availableAt: number;
-  expiresAt: number;
-}
-
 export interface InstantItem extends VideoMetadata {
   expiresAt: number;
   fuseCode: string;
@@ -242,6 +237,8 @@ export interface ExtensionConfig {
   liveEnhancement: LiveEnhancementConfig;
   // Video Player Enhancement
   videoPlayerEnhancement: VideoPlayerEnhancementConfig;
+  // Theme Enhancement
+  themeEnhancement: ThemeEnhancementConfig;
 }
 
 export interface ExtensionStorage {
@@ -304,6 +301,12 @@ export interface VideoPlayerEnhancementConfig {
   enabled: boolean;
   extendSpeed: boolean;
   rememberSpeed: boolean;
+}
+
+/** 主题增强配置 */
+export interface ThemeEnhancementConfig {
+  darkModeFollowSystem: boolean;
+  replaceCover: boolean;
 }
 
 // Export result types

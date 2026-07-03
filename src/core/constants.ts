@@ -138,6 +138,11 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     extendSpeed: false,
     rememberSpeed: false,
   },
+  // Theme Enhancement
+  themeEnhancement: {
+    darkModeFollowSystem: false,
+    replaceCover: false,
+  },
 };
 
 export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {
