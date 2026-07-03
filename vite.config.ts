@@ -22,6 +22,11 @@ export default defineConfig({
   base: './',
   build: {
     target: 'esnext',
+    rollupOptions: {
+      input: {
+        customHomepage: resolve(__dirname, 'src/custom-homepage/index.html'),
+      },
+    },
   },
   server: {
     port: 5173,

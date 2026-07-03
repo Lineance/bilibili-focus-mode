@@ -74,6 +74,17 @@ export function HomepageSection({ config, onUpdate }: HomepageSectionProps): Rea
             />
             <span className="text-sm">重定向到搜索页（默认开启）</span>
           </label>
+          {config.redirectToSearch && (
+            <label className="flex items-center gap-2 ml-4">
+              <input
+                type="checkbox"
+                checked={config.useCustomHomepage ?? false}
+                onChange={(e) => onUpdate({ useCustomHomepage: e.target.checked })}
+                className="w-4 h-4 rounded"
+              />
+              <span className="text-sm">使用自定义专注首页（替代搜索页）</span>
+            </label>
+          )}
         </div>
       )}
     </div>

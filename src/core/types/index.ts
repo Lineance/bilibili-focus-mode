@@ -180,6 +180,7 @@ export interface ExtensionConfig {
     hideLiveStreams: boolean;
     compactLayout: boolean;
     redirectToSearch: boolean;
+    useCustomHomepage: boolean;
   };
   // Dynamic page style simplification
   dynamicSimplification: {

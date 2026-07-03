@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* 复用主题变量 */
+.bg-primary { background-color: var(--fm-bg-primary); }
+.bg-secondary { background-color: var(--fm-bg-secondary); }
+.bg-tertiary { background-color: var(--fm-bg-tertiary); }
+.text-primary { color: var(--fm-text-primary); }
+.text-secondary { color: var(--fm-text-secondary); }
+.text-muted { color: var(--fm-text-muted); }
+.border-secondary { border-color: var(--fm-border-secondary); }
+.bg-accent-primary { background-color: var(--fm-accent-primary); }
+.bg-accent-hover { background-color: var(--fm-accent-hover); }
+.accent-text { color: var(--fm-accent-text); }
+.bg-success { background-color: var(--fm-success); }
+.bg-warning { background-color: var(--fm-warning); }
+.bg-error { background-color: var(--fm-error); }
+.bg-info { background-color: var(--fm-info); }
+.bg-hover:hover { background-color: var(--fm-bg-hover); }
+
+/* 卡片样式 */
+.card {
+  background-color: var(--fm-bg-secondary);
+  border: 1px solid var(--fm-border-secondary);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+/* 按钮样式 */
+.btn-primary {
+  background-color: var(--fm-accent-primary);
+  color: var(--fm-accent-text);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: opacity 0.2s;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: var(--fm-bg-tertiary);
+  color: var(--fm-text-primary);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--fm-border-secondary);
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: var(--fm-bg-hover);
+}
+
+/* 标签样式 */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tag-learning {
+  background-color: var(--fm-success);
+  color: #fff;
+}
+
+.tag-entertainment {
+  background-color: var(--fm-warning);
+  color: #000;
+}
+
+.tag-music {
+  background-color: var(--fm-info);
+  color: #fff;
+}
+
+/* 视频卡片 */
+.video-card {
+  background-color: var(--fm-bg-secondary);
+  border: 1px solid var(--fm-border-secondary);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.video-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--fm-shadow);
+}
+
+.video-card-cover {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+}
+
+.video-card-info {
+  padding: 0.75rem;
+}
+
+.video-card-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--fm-text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+
+.video-card-uploader {
+  font-size: 0.75rem;
+  color: var(--fm-text-secondary);
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--fm-border-secondary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fm-text-muted);
+}

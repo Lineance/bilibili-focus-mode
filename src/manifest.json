@@ -35,7 +35,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["src/manager/index.html", "assets/*", "src/popup/index.html"],
+      "resources": ["src/manager/index.html", "src/custom-homepage/index.html", "assets/*", "src/popup/index.html"],
       "matches": ["https://*.bilibili.com/*"]
     }
   ]

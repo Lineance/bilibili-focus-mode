@@ -65,6 +65,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
     hideLiveStreams: true,
     compactLayout: false,
     redirectToSearch: true,
+    useCustomHomepage: false,
   },
   // Dynamic page style simplification
   dynamicSimplification: {

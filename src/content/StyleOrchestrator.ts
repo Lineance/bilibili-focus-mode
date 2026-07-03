@@ -86,12 +86,22 @@ export class StyleOrchestrator {
   async checkHomepageRedirect(): Promise<void> {
     try {
       const config = await this.permissionChecker.getFullConfig();
-      if (config?.homepageSimplification?.redirectToSearch) {
-        if (this.styleService.isVideoPlayerPage() || this.styleService.isDynamicPage() || this.metadataExtractor.isLivePage() || this.metadataExtractor.isSearchPage()) {
-          logger.debug('Content', 'Not redirecting - on video/dynamic/live/search page');
-          return;
-        }
+      if (!config?.homepageSimplification?.redirectToSearch) {
+        return;
+      }
 
+      // 排除视频页、动态页、直播页、搜索页
+      if (this.styleService.isVideoPlayerPage() || this.styleService.isDynamicPage() || this.metadataExtractor.isLivePage() || this.metadataExtractor.isSearchPage()) {
+        logger.debug('Content', 'Not redirecting - on video/dynamic/live/search page');
+        return;
+      }
+
+      // 检查是否使用自定义首页
+      if (config.homepageSimplification.useCustomHomepage) {
+        const customHomepageUrl = chrome.runtime.getURL('src/custom-homepage/index.html');
+        logger.debug('Content', 'Redirecting to custom homepage');
+        window.location.replace(customHomepageUrl);
+      } else {
         logger.debug('Content', 'Redirecting to search page');
         window.location.replace(`${BILIBILI_SEARCH_URL}/`);
       }
