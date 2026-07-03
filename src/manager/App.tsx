@@ -9,7 +9,7 @@ import { sendMessage } from 'webext-bridge/options';
 import {
   ConfigPanel,
   CoolingList,
-  DebtDashboard,
+  StatsDashboard,
   GhostList,
   InstantList,
   KeywordRulesPanel,
@@ -25,7 +25,7 @@ type ActiveTab =
   | 'instant'
   | 'permanent'
   | 'ghost'
-  | 'debt'
+  | 'stats'
   | 'uploaders'
   | 'keywords'
   | 'config'
@@ -159,7 +159,7 @@ export function App(): React.JSX.Element {
           { id: 'instant', label: '即时许可', count: tabCounts.instant },
           { id: 'permanent', label: '永久分组', count: tabCounts.permanent },
           { id: 'ghost', label: '幽灵档案', count: tabCounts.ghost },
-          { id: 'debt', label: '债务', count: null },
+          { id: 'stats', label: '统计', count: null },
           { id: 'uploaders', label: 'UP 主白名单', count: tabCounts.uploaders },
           { id: 'keywords', label: '关键词规则', count: tabCounts.keywords },
           { id: 'config', label: '配置', count: null },
@@ -186,7 +186,7 @@ export function App(): React.JSX.Element {
         {activeTab === 'instant' && <InstantList items={storage.instantList || []} config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'permanent' && <PermanentGroups groups={storage.permanentGroups || []} />}
         {activeTab === 'ghost' && <GhostList items={storage.ghostList || []} config={storage.config || DEFAULT_CONFIG} />}
-        {activeTab === 'debt' && <DebtDashboard account={storage.debtAccount} config={storage.config || DEFAULT_CONFIG} />}
+        {activeTab === 'stats' && <StatsDashboard watchHistory={storage.watchHistory || []} account={storage.debtAccount} config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'uploaders' && <UploaderAllowlist uploaders={storage.allowedUploaders || []} />}
         {activeTab === 'keywords' && <KeywordRulesPanel config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'config' && <ConfigPanel />}

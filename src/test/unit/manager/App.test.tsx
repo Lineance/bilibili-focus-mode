@@ -79,7 +79,7 @@ describe('Manager App', () => {
     expect(screen.getByText('即时许可')).toBeTruthy();
     expect(screen.getByText('永久分组')).toBeTruthy();
     expect(screen.getByText('幽灵档案')).toBeTruthy();
-    expect(screen.getByText('债务')).toBeTruthy();
+    expect(screen.getByText('统计')).toBeTruthy();
   });
 
   it('should show empty limbo message', () => {
@@ -91,10 +91,10 @@ describe('Manager App', () => {
   it('should switch tabs when clicked', () => {
     render(<App />);
     
-    // Click on debt tab
-    fireEvent.click(screen.getByText('债务'));
+    // Click on stats tab
+    fireEvent.click(screen.getByText('统计'));
     
-    expect(screen.getByText('债务仪表盘')).toBeTruthy();
+    expect(screen.getByText('屏幕使用时间')).toBeTruthy();
   });
 
   it('should show limbo items when storage has data', () => {
@@ -153,33 +153,35 @@ describe('Manager App', () => {
 
     render(<App />);
     
-    fireEvent.click(screen.getByText('债务'));
+    fireEvent.click(screen.getByText('统计'));
     
-    // Check for debt dashboard title and status
-    expect(screen.getByText('债务仪表盘')).toBeTruthy();
-    expect(screen.getByText('债务状况良好')).toBeTruthy();
+    // Check for stats dashboard title and status
+    expect(screen.getByText('屏幕使用时间')).toBeTruthy();
+    expect(screen.getByText(/观看时间健康|观看时间较多/)).toBeTruthy();
     // Check for watch time statistics
-    expect(screen.getByText('娱乐时长')).toBeTruthy();
-    expect(screen.getByText('学习时长')).toBeTruthy();
+    expect(screen.getAllByText('娱乐').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('学习').length).toBeGreaterThanOrEqual(1);
   });
 
   it('should show bankruptcy warning', () => {
-    // Set entertainment minutes to create debt >= maxDebtMinutes (60)
-    // 35 minutes * 2.0 ratio = 70 debt, which exceeds 60 threshold
+    // Set entertainment minutes to exceed daily watch limit (180 minutes default)
     mockStorage.debtAccount = {
       currentDebt: 70,
       bankruptcyCount: 1,
       bankruptcyEndTime: null,
-      totalEntertainmentMinutes: 35,
+      totalEntertainmentMinutes: 200,
       totalLearningMinutes: 0,
       totalMusicMinutes: 0,
     };
+    mockStorage.watchHistory = [
+      { bvid: 'BV1xx', title: 'Test', uploader: 'Test', tag: 'ENTERTAINMENT', startedAt: Date.now(), totalMinutes: 200 },
+    ];
 
     render(<App />);
     
-    fireEvent.click(screen.getByText('债务'));
+    fireEvent.click(screen.getByText('统计'));
     
-    expect(screen.getByText('⚠️ 已破产！24小时内禁止新申请')).toBeTruthy();
+    expect(screen.getByText('⚠️ 已接近今日观看限额')).toBeTruthy();
   });
 
   describe('Limbo Review Actions', () => {
