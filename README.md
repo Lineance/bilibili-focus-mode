@@ -87,6 +87,13 @@ npm run test:coverage
 - 所有核心逻辑必须包含单元测试
 - 遵循 AGENTS.md 中的代码规范
 
+## 🙏 致谢
+
+本项目的外观增强、直播增强、播放器增强等功能组件迁移自 [Bilibili-Evolved](https://github.com/the1812/Bilibili-Evolved) 项目。感谢 Bilibili-Evolved 团队的优秀工作，该项目为 B 站用户体验优化提供了大量有价值的组件。
+
+- **来源项目**: [the1812/Bilibili-Evolved](https://github.com/the1812/Bilibili-Evolved)
+- **迁移的功能**: 细滚动条、隐藏热搜/用户卡片/头像框/视频元素、禁用特殊弹幕、删除广告、直播马赛克/水印/遮罩移除、扩展倍速、记忆倍速、封面替换、夜间模式跟随系统等
+
 ## 📄 许可证
 
 MIT
