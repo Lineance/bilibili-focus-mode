@@ -41,12 +41,7 @@ export interface PermanentGroup {
   debtPriority: number;
 }
 
-export interface GhostItem extends VideoMetadata {
-  diedAt: number;
-  canResurrectUntil: number;
-  resurrected?: boolean;
-  repentanceReason?: string;
-}
+
 
 export interface WatchRecord {
   bvid: string;
@@ -95,8 +90,6 @@ export interface BehaviorLog {
   | 'limbo_added'
   | 'limbo_removed'
   | 'limbo_promoted'
-  | 'ghost_created'
-  | 'ghost_resurrected'
   | 'debt_incurred'
   | 'debt_repaid'
   | 'bankruptcy_declared'
@@ -148,7 +141,6 @@ export interface BankruptcyRecord {
 export interface GlobalStats {
   fuseApplicationsTotal: number;
   fuseOverridesTotal: number;
-  ghostResurrectionsTotal: number;
   bankruptcyHistory: BankruptcyRecord[];
   lifecycleTransitions: Record<string, number>;
 }
@@ -169,9 +161,6 @@ export interface ExtensionConfig {
   maxGroups: number;
   maxItemsPerGroup: number;
   totalPermanentLimit: number;
-  ghostLifespanDays: number;
-  ghostResurrectFuseLength: number;
-  ghostDoublePenalty: boolean;
   debtEnabled: boolean;
   entertainmentRatio: number;
   learningRepayRatio: number;
@@ -247,6 +236,12 @@ export interface ExtensionConfig {
   dailyWatchLimitMinutes: number;
   // Native Messaging
   nativeMessagingEnabled: boolean;
+  // Appearance Enhancement (migrated from Bilibili-Evolved)
+  appearanceEnhancement: AppearanceEnhancementConfig;
+  // Live Enhancement
+  liveEnhancement: LiveEnhancementConfig;
+  // Video Player Enhancement
+  videoPlayerEnhancement: VideoPlayerEnhancementConfig;
 }
 
 export interface ExtensionStorage {
@@ -255,7 +250,6 @@ export interface ExtensionStorage {
   coolingList: CoolingItem[];
   instantList: InstantItem[];
   permanentGroups: PermanentGroup[];
-  ghostList: GhostItem[];
   behaviorLog: BehaviorLogState;
   globalStats: GlobalStats;
   debtAccount: DebtAccount;
@@ -274,6 +268,42 @@ export interface VisualDecayState {
   enabled: boolean;
   threshold: number;
   lastPurgeCheck: number;
+}
+
+// ============================================================
+// Migrated Components Types (from Bilibili-Evolved)
+// ============================================================
+
+/** 外观增强配置 */
+export interface AppearanceEnhancementConfig {
+  enabled: boolean;
+  elegantScrollbar: boolean;
+  hideTrendingSearch: boolean;
+  hideUserCard: boolean;
+  hideUserPendent: boolean;
+  hideVideoNotes: boolean;
+  hideVideoShare: boolean;
+  hideVideoReport: boolean;
+  hideVideoTopMask: boolean;
+  hideRelatedVideos: boolean;
+  hideRecommendedLive: boolean;
+  disableSpecialDanmaku: boolean;
+  removePromotions: boolean;
+}
+
+/** 直播增强配置 */
+export interface LiveEnhancementConfig {
+  enabled: boolean;
+  hidePlayerBlur: boolean;
+  removeWatermark: boolean;
+  removeMaskPanel: boolean;
+}
+
+/** 播放器增强配置 */
+export interface VideoPlayerEnhancementConfig {
+  enabled: boolean;
+  extendSpeed: boolean;
+  rememberSpeed: boolean;
 }
 
 // Export result types

@@ -3,6 +3,7 @@ import { StyleSimplificationService } from '@core/services';
 import { PermissionChecker } from './services/PermissionChecker';
 import { VideoMetadataExtractor } from './services/VideoMetadataExtractor';
 import { StyleInjector } from './services/StyleInjector';
+import { MigratedComponentOrchestrator } from './MigratedComponentOrchestrator';
 import { logger } from '@core/utils/logger';
 
 export class StyleOrchestrator {
@@ -11,6 +12,7 @@ export class StyleOrchestrator {
     private styleInjector: StyleInjector,
     private permissionChecker: PermissionChecker,
     private metadataExtractor: VideoMetadataExtractor,
+    private migratedOrchestrator: MigratedComponentOrchestrator,
   ) {}
 
   async applyStyleSimplification(): Promise<void> {
@@ -65,6 +67,15 @@ export class StyleOrchestrator {
 
       if (this.styleService.isSearchPage() && config.searchSimplification?.enabled) {
         this.styleInjector.injectPage(this.styleService.generateSearchPageStyles());
+      }
+
+      // Apply migrated components
+      this.migratedOrchestrator.applyAppearance(config.appearanceEnhancement);
+      if (this.styleService.isLivePage()) {
+        this.migratedOrchestrator.applyLiveEnhancement(config.liveEnhancement);
+      }
+      if (this.styleService.isVideoPlayerPage()) {
+        this.migratedOrchestrator.applyVideoPlayerEnhancement(config.videoPlayerEnhancement);
       }
     } catch (error) {
       logger.error('Content', 'Failed to apply style simplification:', error);

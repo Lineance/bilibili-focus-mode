@@ -35,7 +35,6 @@ export class PermissionService {
       for (const i of this.storage.instantList) tagMap.set(i.bvid, i.tag);
       for (const i of this.storage.coolingList) tagMap.set(i.bvid, i.tag);
       for (const i of this.storage.limboList) tagMap.set(i.bvid, i.tag);
-      for (const i of this.storage.ghostList) tagMap.set(i.bvid, i.tag);
 
       const resolvedTag = tagMap.get(bvid) || 'ENTERTAINMENT';
       const { isInWindow: inReviewWindow, timeUntilWindow } = this.timeWindowService.checkTimeWindow();

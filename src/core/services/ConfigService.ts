@@ -163,14 +163,6 @@ export class ConfigService {
       });
     }
 
-    // Validate ghost settings
-    if (config.ghostLifespanDays < 1 || config.ghostLifespanDays > 30) {
-      errors.push({
-        field: 'ghostLifespanDays',
-        message: '幽灵寿命应在 1-30 天之间',
-      });
-    }
-
     if (typeof config.learningRepayRatio !== 'number' || config.learningRepayRatio < -10 || config.learningRepayRatio > 0) {
       errors.push({
         field: 'learningRepayRatio',
@@ -210,13 +202,6 @@ export class ConfigService {
       errors.push({
         field: 'postWatchCooldownMinutes',
         message: 'postWatchCooldownMinutes must be between 0 and 60',
-      });
-    }
-
-    if (typeof config.ghostResurrectFuseLength !== 'number' || config.ghostResurrectFuseLength < 8 || config.ghostResurrectFuseLength > 256) {
-      errors.push({
-        field: 'ghostResurrectFuseLength',
-        message: 'ghostResurrectFuseLength must be between 8 and 256',
       });
     }
 

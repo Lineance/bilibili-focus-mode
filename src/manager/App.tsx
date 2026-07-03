@@ -10,7 +10,6 @@ import {
   ConfigPanel,
   CoolingList,
   StatsDashboard,
-  GhostList,
   InstantList,
   KeywordRulesPanel,
   LimboReview,
@@ -24,7 +23,6 @@ type ActiveTab =
   | 'cooling'
   | 'instant'
   | 'permanent'
-  | 'ghost'
   | 'stats'
   | 'uploaders'
   | 'keywords'
@@ -56,10 +54,9 @@ export function App(): React.JSX.Element {
     cooling: storage.coolingList?.length || 0,
     instant: storage.instantList?.length || 0,
     permanent: storage.permanentGroups?.reduce((sum, g) => sum + g.items.length, 0) || 0,
-    ghost: storage.ghostList?.length || 0,
     uploaders: storage.allowedUploaders?.length || 0,
     keywords: storage.config?.keywordRules?.keywords?.length || 0,
-  }), [storage.limboList, storage.coolingList, storage.instantList, storage.permanentGroups, storage.ghostList, storage.allowedUploaders, storage.config?.keywordRules?.keywords]);
+  }), [storage.limboList, storage.coolingList, storage.instantList, storage.permanentGroups, storage.allowedUploaders, storage.config?.keywordRules?.keywords]);
 
   const handleExport = async () => {
     try {
@@ -72,7 +69,6 @@ export function App(): React.JSX.Element {
         coolingList: storage.coolingList,
         instantList: storage.instantList,
         permanentGroups: storage.permanentGroups,
-        ghostList: storage.ghostList,
         allowedUploaders: storage.allowedUploaders,
         debtAccount: storage.debtAccount,
         globalStats: storage.globalStats,
@@ -117,7 +113,6 @@ export function App(): React.JSX.Element {
         coolingList: data.coolingList || [],
         instantList: data.instantList || [],
         permanentGroups: data.permanentGroups || [],
-        ghostList: data.ghostList || [],
         allowedUploaders: data.allowedUploaders || [],
         debtAccount: data.debtAccount,
         globalStats: data.globalStats,
@@ -158,7 +153,6 @@ export function App(): React.JSX.Element {
           { id: 'cooling', label: '冷静期', count: tabCounts.cooling },
           { id: 'instant', label: '即时许可', count: tabCounts.instant },
           { id: 'permanent', label: '永久分组', count: tabCounts.permanent },
-          { id: 'ghost', label: '幽灵档案', count: tabCounts.ghost },
           { id: 'stats', label: '统计', count: null },
           { id: 'uploaders', label: 'UP 主白名单', count: tabCounts.uploaders },
           { id: 'keywords', label: '关键词规则', count: tabCounts.keywords },
@@ -185,7 +179,6 @@ export function App(): React.JSX.Element {
         {activeTab === 'cooling' && <CoolingList items={storage.coolingList || []} />}
         {activeTab === 'instant' && <InstantList items={storage.instantList || []} config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'permanent' && <PermanentGroups groups={storage.permanentGroups || []} />}
-        {activeTab === 'ghost' && <GhostList items={storage.ghostList || []} config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'stats' && <StatsDashboard watchHistory={storage.watchHistory || []} account={storage.debtAccount} config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'uploaders' && <UploaderAllowlist uploaders={storage.allowedUploaders || []} />}
         {activeTab === 'keywords' && <KeywordRulesPanel config={storage.config || DEFAULT_CONFIG} />}

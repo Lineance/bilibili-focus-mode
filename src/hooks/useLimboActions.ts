@@ -61,8 +61,7 @@ export function useLimboActions(config: ExtensionConfig) {
           const expirationService = new ExpirationService(
             config.coolingCooldownHours,
             config.coolingAvailableHours,
-            config.instantDurationHours,
-            config.ghostLifespanDays
+            config.instantDurationHours
           );
           const coolingItem = expirationService.createCoolingItem(metadata);
           const coolingList = storage.coolingList;
@@ -86,8 +85,7 @@ export function useLimboActions(config: ExtensionConfig) {
           const expirationService = new ExpirationService(
             config.coolingCooldownHours,
             config.coolingAvailableHours,
-            config.instantDurationHours,
-            config.ghostLifespanDays
+            config.instantDurationHours
           );
           const instantItem = expirationService.createInstantItem(metadata, '');
           const instantList = storage.instantList;

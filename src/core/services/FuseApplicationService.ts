@@ -24,8 +24,7 @@ export class FuseApplicationService {
     this.expirationService = new ExpirationService(
       config.coolingCooldownHours,
       config.coolingAvailableHours,
-      config.instantDurationHours,
-      config.ghostLifespanDays
+      config.instantDurationHours
     );
   }
 

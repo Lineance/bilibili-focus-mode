@@ -14,6 +14,7 @@ import { StyleInjector } from './services/StyleInjector';
 import { NavigationWatcher } from './NavigationWatcher';
 import { PermissionOrchestrator } from './PermissionOrchestrator';
 import { StyleOrchestrator } from './StyleOrchestrator';
+import { MigratedComponentOrchestrator } from './MigratedComponentOrchestrator';
 import './purify.css';
 
 if (typeof chrome === 'undefined' || !chrome.runtime?.id) {
@@ -48,7 +49,8 @@ if (typeof chrome === 'undefined' || !chrome.runtime?.id) {
   const permissionOrchestrator = new PermissionOrchestrator(
     metadataExtractor, blockOverlayManager, permissionChecker, videoTracker, safeSendMessage
   );
-  const styleOrchestrator = new StyleOrchestrator(styleService, styleInjector, permissionChecker, metadataExtractor);
+  const migratedOrchestrator = new MigratedComponentOrchestrator(styleInjector);
+  const styleOrchestrator = new StyleOrchestrator(styleService, styleInjector, permissionChecker, metadataExtractor, migratedOrchestrator);
   const searchBoxManager = new SearchBoxManager();
 
   function onNavigate() {
@@ -80,7 +82,7 @@ if (typeof chrome === 'undefined' || !chrome.runtime?.id) {
   });
 
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && (changes.config || changes.permanentGroups || changes.instantList || changes.coolingList || changes.limboList || changes.ghostList || changes.allowedUploaders)) {
+    if (area === 'local' && (changes.config || changes.permanentGroups || changes.instantList || changes.coolingList || changes.limboList || changes.allowedUploaders)) {
       if (permissionChecker.getCurrentBvid()) {
         permissionOrchestrator.checkPermission();
       }

@@ -1,6 +1,7 @@
 export class StyleInjector {
   private globalStyleEl: HTMLStyleElement | null = null;
   private pageStyleEl: HTMLStyleElement | null = null;
+  private namedElements = new Map<string, HTMLStyleElement>();
 
   injectGlobal(css: string): void {
     this.removeGlobal();
@@ -16,6 +17,23 @@ export class StyleInjector {
     this.pageStyleEl.id = 'bilibili-focus-mode-page-styles';
     this.pageStyleEl.textContent = css;
     document.head.appendChild(this.pageStyleEl);
+  }
+
+  injectNamed(name: string, css: string): void {
+    this.removeNamed(name);
+    const el = document.createElement('style');
+    el.id = `bilibili-focus-mode-${name}`;
+    el.textContent = css;
+    document.head.appendChild(el);
+    this.namedElements.set(name, el);
+  }
+
+  removeNamed(name: string): void {
+    const el = this.namedElements.get(name);
+    if (el) {
+      el.remove();
+      this.namedElements.delete(name);
+    }
   }
 
   removePage(): void {
@@ -35,5 +53,9 @@ export class StyleInjector {
   cleanup(): void {
     this.removePage();
     this.removeGlobal();
+    for (const [, el] of this.namedElements) {
+      el.remove();
+    }
+    this.namedElements.clear();
   }
 }

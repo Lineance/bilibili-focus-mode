@@ -4,7 +4,6 @@ export * from './DebtService';
 export * from './ExpirationService';
 export * from './ConfigService';
 export * from './TimeWindowService';
-export * from './GhostResurrectionService';
 export * from './BehaviorLoggingService';
 export * from './FuseApplicationService';
 export * from './StyleSimplificationService';

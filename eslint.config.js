@@ -62,6 +62,6 @@ export default [
     },
   },
   {
-    ignores: ['dist/**', '.eslintrc.cjs', 'eslint.config.js'],
+    ignores: ['dist/**', '.eslintrc.cjs', 'eslint.config.js', 'migrated-components/**'],
   },
 ];

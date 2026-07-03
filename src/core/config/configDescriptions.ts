@@ -76,21 +76,6 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
     description: '所有永久分组的视频总数限制',
     type: 'number',
   },
-  ghostLifespanDays: {
-    label: '幽灵寿命',
-    description: '幽灵档案可招魂的天数',
-    type: 'number',
-  },
-  ghostResurrectFuseLength: {
-    label: '招魂熔断码长度',
-    description: '招魂所需的熔断码长度',
-    type: 'number',
-  },
-  ghostDoublePenalty: {
-    label: '招魂双倍惩罚',
-    description: '招魂后是否应用双倍冷静期',
-    type: 'boolean',
-  },
   debtEnabled: {
     label: '启用债务系统',
     description: '是否启用债务追踪功能',
@@ -208,6 +193,21 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
   nativeMessagingEnabled: {
     label: '启用外部监控连接',
     description: '允许外部监控程序通过 Native Messaging 检测扩展状态',
+    type: 'boolean',
+  },
+  appearanceEnhancement: {
+    label: '外观增强',
+    description: '自定义页面外观，隐藏不需要的元素',
+    type: 'boolean',
+  },
+  liveEnhancement: {
+    label: '直播增强',
+    description: '优化直播页面体验',
+    type: 'boolean',
+  },
+  videoPlayerEnhancement: {
+    label: '播放器增强',
+    description: '增强视频播放器功能',
     type: 'boolean',
   },
 };

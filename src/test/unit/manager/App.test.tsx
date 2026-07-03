@@ -78,7 +78,6 @@ describe('Manager App', () => {
     expect(screen.getByText('冷静期')).toBeTruthy();
     expect(screen.getByText('即时许可')).toBeTruthy();
     expect(screen.getByText('永久分组')).toBeTruthy();
-    expect(screen.getByText('幽灵档案')).toBeTruthy();
     expect(screen.getByText('统计')).toBeTruthy();
   });
 

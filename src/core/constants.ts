@@ -38,9 +38,6 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   maxGroups: 4,
   maxItemsPerGroup: 10,
   totalPermanentLimit: 20,
-  ghostLifespanDays: 7,
-  ghostResurrectFuseLength: 64,
-  ghostDoublePenalty: true,
   debtEnabled: true,
   entertainmentRatio: 2.0,
   learningRepayRatio: -1.0,
@@ -112,6 +109,35 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   dailyWatchLimitMinutes: 180,
   // Native Messaging
   nativeMessagingEnabled: false,
+  // Appearance Enhancement (migrated from Bilibili-Evolved)
+  appearanceEnhancement: {
+    enabled: false,
+    elegantScrollbar: false,
+    hideTrendingSearch: false,
+    hideUserCard: false,
+    hideUserPendent: false,
+    hideVideoNotes: false,
+    hideVideoShare: false,
+    hideVideoReport: false,
+    hideVideoTopMask: false,
+    hideRelatedVideos: false,
+    hideRecommendedLive: false,
+    disableSpecialDanmaku: false,
+    removePromotions: false,
+  },
+  // Live Enhancement
+  liveEnhancement: {
+    enabled: false,
+    hidePlayerBlur: false,
+    removeWatermark: false,
+    removeMaskPanel: false,
+  },
+  // Video Player Enhancement
+  videoPlayerEnhancement: {
+    enabled: false,
+    extendSpeed: false,
+    rememberSpeed: false,
+  },
 };
 
 export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {
@@ -136,7 +162,6 @@ export const DEFAULT_BEHAVIOR_LOG: BehaviorLogState = {
 export const DEFAULT_GLOBAL_STATS: GlobalStats = {
   fuseApplicationsTotal: 0,
   fuseOverridesTotal: 0,
-  ghostResurrectionsTotal: 0,
   bankruptcyHistory: [],
   lifecycleTransitions: {},
 };
@@ -157,7 +182,6 @@ export const DEFAULT_STORAGE: ExtensionStorage = {
   coolingList: [],
   instantList: [],
   permanentGroups: [],
-  ghostList: [],
   behaviorLog: DEFAULT_BEHAVIOR_LOG,
   globalStats: DEFAULT_GLOBAL_STATS,
   debtAccount: DEFAULT_DEBT_ACCOUNT,

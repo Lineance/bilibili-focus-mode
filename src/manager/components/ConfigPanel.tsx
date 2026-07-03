@@ -11,7 +11,6 @@ import { CoolingSettings } from './config/CoolingSettings';
 import { FuseSettings } from './config/FuseSettings';
 import { PermanentGroupSettings } from './config/PermanentGroupSettings';
 import { DebtSettings } from './config/DebtSettings';
-import { GhostSettings } from './config/GhostSettings';
 import { QuotaSettings } from './config/QuotaSettings';
 import { DetectionSettings } from './config/DetectionSettings';
 import { StyleSimplificationSettings } from './config/StyleSimplificationSettings';
@@ -92,7 +91,6 @@ export function ConfigPanel(): React.JSX.Element {
         <FuseSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <PermanentGroupSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <DebtSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
-        <GhostSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <QuotaSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <DetectionSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <DailyBypassSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />

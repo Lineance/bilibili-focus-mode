@@ -8,7 +8,7 @@ export async function handleCheckPermission(request: unknown): Promise<unknown> 
   logger.debug('Background', 'Checking permission for:', data.bvid, 'uploader:', data.uploaderName);
 
   const allData = await chrome.storage.local.get([
-    'config', 'permanentGroups', 'instantList', 'coolingList', 'limboList', 'ghostList',
+    'config', 'permanentGroups', 'instantList', 'coolingList', 'limboList',
     'allowedUploaders', 'debtAccount', 'timeWindowBreakUntil', 'dailyBypassUntil'
   ]);
 
