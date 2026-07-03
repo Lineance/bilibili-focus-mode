@@ -99,19 +99,22 @@ export function BlockOverlay({
         />
 
         <div className="bfm-buttons">
-          {effectiveBypass.enabled && effectiveBypass.remainingUses > 0 && (
-            <button
-              id="bfm-daily-bypass"
-              className="bfm-btn bfm-btn--bypass"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
+          <button
+            id="bfm-daily-bypass"
+            className={`bfm-btn bfm-btn--bypass ${!effectiveBypass.enabled || effectiveBypass.remainingUses <= 0 ? 'bfm-btn--disabled' : ''}`}
+            disabled={!effectiveBypass.enabled || effectiveBypass.remainingUses <= 0}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (effectiveBypass.enabled && effectiveBypass.remainingUses > 0) {
                 onDailyBypass();
-              }}
-            >
-              每日放行 ({effectiveBypass.remainingUses}次)
-            </button>
-          )}
+              }
+            }}
+          >
+            {effectiveBypass.remainingUses > 0
+              ? `每日放行 (${effectiveBypass.remainingUses}次)`
+              : '每日放行 (已用完)'}
+          </button>
           {!isBankruptcy && (
             <button
               id="bfm-submit-limbo"

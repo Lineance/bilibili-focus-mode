@@ -106,7 +106,7 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
     description: '观看后的冷静期时长（分钟）',
     type: 'number',
   },
-  dailyCoolingQuota: {
+  dailyInstantQuota: {
     label: '每日即时配额',
     description: '每日可申请即时许可的最大次数（0=无限制）',
     type: 'number',

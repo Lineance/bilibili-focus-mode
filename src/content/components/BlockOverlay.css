@@ -104,6 +104,12 @@
   background: #10b981 !important;
 }
 
+.bfm-btn--bypass.bfm-btn--disabled {
+  background: #4b5563 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+}
+
 .bfm-btn--submit {
   background: #00aeec !important;
 }

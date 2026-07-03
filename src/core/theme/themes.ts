@@ -7,9 +7,9 @@ export const MINIMAL_THEME: ThemeDefinition = {
   light: {
     // Background
     bgPrimary: '#FFFFFF',
-    bgSecondary: '#F5F5F5',
-    bgTertiary: '#E8E8E8',
-    bgHover: '#D0D0D0',
+    bgSecondary: '#E8E8E8',
+    bgTertiary: '#D0D0D0',
+    bgHover: '#B8B8B8',
     
     // Text
     textPrimary: '#000000',
@@ -25,6 +25,7 @@ export const MINIMAL_THEME: ThemeDefinition = {
     accentPrimary: '#000000',
     accentHover: '#333333',
     accentActive: '#666666',
+    accentText: '#FFFFFF',
     
     // Status
     success: '#000000',
@@ -57,6 +58,7 @@ export const MINIMAL_THEME: ThemeDefinition = {
     accentPrimary: '#FFFFFF',
     accentHover: '#CCCCCC',
     accentActive: '#999999',
+    accentText: '#000000',
     
     // Status
     success: '#FFFFFF',
@@ -77,9 +79,9 @@ export const TOKYO_THEME: ThemeDefinition = {
   light: {
     // Background
     bgPrimary: '#F8F9FA',
-    bgSecondary: '#E9ECEF',
-    bgTertiary: '#DEE2E6',
-    bgHover: '#CED4DA',
+    bgSecondary: '#DEE2E6',
+    bgTertiary: '#CED4DA',
+    bgHover: '#ADB5BD',
     
     // Text
     textPrimary: '#212529',
@@ -95,6 +97,7 @@ export const TOKYO_THEME: ThemeDefinition = {
     accentPrimary: '#6F42C1',
     accentHover: '#593499',
     accentActive: '#442875',
+    accentText: '#FFFFFF',
     
     // Status
     success: '#28A745',
@@ -127,6 +130,7 @@ export const TOKYO_THEME: ThemeDefinition = {
     accentPrimary: '#7AA2F7',
     accentHover: '#5D87E5',
     accentActive: '#3F6BC9',
+    accentText: '#FFFFFF',
     
     // Status
     success: '#9ECE6A',

@@ -22,6 +22,7 @@ export interface ThemeColors {
   accentPrimary: string;
   accentHover: string;
   accentActive: string;
+  accentText: string;  // Text color on accent background
   
   // Status colors
   success: string;

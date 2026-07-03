@@ -1,5 +1,6 @@
 import { MS_PER_SECOND } from '@core/constants';
 import { logger } from '@core/utils/logger';
+import { getTodayKey, resetQuotaIfNeeded } from '@core/utils/dateUtils';
 import type { ProtocolMap } from '@core/protocol';
 import type { VideoMetadata } from '@core/types';
 import { StorageRepository } from '@core/storage/StorageRepository';
@@ -99,7 +100,12 @@ export class PermissionOrchestrator {
       const { behaviorLog, config } = await StorageRepository.getKeys('behaviorLog', 'config');
       const dailyBypassEnabled = (config.dailyBypassEnabled as boolean) ?? true;
       const dailyBypassQuota = (config.dailyBypassQuota as number) ?? 3;
-      const remainingUses = Math.max(0, dailyBypassQuota - (behaviorLog.dailyBypassesUsedToday || 0));
+      
+      // Reset daily counter if needed (cross-day scenario)
+      const today = getTodayKey();
+      const needsReset = resetQuotaIfNeeded(behaviorLog.lastQuotaResetDate, today);
+      const dailyBypassesUsedToday = needsReset ? 0 : (behaviorLog.dailyBypassesUsedToday || 0);
+      const remainingUses = Math.max(0, dailyBypassQuota - dailyBypassesUsedToday);
 
       const bypassInfo = {
         enabled: !isBankruptcy && dailyBypassEnabled,

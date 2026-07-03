@@ -16,6 +16,10 @@ import { StyleSimplificationSettings } from './config/StyleSimplificationSetting
 import { SearchSimplificationSettings } from './config/SearchSimplificationSettings';
 import { DailyBypassSettings } from './config/DailyBypassSettings';
 import { NativeMessagingSettings } from './config/NativeMessagingSettings';
+import { AppearanceEnhancementSettings } from './config/AppearanceEnhancementSettings';
+import { LiveEnhancementSettings } from './config/LiveEnhancementSettings';
+import { VideoPlayerEnhancementSettings } from './config/VideoPlayerEnhancementSettings';
+import { ThemeEnhancementSettings } from './config/ThemeEnhancementSettings';
 
 export function ConfigPanel(): React.JSX.Element {
   const [config, setConfig] = useState<ExtensionConfig>(DEFAULT_CONFIG);
@@ -95,6 +99,10 @@ export function ConfigPanel(): React.JSX.Element {
         <NativeMessagingSettings config={config} updateConfig={updateConfig} />
         <StyleSimplificationSettings config={config} updateConfig={updateConfig} />
         <SearchSimplificationSettings config={config} updateConfig={updateConfig} />
+        <AppearanceEnhancementSettings config={config} updateConfig={updateConfig} />
+        <LiveEnhancementSettings config={config} updateConfig={updateConfig} />
+        <VideoPlayerEnhancementSettings config={config} updateConfig={updateConfig} />
+        <ThemeEnhancementSettings config={config} updateConfig={updateConfig} />
       </div>
     </div>
   );

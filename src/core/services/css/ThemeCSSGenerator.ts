@@ -24,6 +24,7 @@ export class ThemeCSSGenerator {
         --fm-accent-primary: ${colors.accentPrimary};
         --fm-accent-hover: ${colors.accentHover};
         --fm-accent-active: ${colors.accentActive};
+        --fm-accent-text: ${colors.accentText};
         
         /* Status colors */
         --fm-success: ${colors.success};
@@ -94,6 +95,7 @@ export class ThemeCSSGenerator {
 
       .accent-primary { color: var(--fm-accent-primary) !important; }
       .accent-hover:hover { color: var(--fm-accent-hover) !important; }
+      .accent-text { color: var(--fm-accent-text) !important; }
 
       .text-success { color: var(--fm-success) !important; }
       .text-warning { color: var(--fm-warning) !important; }
