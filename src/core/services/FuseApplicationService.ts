@@ -22,8 +22,6 @@ export class FuseApplicationService {
     this.config = config;
     this.fuseService = new FuseService(config);
     this.expirationService = new ExpirationService(
-      config.coolingCooldownHours,
-      config.coolingAvailableHours,
       config.instantDurationHours
     );
   }
@@ -40,7 +38,6 @@ export class FuseApplicationService {
     const normalizedBehaviorLog = this.resetBehaviorLogQuotaIfNeeded({
       ...behaviorLog,
       lastQuotaResetDate: behaviorLog.lastQuotaResetDate || getTodayKey(),
-      coolingApplicationsToday: behaviorLog.coolingApplicationsToday || 0,
     });
 
     if (
@@ -48,10 +45,6 @@ export class FuseApplicationService {
       && normalizedBehaviorLog.instantApplicationsToday >= this.config.dailyInstantQuota
     ) {
       return failure('QUOTA_EXCEEDED', '已达到今日即时配额');
-    }
-
-    if (normalizedBehaviorLog.currentCooldownUntil && Date.now() < normalizedBehaviorLog.currentCooldownUntil) {
-      return failure('COOLDOWN_ACTIVE', '冷静期未结束，暂时无法申请');
     }
 
     // Atomic check-and-create pattern to prevent race conditions
@@ -197,7 +190,6 @@ export class FuseApplicationService {
       ...behaviorLog,
       lastQuotaResetDate: getTodayKey(),
       instantApplicationsToday: 0,
-      coolingApplicationsToday: 0,
     };
   }
 }

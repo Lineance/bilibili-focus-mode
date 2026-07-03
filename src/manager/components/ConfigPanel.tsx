@@ -7,7 +7,6 @@ import type { ExtensionConfig } from '@core/types';
 import { TimeWindowSettings } from './config/TimeWindowSettings';
 import { LimboSettings } from './config/LimboSettings';
 import { InstantSettings } from './config/InstantSettings';
-import { CoolingSettings } from './config/CoolingSettings';
 import { FuseSettings } from './config/FuseSettings';
 import { PermanentGroupSettings } from './config/PermanentGroupSettings';
 import { DebtSettings } from './config/DebtSettings';
@@ -87,7 +86,6 @@ export function ConfigPanel(): React.JSX.Element {
         <TimeWindowSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <LimboSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <InstantSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
-        <CoolingSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <FuseSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <PermanentGroupSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <DebtSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />

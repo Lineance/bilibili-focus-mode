@@ -1,5 +1,5 @@
 import { DEFAULT_STORAGE } from '@core/constants';
-import type { CoolingItem, ExtensionConfig, VideoMetadata } from '@core/types';
+import type { ExtensionConfig, VideoMetadata } from '@core/types';
 import { logger } from '@core/utils/logger';
 
 function getConfigFromStorage(storage: Record<string, unknown>): ExtensionConfig {
@@ -28,9 +28,6 @@ export class AlarmHandler {
         this.handleLimboAutoPurge();
       }
 
-      if (alarm.name === 'cooling-cleanup') {
-        this.handleCoolingCleanup();
-      }
     });
   }
 
@@ -39,10 +36,7 @@ export class AlarmHandler {
     const now = new Date();
     const next = new Date(now);
     next.setHours(hour, minute, 0, 0);
-
-    if (next.getTime() <= now.getTime()) {
-      next.setDate(next.getDate() + 1);
-    }
+    if (next <= now) next.setDate(next.getDate() + 1);
 
     chrome.alarms.create('limbo-review-reminder', {
       when: next.getTime(),
@@ -50,21 +44,11 @@ export class AlarmHandler {
     });
   }
 
-  scheduleLimboAutoPurge(hours: number): void {
-    if (hours <= 0) {
-      chrome.alarms.clear('limbo-auto-purge');
-      return;
-    }
-
+  scheduleLimboAutoPurge(intervalHours: number): void {
+    if (intervalHours <= 0) return;
     chrome.alarms.create('limbo-auto-purge', {
       when: Date.now() + 60 * 1000,
       periodInMinutes: 60,
-    });
-  }
-
-  scheduleCoolingCleanup(): void {
-    chrome.alarms.create('cooling-cleanup', {
-      periodInMinutes: 360,
     });
   }
 
@@ -79,23 +63,6 @@ export class AlarmHandler {
 
       if (updatedLimboList.length !== limboList.length) {
         chrome.storage.local.set({ limboList: updatedLimboList });
-      }
-    });
-  }
-
-  private handleCoolingCleanup(): void {
-    chrome.storage.local.get(['coolingList', 'config']).then((storage) => {
-      const coolingList = (storage.coolingList || []) as CoolingItem[];
-      const now = Date.now();
-
-      const cleanupThreshold = now - 24 * 60 * 60 * 1000;
-      const updatedCoolingList = coolingList.filter(item =>
-        item.expiresAt > cleanupThreshold
-      );
-
-      if (updatedCoolingList.length !== coolingList.length) {
-        chrome.storage.local.set({ coolingList: updatedCoolingList });
-        logger.debug('AlarmHandler', `Cleaned up ${coolingList.length - updatedCoolingList.length} expired cooling items`);
       }
     });
   }

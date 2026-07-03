@@ -8,7 +8,6 @@ import { sendMessage } from 'webext-bridge/options';
 
 import {
   ConfigPanel,
-  CoolingList,
   StatsDashboard,
   InstantList,
   KeywordRulesPanel,
@@ -20,7 +19,6 @@ import {
 
 type ActiveTab =
   | 'limbo'
-  | 'cooling'
   | 'instant'
   | 'permanent'
   | 'stats'
@@ -51,12 +49,11 @@ export function App(): React.JSX.Element {
 
   const tabCounts = useMemo(() => ({
     limbo: storage.limboList?.length || 0,
-    cooling: storage.coolingList?.length || 0,
     instant: storage.instantList?.length || 0,
     permanent: storage.permanentGroups?.reduce((sum, g) => sum + g.items.length, 0) || 0,
     uploaders: storage.allowedUploaders?.length || 0,
     keywords: storage.config?.keywordRules?.keywords?.length || 0,
-  }), [storage.limboList, storage.coolingList, storage.instantList, storage.permanentGroups, storage.allowedUploaders, storage.config?.keywordRules?.keywords]);
+  }), [storage.limboList, storage.instantList, storage.permanentGroups, storage.allowedUploaders, storage.config?.keywordRules?.keywords]);
 
   const handleExport = async () => {
     try {
@@ -66,7 +63,6 @@ export function App(): React.JSX.Element {
         exportDate: new Date().toISOString(),
         config: storage.config,
         limboList: storage.limboList,
-        coolingList: storage.coolingList,
         instantList: storage.instantList,
         permanentGroups: storage.permanentGroups,
         allowedUploaders: storage.allowedUploaders,
@@ -110,7 +106,6 @@ export function App(): React.JSX.Element {
       await StorageRepository.set({
         config: data.config,
         limboList: data.limboList || [],
-        coolingList: data.coolingList || [],
         instantList: data.instantList || [],
         permanentGroups: data.permanentGroups || [],
         allowedUploaders: data.allowedUploaders || [],
@@ -150,7 +145,6 @@ export function App(): React.JSX.Element {
       <nav className="flex gap-4 mb-6 border-b border-secondary pb-4 flex-wrap">
         {[
           { id: 'limbo', label: '待审池', count: tabCounts.limbo },
-          { id: 'cooling', label: '冷静期', count: tabCounts.cooling },
           { id: 'instant', label: '即时许可', count: tabCounts.instant },
           { id: 'permanent', label: '永久分组', count: tabCounts.permanent },
           { id: 'stats', label: '统计', count: null },
@@ -176,7 +170,6 @@ export function App(): React.JSX.Element {
 
       <main>
         {activeTab === 'limbo' && <LimboReview items={storage.limboList || []} config={storage.config || DEFAULT_CONFIG} />}
-        {activeTab === 'cooling' && <CoolingList items={storage.coolingList || []} />}
         {activeTab === 'instant' && <InstantList items={storage.instantList || []} config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'permanent' && <PermanentGroups groups={storage.permanentGroups || []} />}
         {activeTab === 'stats' && <StatsDashboard watchHistory={storage.watchHistory || []} account={storage.debtAccount} config={storage.config || DEFAULT_CONFIG} />}

@@ -82,7 +82,7 @@ if (typeof chrome === 'undefined' || !chrome.runtime?.id) {
   });
 
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && (changes.config || changes.permanentGroups || changes.instantList || changes.coolingList || changes.limboList || changes.allowedUploaders)) {
+    if (area === 'local' && (changes.config || changes.permanentGroups || changes.instantList || changes.limboList || changes.allowedUploaders)) {
       if (permissionChecker.getCurrentBvid()) {
         permissionOrchestrator.checkPermission();
       }

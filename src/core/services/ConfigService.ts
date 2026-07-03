@@ -110,21 +110,6 @@ export class ConfigService {
       });
     }
 
-    // Validate cooling periods
-    if (config.coolingCooldownHours < 1 || config.coolingCooldownHours > 168) {
-      errors.push({
-        field: 'coolingCooldownHours',
-        message: '冷静期应在 1-168 小时之间',
-      });
-    }
-
-    if (config.coolingAvailableHours < 1 || config.coolingAvailableHours > 168) {
-      errors.push({
-        field: 'coolingAvailableHours',
-        message: '可用期应在 1-168 小时之间',
-      });
-    }
-
     // Validate instant duration
     if (config.instantDurationHours < 1 || config.instantDurationHours > 24) {
       errors.push({
@@ -181,13 +166,6 @@ export class ConfigService {
       errors.push({
         field: 'bankruptcyOverrideMaxFuse',
         message: 'bankruptcyOverrideMaxFuse must be between 8 and 256',
-      });
-    }
-
-    if (typeof config.dailyCoolingQuota !== 'number' || config.dailyCoolingQuota < 0 || config.dailyCoolingQuota > 100) {
-      errors.push({
-        field: 'dailyCoolingQuota',
-        message: 'dailyCoolingQuota must be between 0 and 100',
       });
     }
 

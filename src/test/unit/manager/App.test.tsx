@@ -75,7 +75,6 @@ describe('Manager App', () => {
     render(<App />);
     
     expect(screen.getByText('待审池')).toBeTruthy();
-    expect(screen.getByText('冷静期')).toBeTruthy();
     expect(screen.getByText('即时许可')).toBeTruthy();
     expect(screen.getByText('永久分组')).toBeTruthy();
     expect(screen.getByText('统计')).toBeTruthy();
@@ -117,7 +116,6 @@ describe('Manager App', () => {
     expect(screen.getByText('🎮 娱乐')).toBeTruthy();
     // Use getAllByText for buttons that also appear in nav
     expect(screen.getAllByText('永久').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('冷静期').length).toBeGreaterThan(0);
     expect(screen.getAllByText('立即').length).toBeGreaterThan(0);
     expect(screen.getAllByText('删除').length).toBeGreaterThan(0);
   });
@@ -197,7 +195,6 @@ describe('Manager App', () => {
     beforeEach(() => {
       mockStorage.limboList = [mockItem];
       mockStorage.permanentGroups = [];
-      mockStorage.coolingList = [];
       mockStorage.instantList = [];
     });
 
@@ -206,35 +203,12 @@ describe('Manager App', () => {
       
       // Check that action buttons are rendered (use getAllByText since they also appear in nav)
       expect(screen.getAllByText('永久').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('冷静期').length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText('立即').length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText('删除').length).toBeGreaterThanOrEqual(1);
     });
   });
 
   describe('Other Tabs', () => {
-    it('should show cooling list', () => {
-      const now = Date.now();
-      mockStorage.coolingList = [
-        {
-          bvid: 'BV1xx',
-          title: 'Cooling Video',
-          uploader: 'Uploader',
-          coverUrl: '',
-          tag: 'ENTERTAINMENT' as const,
-          addedAt: now,
-          availableAt: now + 24 * 3600000,
-          expiresAt: now + 72 * 3600000,
-        },
-      ];
-
-      render(<App />);
-      fireEvent.click(screen.getByText('冷静期'));
-      
-      expect(screen.getByText('Cooling Video')).toBeTruthy();
-      expect(screen.getByText('Uploader')).toBeTruthy();
-    });
-
     it('should show instant list', () => {
       const now = Date.now();
       mockStorage.instantList = [

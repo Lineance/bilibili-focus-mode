@@ -27,7 +27,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     logger.debug('Background', 'Default storage initialized');
     alarmHandler.scheduleLimboReviewReminder(DEFAULT_STORAGE.config.limboReviewTime);
     alarmHandler.scheduleLimboAutoPurge(DEFAULT_STORAGE.config.limboAutoPurgeHours);
-    alarmHandler.scheduleCoolingCleanup();
   } else if (details.reason === 'update') {
     const storage = await chrome.storage.local.get();
     const currentVersion = (storage as Record<string, unknown>).version as number || 0;
@@ -47,7 +46,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     alarmHandler.scheduleLimboAutoPurge(
       ((storage as Record<string, unknown>).config as Record<string, unknown>)?.limboAutoPurgeHours as number ?? DEFAULT_STORAGE.config.limboAutoPurgeHours
     );
-    alarmHandler.scheduleCoolingCleanup();
   }
 });
 
@@ -88,7 +86,6 @@ chrome.storage.local.get('config').then((storage) => {
   const limboAutoPurgeHours = config.limboAutoPurgeHours ?? DEFAULT_STORAGE.config.limboAutoPurgeHours;
   alarmHandler.scheduleLimboReviewReminder(limboReviewTime);
   alarmHandler.scheduleLimboAutoPurge(limboAutoPurgeHours);
-  alarmHandler.scheduleCoolingCleanup();
 });
 
 // Re-schedule alarms when config changes

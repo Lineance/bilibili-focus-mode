@@ -31,16 +31,6 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
     description: '待审池视频自动清理的时间（小时）',
     type: 'number',
   },
-  coolingCooldownHours: {
-    label: '冷静期时长',
-    description: '冷却期的等待时长（小时）',
-    type: 'number',
-  },
-  coolingAvailableHours: {
-    label: '可用期时长',
-    description: '冷却期后可供观看的时长（小时）',
-    type: 'number',
-  },
   instantDurationHours: {
     label: '即时许可有效期',
     description: '即时许可的有效时长（小时）',
@@ -117,11 +107,6 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
     type: 'number',
   },
   dailyCoolingQuota: {
-    label: '每日冷却配额',
-    description: '每日可申请冷却的最大次数（0=无限制）',
-    type: 'number',
-  },
-  dailyInstantQuota: {
     label: '每日即时配额',
     description: '每日可申请即时许可的最大次数（0=无限制）',
     type: 'number',

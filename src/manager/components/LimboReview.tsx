@@ -77,7 +77,7 @@ export function LimboReview({ items, config }: { items: readonly LimboItem[]; co
     if (success) clearSelection();
   };
 
-  const onAction = async (item: LimboItem, action: 'permanent' | 'cooling' | 'instant') => {
+  const onAction = async (item: LimboItem, action: 'permanent' | 'instant') => {
     if (!isInReviewWindow) {
       alert('当前不在审批时间窗口，无法处理待审池视频\n请在 ' + config.windowStart + ' - ' + config.windowEnd + ' 期间进行审批');
       return;

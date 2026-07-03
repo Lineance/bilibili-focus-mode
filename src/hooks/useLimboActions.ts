@@ -27,7 +27,6 @@ function resetBehaviorLogQuotaIfNeeded(behaviorLog: BehaviorLogState): BehaviorL
     ...behaviorLog,
     lastQuotaResetDate: getTodayKey(),
     instantApplicationsToday: 0,
-    coolingApplicationsToday: 0,
   };
 }
 
@@ -35,7 +34,7 @@ export function useLimboActions(config: ExtensionConfig) {
   const [processingBvid, setProcessingBvid] = useState<string | null>(null);
 
   const handleAction = useCallback(
-    async (item: LimboItem, action: 'permanent' | 'cooling' | 'instant') => {
+    async (item: LimboItem, action: 'permanent' | 'instant') => {
       setProcessingBvid(item.bvid);
       try {
         const storage = await StorageRepository.get();
@@ -52,39 +51,13 @@ export function useLimboActions(config: ExtensionConfig) {
           addedAt: Date.now(),
         };
 
-        if (action === 'cooling') {
-          if (config.dailyCoolingQuota > 0 && behaviorLog.coolingApplicationsToday >= config.dailyCoolingQuota) {
-            alert('已达到今日冷却配额，请明天再试');
-            return false;
-          }
-
-          const expirationService = new ExpirationService(
-            config.coolingCooldownHours,
-            config.coolingAvailableHours,
-            config.instantDurationHours
-          );
-          const coolingItem = expirationService.createCoolingItem(metadata);
-          const coolingList = storage.coolingList;
-          const filteredCoolingList = coolingList.filter(i => i.bvid !== item.bvid);
-          const updatedBehaviorLog = {
-            ...behaviorLog,
-            coolingApplicationsToday: behaviorLog.coolingApplicationsToday + 1,
-          };
-          await StorageRepository.set({
-            limboList: newLimboList,
-            coolingList: [...filteredCoolingList, coolingItem],
-            behaviorLog: updatedBehaviorLog,
-          });
-          alert(`已加入冷静期，将在 ${config.coolingCooldownHours} 小时后可用`);
-        } else if (action === 'instant') {
+        if (action === 'instant') {
           if (config.dailyInstantQuota > 0 && behaviorLog.instantApplicationsToday >= config.dailyInstantQuota) {
             alert('已达到今日即时配额，请明天再试');
             return false;
           }
 
           const expirationService = new ExpirationService(
-            config.coolingCooldownHours,
-            config.coolingAvailableHours,
             config.instantDurationHours
           );
           const instantItem = expirationService.createInstantItem(metadata, '');

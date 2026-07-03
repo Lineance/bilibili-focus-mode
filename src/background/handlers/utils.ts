@@ -33,7 +33,6 @@ export function resetQuotaIfNeeded(behaviorLog: BehaviorLogState): BehaviorLogSt
     ...behaviorLog,
     lastQuotaResetDate: today,
     instantApplicationsToday: 0,
-    coolingApplicationsToday: 0,
     dailyBypassesUsedToday: 0,
   };
 }

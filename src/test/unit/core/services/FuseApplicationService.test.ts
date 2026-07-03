@@ -56,7 +56,6 @@ describe('FuseApplicationService', () => {
     mockBehaviorLog = {
       lastInstantApplication: 0,
       instantApplicationsToday: 0,
-      coolingApplicationsToday: 0,
       lastQuotaResetDate: new Date().toISOString().slice(0, 10),
       lastWatchEnd: 0,
       currentCooldownUntil: null,

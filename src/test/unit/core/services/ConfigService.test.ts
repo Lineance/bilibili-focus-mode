@@ -44,7 +44,6 @@ describe('ConfigService', () => {
 
       expect(config.limboCapacity).toBe(10);
       expect(config.maxDebtMinutes).toBe(100);
-      expect(config.coolingCooldownHours).toBe(DEFAULT_CONFIG.coolingCooldownHours);
     });
   });
 
@@ -126,17 +125,6 @@ describe('ConfigService', () => {
       expect(errors).toContainEqual({
         field: 'limboCapacity',
         message: '待审池容量应在 1-20 之间',
-      });
-    });
-
-    it('should detect invalid cooling period', () => {
-      const config = { ...DEFAULT_CONFIG, coolingCooldownHours: 200 };
-
-      const errors = service.validateConfig(config);
-
-      expect(errors).toContainEqual({
-        field: 'coolingCooldownHours',
-        message: '冷静期应在 1-168 小时之间',
       });
     });
 

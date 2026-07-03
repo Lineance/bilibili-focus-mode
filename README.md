@@ -1,10 +1,10 @@
 # Bilibili Focus Mode
 
-基于白名单（Block-All-Except）的深度时间管理 Chrome 扩展，采用四态许可系统（Limbo → Cooling → Instant → Permanent）结合债务机制，实现"意图性娱乐"（Intentioned Entertainment）。
+基于白名单（Block-All-Except）的深度时间管理 Chrome 扩展，采用三态许可系统（Limbo → Instant → Permanent）结合债务机制，实现"意图性娱乐"（Intentioned Entertainment）。
 
 ## ✨ 功能特性
 
-- **四态许可系统**: Limbo(待审池) → Cooling(冷静期) → Instant(即时许可) → Permanent(永久分组)
+- **三态许可系统**: Limbo(待审池) → Instant(即时许可) → Permanent(永久分组)
 - **债务机制**: 观看娱乐视频产生债务，学习视频偿还债务
 - **熔断码系统**: 动态长度熔断码防止疲劳绕过
 - **破产惩罚**: 债务过高触发24小时锁定

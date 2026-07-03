@@ -10,7 +10,7 @@ interface LimboReviewItemProps {
   isInReviewWindow: boolean;
   isProcessing: boolean;
   onSelect: (bvid: string) => void;
-  onAction: (item: LimboItem, action: 'permanent' | 'cooling' | 'instant') => void;
+  onAction: (item: LimboItem, action: 'permanent' | 'instant') => void;
   onDelete: (bvid: string) => void;
 }
 
@@ -68,17 +68,6 @@ export const LimboReviewItem = React.memo(function LimboReviewItem({
               title={isInReviewWindow ? '' : '请在审批时间处理'}
             >
               永久
-            </button>
-            <button
-              onClick={() => onAction(item, 'cooling')}
-              disabled={!isInReviewWindow || isProcessing}
-              className={`px-3 py-1 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isInReviewWindow && !isProcessing
-                ? 'bg-accent-primary hover:bg-accent-primary/90'
-                : 'bg-tertiary cursor-not-allowed opacity-50'
-                }`}
-              title={isInReviewWindow ? '' : '请在审批时间处理'}
-            >
-              冷静期
             </button>
             <button
               onClick={() => onAction(item, 'instant')}

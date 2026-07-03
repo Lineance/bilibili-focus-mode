@@ -13,19 +13,6 @@ export function QuotaSettings({ config, updateConfig, descriptions }: QuotaSetti
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm text-gray-400 mb-1">
-            {descriptions.dailyCoolingQuota.label}
-          </label>
-          <input
-            type="number"
-            value={config.dailyCoolingQuota}
-            onChange={(e) => updateConfig('dailyCoolingQuota', parseInt(e.target.value))}
-            min={0}
-            max={100}
-            className="w-full px-3 py-2 bg-gray-700 rounded"
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-400 mb-1">
             {descriptions.dailyInstantQuota.label}
           </label>
           <input

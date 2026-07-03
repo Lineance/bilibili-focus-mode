@@ -4,26 +4,7 @@ describe('ExpirationService', () => {
   let service: ExpirationService;
 
   beforeEach(() => {
-    service = new ExpirationService(24, 48, 6);
-  });
-
-  describe('createCoolingItem', () => {
-    it('should create cooling item with correct timestamps', () => {
-      const before = Date.now();
-      const item = service.createCoolingItem({
-        bvid: 'BV1xx',
-        title: 'Test',
-        uploader: 'Test',
-        coverUrl: '',
-        tag: 'ENTERTAINMENT',
-        addedAt: before,
-      });
-      const after = Date.now();
-
-      expect(item.availableAt).toBeGreaterThanOrEqual(before + 24 * 60 * 60 * 1000);
-      expect(item.availableAt).toBeLessThanOrEqual(after + 24 * 60 * 60 * 1000);
-      expect(item.expiresAt).toBe(item.availableAt + 48 * 60 * 60 * 1000);
-    });
+    service = new ExpirationService(6);
   });
 
   describe('createInstantItem', () => {

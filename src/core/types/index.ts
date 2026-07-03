@@ -60,7 +60,6 @@ export interface DebtAccount {
 export interface BehaviorLogState {
   lastInstantApplication: number;
   instantApplicationsToday: number;
-  coolingApplicationsToday: number;
   lastQuotaResetDate: string;
   lastWatchEnd: number;
   currentCooldownUntil: number | null;
@@ -78,8 +77,6 @@ export interface BehaviorLog {
   | 'fuse_applied'
   | 'fuse_verified'
   | 'fuse_rejected'
-  | 'cooling_requested'
-  | 'cooling_granted'
   | 'instant_requested'
   | 'instant_granted'
   | 'limbo_added'
@@ -147,8 +144,6 @@ export interface ExtensionConfig {
   limboCapacity: number;
   limboReviewTime: string;
   limboAutoPurgeHours: number;
-  coolingCooldownHours: number;
-  coolingAvailableHours: number;
   instantDurationHours: number;
   instantBreakFuse: boolean;
   baseFuseLength: number;
@@ -164,7 +159,6 @@ export interface ExtensionConfig {
   bankruptcyOverrideMaxFuse: number;
   dynamicFuseEnabled: boolean;
   postWatchCooldownMinutes: number;
-  dailyCoolingQuota: number;
   dailyInstantQuota: number;
   collectionDetectionEnabled: boolean;
   // Video player style simplification
@@ -244,7 +238,6 @@ export interface ExtensionConfig {
 export interface ExtensionStorage {
   version: 3;
   limboList: LimboItem[];
-  coolingList: CoolingItem[];
   instantList: InstantItem[];
   permanentGroups: PermanentGroup[];
   behaviorLog: BehaviorLogState;

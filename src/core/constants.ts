@@ -29,8 +29,6 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   limboCapacity: 5,
   limboReviewTime: '19:30',
   limboAutoPurgeHours: 24,
-  coolingCooldownHours: 24,
-  coolingAvailableHours: 48,
   instantDurationHours: 6,
   instantBreakFuse: true,
   baseFuseLength: 8,
@@ -46,7 +44,6 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   bankruptcyOverrideMaxFuse: 128,
   dynamicFuseEnabled: true,
   postWatchCooldownMinutes: 5,
-  dailyCoolingQuota: 0,
   dailyInstantQuota: 0,
   collectionDetectionEnabled: true,
   // Video player style simplification
@@ -157,7 +154,6 @@ export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {
 export const DEFAULT_BEHAVIOR_LOG: BehaviorLogState = {
   lastInstantApplication: 0,
   instantApplicationsToday: 0,
-  coolingApplicationsToday: 0,
   lastQuotaResetDate: new Date().toISOString().slice(0, 10),
   lastWatchEnd: 0,
   currentCooldownUntil: null,
@@ -184,7 +180,6 @@ export const ICON_PATH = 'icon128.png';
 export const DEFAULT_STORAGE: ExtensionStorage = {
   version: 3,
   limboList: [],
-  coolingList: [],
   instantList: [],
   permanentGroups: [],
   behaviorLog: DEFAULT_BEHAVIOR_LOG,

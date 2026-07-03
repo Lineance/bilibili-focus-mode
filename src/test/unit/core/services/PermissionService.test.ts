@@ -12,7 +12,6 @@ describe('PermissionService', () => {
       ...DEFAULT_STORAGE,
       permanentGroups: [],
       instantList: [],
-      coolingList: [],
       debtAccount: {
         ...DEFAULT_STORAGE.debtAccount,
         bankruptcyEndTime: null,
@@ -102,56 +101,6 @@ describe('PermissionService', () => {
       expect(result.allowed).toBe(false);
     });
 
-    it('should allow cooling items in available period', () => {
-      const now = Date.now();
-      mockStorage = {
-        ...mockStorage,
-        coolingList: [
-          {
-            bvid: 'BV4xx',
-            title: 'Test Video',
-            uploader: 'Test Uploader',
-            coverUrl: '',
-            tag: 'ENTERTAINMENT',
-            addedAt: now - 86400000, // 1 day ago
-            availableAt: now - 3600000, // Available 1 hour ago
-            expiresAt: now + 86400000, // Expires in 1 day
-          },
-        ],
-      };
-      service = new PermissionService(mockStorage);
-
-      const result = service.check('BV4xx');
-
-      expect(result.allowed).toBe(true);
-      expect(result.reason).toBe('COOLING_AVAILABLE');
-    });
-
-    it('should deny cooling items in waiting period', () => {
-      const now = Date.now();
-      mockStorage = {
-        ...mockStorage,
-        coolingList: [
-          {
-            bvid: 'BV5xx',
-            title: 'Test Video',
-            uploader: 'Test Uploader',
-            coverUrl: '',
-            tag: 'ENTERTAINMENT',
-            addedAt: now,
-            availableAt: now + 86400000, // Available in 1 day
-            expiresAt: now + 172800000, // Expires in 2 days
-          },
-        ],
-      };
-      service = new PermissionService(mockStorage);
-
-      const result = service.check('BV5xx');
-
-      expect(result.allowed).toBe(false);
-      expect(result.reason).toBe('COOLING_WAITING');
-    });
-
     it('should deny when in bankruptcy', () => {
       const futureTime = Date.now() + 86400000; // 1 day from now
       mockStorage = {
@@ -234,26 +183,25 @@ describe('PermissionService', () => {
       expect(result.reason).toBe('BANKRUPTCY');
     });
 
-    it('should deny cooling videos when in bankruptcy', () => {
+    it('should deny instant videos when in bankruptcy', () => {
       const futureTime = Date.now() + 86400000; // 1 day from now
-      const pastTime = Date.now() - 3600000; // 1 hour ago
-      const futureExpiry = Date.now() + 3600000; // 1 hour from now
       mockStorage = {
         ...mockStorage,
         debtAccount: {
           ...mockStorage.debtAccount,
           bankruptcyEndTime: futureTime,
         },
-        coolingList: [
+        instantList: [
           {
             bvid: 'BV12xx',
             title: 'Test Video',
             uploader: 'Test Uploader',
             coverUrl: '',
             tag: 'ENTERTAINMENT' as const,
-            addedAt: pastTime,
-            availableAt: pastTime,
-            expiresAt: futureExpiry,
+            addedAt: Date.now(),
+            expiresAt: Date.now() + 86400000,
+            fuseCode: 'TEST',
+            usedFuse: false,
           },
         ],
       };
