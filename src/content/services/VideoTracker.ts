@@ -12,6 +12,8 @@ export class VideoTracker {
   private lastWatchTick = 0;
   private latestConfig: { debtEnabled?: boolean } | null = null;
   private latestVideoTag: VideoTag = 'ENTERTAINMENT';
+  private latestTitle = '';
+  private latestUploader = '';
   private getCurrentBvid: () => string | null;
   private safeSendMessage: SafeSendMessage;
 
@@ -35,6 +37,14 @@ export class VideoTracker {
    */
   updateVideoTag(tag: VideoTag): void {
     this.latestVideoTag = tag;
+  }
+
+  /**
+   * Update video metadata (title, uploader)
+   */
+  updateVideoMetadata(title: string, uploader: string): void {
+    this.latestTitle = title;
+    this.latestUploader = uploader;
   }
 
   /**
@@ -81,6 +91,9 @@ export class VideoTracker {
     this.safeSendMessage('watch-ended', {
       bvid,
       endedAt: Date.now(),
+      title: this.latestTitle || undefined,
+      uploader: this.latestUploader || undefined,
+      tag: this.latestVideoTag,
     } as ProtocolMap['watch-ended']['req']).catch((error) => {
       console.error('[Content] Failed to report watch end:', error);
     });
@@ -119,9 +132,13 @@ export class VideoTracker {
     if (minutes <= 0) return;
     this.lastWatchTick = now;
 
+    const bvid = this.getCurrentBvid();
+    if (!bvid) return;
+
     this.safeSendMessage('update-debt', {
       minutes,
       tag: this.latestVideoTag,
+      bvid,
     } as ProtocolMap['update-debt']['req']).catch((error) => {
       console.error('[Content] Failed to update debt:', error);
     });

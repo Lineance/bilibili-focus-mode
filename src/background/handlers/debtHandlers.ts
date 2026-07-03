@@ -1,7 +1,7 @@
-import { DEFAULT_GLOBAL_STATS, DEFAULT_STORAGE } from '@core/constants';
+import { DEFAULT_GLOBAL_STATS, DEFAULT_STORAGE, MAX_WATCH_HISTORY } from '@core/constants';
 import type { ProtocolMap } from '@core/protocol';
 import { DebtService } from '@core/services';
-import type { DebtAccount, GlobalStats } from '@core/types';
+import type { DebtAccount, GlobalStats, WatchRecord } from '@core/types';
 import { logger } from '@core/utils/logger';
 import { storageQueue } from '@core/utils/storageQueue';
 import { migrateDebtAccount, syncCurrentDebt } from '../DebtMigrationService';
@@ -61,10 +61,35 @@ export async function handleUpdateDebt(request: unknown): Promise<unknown> {
     ];
   }
 
+  // Update watch history
+  const watchHistoryStorage = await chrome.storage.local.get('watchHistory');
+  const watchHistory: WatchRecord[] = (watchHistoryStorage.watchHistory as WatchRecord[] | undefined) || [];
+  const existingIndex = watchHistory.findIndex((r) => r.bvid === data.bvid);
+  if (existingIndex >= 0) {
+    watchHistory[existingIndex] = {
+      ...watchHistory[existingIndex],
+      totalMinutes: watchHistory[existingIndex].totalMinutes + data.minutes,
+    };
+  } else {
+    watchHistory.push({
+      bvid: data.bvid,
+      title: data.bvid,
+      uploader: '',
+      tag: data.tag,
+      startedAt: now,
+      totalMinutes: data.minutes,
+    });
+  }
+  // Trim to max history
+  if (watchHistory.length > MAX_WATCH_HISTORY) {
+    watchHistory.splice(0, watchHistory.length - MAX_WATCH_HISTORY);
+  }
+
   await storageQueue.enqueue(() =>
     chrome.storage.local.set({
       debtAccount: updatedAccount,
       globalStats,
+      watchHistory,
     })
   );
 

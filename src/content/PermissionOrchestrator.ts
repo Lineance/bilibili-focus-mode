@@ -81,6 +81,7 @@ export class PermissionOrchestrator {
 
     this.videoTracker.updateConfig(result.config || null);
     this.videoTracker.updateVideoTag(result.videoTag || 'ENTERTAINMENT');
+    this.videoTracker.updateVideoMetadata(metadata.title, metadata.uploader);
     this.videoTracker.setupVideoTracking();
 
     if (result.uploaderAllowed) {
