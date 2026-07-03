@@ -48,6 +48,15 @@ export interface GhostItem extends VideoMetadata {
   repentanceReason?: string;
 }
 
+export interface WatchRecord {
+  bvid: string;
+  title: string;
+  uploader: string;
+  tag: VideoTag;
+  startedAt: number;
+  totalMinutes: number;
+}
+
 export interface DebtAccount {
   currentDebt: number;
   bankruptcyCount: number;
@@ -234,6 +243,8 @@ export interface ExtensionConfig {
   dailyBypassEnabled: boolean;
   dailyBypassQuota: number;
   dailyBypassDurationMinutes: number;
+  // Daily Watch Limit
+  dailyWatchLimitMinutes: number;
   // Native Messaging
   nativeMessagingEnabled: boolean;
 }
@@ -250,6 +261,7 @@ export interface ExtensionStorage {
   debtAccount: DebtAccount;
   config: ExtensionConfig;
   allowedUploaders: AllowedUploader[];
+  watchHistory: WatchRecord[];
 }
 
 export type PermissionResult =

@@ -15,6 +15,7 @@ export const MS_PER_DAY = 24 * 60 * 60 * 1000;
 // Business logic constants
 export const MIN_FUSE_LENGTH = 8;
 export const MAX_LOG_ENTRIES = 1000;
+export const MAX_WATCH_HISTORY = 200;
 export const MIN_REPENTANCE_LENGTH = 20;
 export const TITLE_MAX_LENGTH = 50;
 export const PERMISSION_CHECK_INTERVAL_MS = 60000;
@@ -107,6 +108,8 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   dailyBypassEnabled: true,
   dailyBypassQuota: 3,
   dailyBypassDurationMinutes: 30,
+  // Daily Watch Limit
+  dailyWatchLimitMinutes: 180,
   // Native Messaging
   nativeMessagingEnabled: false,
 };
@@ -160,4 +163,5 @@ export const DEFAULT_STORAGE: ExtensionStorage = {
   debtAccount: DEFAULT_DEBT_ACCOUNT,
   config: DEFAULT_CONFIG,
   allowedUploaders: [],
+  watchHistory: [],
 };

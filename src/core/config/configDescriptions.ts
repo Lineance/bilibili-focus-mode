@@ -197,6 +197,14 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
     max: 120,
     step: 5,
   },
+  dailyWatchLimitMinutes: {
+    label: '每日观看限额（分钟）',
+    description: '每日允许观看的总时长上限（30-480分钟）',
+    type: 'number',
+    min: 30,
+    max: 480,
+    step: 10,
+  },
   nativeMessagingEnabled: {
     label: '启用外部监控连接',
     description: '允许外部监控程序通过 Native Messaging 检测扩展状态',

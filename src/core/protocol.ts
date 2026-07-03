@@ -26,7 +26,7 @@ export interface ProtocolMap {
     res: { success: boolean; limboCount: number };
   };
   'update-debt': {
-    req: { minutes: number; tag: VideoTag };
+    req: { minutes: number; tag: VideoTag; bvid: string };
     res: { currentDebt: number; bankruptcyEndTime: number | null };
   };
   'verify-fuse': {
@@ -38,7 +38,7 @@ export interface ProtocolMap {
     res: { success: boolean; message: string; fuseCode?: string; expiresAt?: number };
   };
   'watch-ended': {
-    req: { bvid: string; endedAt: number };
+    req: { bvid: string; endedAt: number; title?: string; uploader?: string; tag?: VideoTag };
     res: { success: boolean; cooldownUntil: number | null };
   };
   'get-full-config': {
