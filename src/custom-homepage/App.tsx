@@ -69,7 +69,7 @@ export function App(): React.JSX.Element {
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* 债务仪表盘 */}
         <section className="mb-6">
-          <DebtStatus account={storage.debtAccount} config={config} />
+          <DebtStatus account={storage.debtAccount} config={config} watchHistory={storage.watchHistory || []} />
         </section>
 
         {/* 状态栏 */}
