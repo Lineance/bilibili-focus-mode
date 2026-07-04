@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DEFAULT_CONFIG } from '@core/constants';
 import type { ExtensionStorage } from '@core/types';
 import { StorageRepository } from '@core/storage/StorageRepository';
+import { DebtStatus } from './components/DebtStatus';
 import { BypassStatus } from './components/BypassStatus';
 import { InstantSection } from './components/InstantSection';
 import { PermanentSection } from './components/PermanentSection';
@@ -49,6 +50,12 @@ export function App(): React.JSX.Element {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => window.open('https://search.bilibili.com/', '_blank')}
+              className="btn-primary"
+            >
+              🔍 搜索
+            </button>
+            <button
               onClick={() => window.open(chrome.runtime.getURL('src/manager/index.html'), '_blank')}
               className="btn-secondary"
             >
@@ -60,6 +67,11 @@ export function App(): React.JSX.Element {
 
       {/* 主内容 */}
       <main className="max-w-7xl mx-auto px-4 py-6">
+        {/* 债务仪表盘 */}
+        <section className="mb-6">
+          <DebtStatus account={storage.debtAccount} config={config} />
+        </section>
+
         {/* 状态栏 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <BypassStatus config={config} behaviorLog={storage.behaviorLog} />
