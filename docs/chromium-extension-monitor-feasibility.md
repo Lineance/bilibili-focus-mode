@@ -1,5 +1,7 @@
 # Chromium Extension Monitor：P0 可行性验证
 
+此报告保留原型阶段的验证结论。正式实现与实际关闭验收已另行记录于 [实现与验收报告](./chromium-extension-monitor-implementation.md)。
+
 ## 结论
 
 Windows 上的“扩展后台 → Native Host → Named Pipe → 独立 Watchdog”链路已在真实 Chromium 中运行。已验证主机注册、握手、消息完整性、实例关联、停用及卸载后的独立倒计时、重新启用、重新安装、重载恢复、正常退出，以及浏览器启动时没有扩展连接的独立发现。

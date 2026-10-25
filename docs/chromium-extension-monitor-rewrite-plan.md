@@ -1,6 +1,6 @@
 # Chromium Extension Monitor 重写方案
 
-状态：已完成 P0 核心链路验证及扩展连接原型；正式守护程序尚未实现。实测范围与结果见 [P0 可行性报告](./chromium-extension-monitor-feasibility.md)。
+状态：Windows 首版已实现，包含独立守护进程、实际关闭、本地安装管理和扩展恢复。实现、功能提交及验收见 [实现与验收记录](./chromium-extension-monitor-implementation.md)；使用方法见 [监控程序 README](../chromium-extension-monitor/README.md)。下文保留原始设计依据与验收要求。
 
 ## 1. 分析基线与目标
 

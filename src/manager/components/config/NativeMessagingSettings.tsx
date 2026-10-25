@@ -26,7 +26,7 @@ export function NativeMessagingSettings({ config, updateConfig }: NativeMessagin
       </label>
       <NativeMonitorStatus />
       <p className="text-sm text-warning">
-        此开关只控制通信。如果本地保护已启用，关闭通信也会触发倒计时。请先运行 monitor.exe disable 暂停保护。
+        此开关只控制通信。如果本地保护已启用，关闭通信并保存配置也会触发倒计时。请先运行 monitor.exe disable 暂停保护。
       </p>
       <details className="text-sm">
         <summary className="cursor-pointer">安装与启用步骤</summary>
@@ -35,7 +35,7 @@ export function NativeMessagingSettings({ config, updateConfig }: NativeMessagin
             编译或解压 Windows 监控程序，在同一目录保留三个可执行文件，然后登记当前扩展：
             <code className="block mt-2 p-2 bg-tertiary rounded break-all select-all">{installCommand}</code>
           </li>
-          <li>运行 <code>monitor.exe start</code>，再开启上方通信开关。</li>
+          <li>运行 <code>monitor.exe start</code>，再开启上方通信开关并保存配置。</li>
           <li>运行 <code>monitor.exe doctor</code>。握手检查通过后，运行 <code>monitor.exe enable</code> 启用保护。</li>
           <li>暂停使用 <code>monitor.exe disable</code>；移除登记使用 <code>monitor.exe uninstall</code>。</li>
         </ol>

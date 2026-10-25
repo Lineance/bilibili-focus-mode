@@ -3,6 +3,9 @@
 ## 文档索引
 
 - [项目架构](./ARCHITECTURE.md) - 项目目录结构、系统架构说明
+- [原生监控使用说明](../chromium-extension-monitor/README.md) - Windows 安装、诊断、暂停与卸载
+- [原生监控实现与验收](./chromium-extension-monitor-implementation.md) - 功能提交、测试证据与支持范围
+- [原生监控 P0 验证](./chromium-extension-monitor-feasibility.md) - 最小原型与架构依据
 - [GitHub Actions 指南](./github-action.md) - CI / 发布流程
 - [AI 代理指南](../AGENTS.md) - 代码规范、命名约定、开发指南
 

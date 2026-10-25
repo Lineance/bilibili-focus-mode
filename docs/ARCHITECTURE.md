@@ -13,7 +13,7 @@ Bilibili Focus Mode 是一个基于 Manifest V3 的 Chrome 扩展。项目采用
   - 注册消息处理器（`src/background/MessageHandlers.ts`）
   - 定时任务与提醒（`AlarmHandler`）
   - 数据迁移（`DebtMigrationService`）
-  - 可选 Native Messaging 通道（`NativeMessagingClient`）
+  - 可选 Native Messaging 通道（`NativeMessagingClient`）与 worker 恢复服务（`NativeMessagingService`）；独立 alarm 恢复断连，管理页通过 webext-bridge 查询状态。
 
 ### Content Script（Bilibili 页面注入）
 
@@ -87,6 +87,14 @@ src/
 ├── test/                   # 测试（unit / integration / e2e）
 └── manifest.json
 ```
+
+## Windows 原生监控
+
+`chromium-extension-monitor/` 包含独立 Watchdog、Native Messaging Host 与管理 CLI。Host 由 Chrome 管理，Watchdog 通过用户级后台启动或登录启动独立运行，负责浏览器实例发现、纯状态机、倒计时与定向关闭。
+
+Native Host 通过当前用户 ACL 限制的 Named Pipe 与 Watchdog 通信。同步管道由单个线程按请求/响应操作，stdin 独立读取。Windows 关闭前核对完整路径、数据目录、PID 和创建时间，并持有进程句柄以防 PID 复用。配置、状态和日志存放在当前用户应用数据目录；首次安装不启用实际保护。
+
+使用与支持范围见 [监控程序 README](../chromium-extension-monitor/README.md)。
 
 ## 测试与质量保障
 

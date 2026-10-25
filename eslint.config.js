@@ -62,6 +62,6 @@ export default [
     },
   },
   {
-    ignores: ['dist/**', '.eslintrc.cjs', 'eslint.config.js', 'migrated-components/**', 'tools/native-monitor-probe/artifacts/**', 'tools/native-monitor-probe/target/**'],
+    ignores: ['dist/**', '.eslintrc.cjs', 'eslint.config.js', 'migrated-components/**', 'tools/native-monitor-probe/artifacts/**', 'tools/native-monitor-probe/target/**', 'chromium-extension-monitor/artifacts/**', 'chromium-extension-monitor/target/**'],
   },
 ];
