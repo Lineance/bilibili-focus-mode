@@ -33,9 +33,12 @@ const TEST: u16 = 105;
 const BROWSER: u16 = 106;
 const EXIT: u16 = 107;
 enum Command {
+    Menu,
+    RestoreTray,
     Click(u16),
     Close(HWND),
 }
+static TASKBAR_MESSAGE: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 unsafe extern "system" fn window_proc(
     hwnd: HWND,
     message: u32,
@@ -45,6 +48,14 @@ unsafe extern "system" fn window_proc(
     let sender = unsafe { GetWindowLongPtrW(hwnd, GWLP_USERDATA) } as *const mpsc::Sender<Command>;
     if !sender.is_null() {
         let command = match message {
+            crate::tray::CALLBACK => match (lparam as u32) & 0xffff {
+                WM_LBUTTONDBLCLK => Some(Command::Click(crate::tray::SHOW)),
+                WM_RBUTTONUP | WM_CONTEXTMENU => Some(Command::Menu),
+                _ => None,
+            },
+            value if value != 0 && value == TASKBAR_MESSAGE.load(Ordering::SeqCst) => {
+                Some(Command::RestoreTray)
+            }
             WM_COMMAND => Some(Command::Click((wparam & 0xffff) as u16)),
             WM_CLOSE => Some(Command::Close(hwnd)),
             _ => None,
@@ -55,6 +66,52 @@ unsafe extern "system" fn window_proc(
         }
     }
     unsafe { DefWindowProcW(hwnd, message, wparam, lparam) }
+}
+fn scale(value: i32) -> i32 {
+    let dpi = unsafe { windows_sys::Win32::UI::HiDpi::GetDpiForSystem() }.max(96) as i32;
+    value * dpi / 96
+}
+thread_local! {static FONT:std::cell::Cell<*mut std::ffi::c_void>=const{std::cell::Cell::new(std::ptr::null_mut())};}
+struct FontGuard(*mut std::ffi::c_void);
+impl FontGuard {
+    fn new() -> Self {
+        unsafe {
+            windows_sys::Win32::UI::HiDpi::SetThreadDpiAwarenessContext(
+                windows_sys::Win32::UI::HiDpi::DPI_AWARENESS_CONTEXT_SYSTEM_AWARE,
+            );
+        }
+        let face = wide("Segoe UI");
+        let font = unsafe {
+            windows_sys::Win32::Graphics::Gdi::CreateFontW(
+                -scale(15),
+                0,
+                0,
+                0,
+                400,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                5,
+                0,
+                face.as_ptr(),
+            )
+        };
+        FONT.with(|slot| slot.set(font));
+        Self(font)
+    }
+}
+impl Drop for FontGuard {
+    fn drop(&mut self) {
+        FONT.with(|slot| slot.set(null_mut()));
+        if !self.0.is_null() {
+            unsafe {
+                windows_sys::Win32::Graphics::Gdi::DeleteObject(self.0);
+            }
+        }
+    }
 }
 fn window(
     title: &str,
@@ -90,8 +147,8 @@ fn window(
             WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            width,
-            height,
+            scale(width),
+            scale(height),
             null_mut(),
             null_mut(),
             module,
@@ -129,10 +186,10 @@ fn control(
             class.as_ptr(),
             text.as_ptr(),
             WS_CHILD | WS_VISIBLE | style,
-            x,
-            y,
-            w,
-            h,
+            scale(x),
+            scale(y),
+            scale(w),
+            scale(h),
             parent,
             id as usize as _,
             null_mut(),
@@ -143,7 +200,13 @@ fn control(
         SendMessageW(
             hwnd,
             WM_SETFONT,
-            GetStockObject(DEFAULT_GUI_FONT) as usize,
+            FONT.with(|slot| {
+                if slot.get().is_null() {
+                    GetStockObject(DEFAULT_GUI_FONT)
+                } else {
+                    slot.get()
+                }
+            }) as usize,
             1,
         );
     }
@@ -227,7 +290,11 @@ pub fn open_browser(directory: &Path) -> io::Result<()> {
     Ok(())
 }
 
-pub fn start(directory: PathBuf, status: Arc<Mutex<Value>>, show: Arc<AtomicBool>) {
+pub fn start(
+    directory: PathBuf,
+    status: Arc<Mutex<Value>>,
+    show: Arc<AtomicBool>,
+) -> thread::JoinHandle<()> {
     thread::spawn(move || {
         if let Err(error) = run(&directory, status, show) {
             let _ = storage::write_json(
@@ -236,13 +303,22 @@ pub fn start(directory: PathBuf, status: Arc<Mutex<Value>>, show: Arc<AtomicBool
             );
             show_error("专注守护界面启动失败", &error.to_string());
         }
-    });
+    })
 }
 
 fn run(directory: &Path, status: Arc<Mutex<Value>>, show: Arc<AtomicBool>) -> io::Result<()> {
+    let _font = FontGuard::new();
     let _apartment = notifications::Apartment::new()?;
     let (sender, commands) = mpsc::channel();
     let main = window("Bilibili 专注守护", 640, 380, &sender, false)?;
+    let taskbar = wide("TaskbarCreated");
+    TASKBAR_MESSAGE.store(
+        unsafe { RegisterWindowMessageW(taskbar.as_ptr()) },
+        Ordering::SeqCst,
+    );
+    let mut tray = crate::tray::Tray::new(main);
+    let mut tray_last_try = 0;
+    let mut tray_state = String::new();
     let summary = control(main, "STATIC", "正在读取状态…", 0, 20, 16, 590, 70, 0);
     let details = control(main, "STATIC", "", 0, 20, 90, 590, 90, 0);
     control(
@@ -374,6 +450,22 @@ fn run(directory: &Path, status: Arc<Mutex<Value>>, show: Arc<AtomicBool>) -> io
                 );
             }
         }
+        let now = windows_runtime::active_time()?;
+        if now.saturating_sub(tray_last_try) >= 1000 {
+            tray_last_try = now;
+            let result = tray.update(&current);
+            let message = match &result {
+                Ok(_) => "ready".into(),
+                Err(error) => error.to_string(),
+            };
+            if message != tray_state {
+                let _ = storage::write_json(
+                    &directory.join("tray-status.json"),
+                    &json!({"registered":result.is_ok(),"detail":message,"updatedAt":storage::timestamp()}),
+                );
+                tray_state = message;
+            }
+        }
         let view = format!(
             "{}\n通信：{}",
             describe(&current),
@@ -431,6 +523,13 @@ fn run(directory: &Path, status: Arc<Mutex<Value>>, show: Arc<AtomicBool>) -> io
         }
         for command in commands.try_iter() {
             match command {
+                Command::RestoreTray => tray.reset(),
+                Command::Menu => {
+                    if let Some(id) = tray.menu(&current) {
+                        let _ = sender.send(Command::Click(id));
+                    }
+                }
+                Command::Click(crate::tray::SHOW) => reveal(main, true),
                 Command::Close(hwnd) => {
                     if hwnd == countdown {
                         dismissed = Some(policy.incident());
@@ -517,6 +616,15 @@ fn run(directory: &Path, status: Arc<Mutex<Value>>, show: Arc<AtomicBool>) -> io
         }
         thread::sleep(Duration::from_millis(75));
     }
+    drop(tray);
+    let _ = storage::write_json(
+        &directory.join("tray-status.json"),
+        &json!({"registered":false,"stopped":true,"updatedAt":storage::timestamp()}),
+    );
+    let _ = storage::write_json(
+        &directory.join("desktop-status.json"),
+        &json!({"running":false,"stopped":true,"updatedAt":storage::timestamp()}),
+    );
     unsafe {
         SetWindowLongPtrW(main, GWLP_USERDATA, 0);
         SetWindowLongPtrW(countdown, GWLP_USERDATA, 0);

@@ -19,4 +19,6 @@ pub mod registry;
 #[cfg(windows)]
 pub mod storage;
 #[cfg(windows)]
+pub mod tray;
+#[cfg(windows)]
 pub mod windows_runtime;

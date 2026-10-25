@@ -276,9 +276,15 @@ pub fn run_options(
     });
     let mut log = EventLog::new(directory)?;
     log.record(json!({"event":"watchdogStarted","pid":std::process::id(),"dryRun":dry_run}))?;
-    if notify {
-        crate::desktop::start(directory.to_owned(), status.clone(), show);
-    }
+    let desktop_thread = if notify {
+        Some(crate::desktop::start(
+            directory.to_owned(),
+            status.clone(),
+            show,
+        ))
+    } else {
+        None
+    };
     let mut last_active = windows_runtime::active_time()?;
     let mut last_uptime = windows_runtime::uptime();
     let mut last_scan = 0;
@@ -451,6 +457,17 @@ pub fn run_options(
         .lock()
         .map_err(|_| io::Error::other("status lock poisoned"))? = stopped.clone();
     storage::write_json(&directory.join("status.json"), &stopped)?;
+    if let Some(thread) = desktop_thread {
+        for _ in 0..20 {
+            if thread.is_finished() {
+                break;
+            }
+            thread::sleep(Duration::from_millis(50));
+        }
+        if thread.is_finished() && thread.join().is_err() {
+            eprintln!("[Desktop] UI thread terminated unexpectedly");
+        }
+    }
     log.record(json!({"event":"watchdogStopped"}))
 }
 

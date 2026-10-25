@@ -48,6 +48,12 @@ try:
     diagnostics=command(['notify-status']);assert diagnostics['registered'] and diagnostics['historyCount']>=1,diagnostics
     print('PASS Windows accepted toast and notification history contains it',flush=True)
     command(['ui']);main=wait(lambda:next((h for h,t in windows(pid) if t=='Bilibili 专注守护' and user.IsWindowVisible(h)),None),'status window opens')
+    tray_status=data/'tray-status.json'
+    wait(lambda:tray_status.exists() and json.loads(tray_status.read_text()).get('registered'),'tray registration')
+    user.PostMessageW(main,0x10,0,0);wait(lambda:not user.IsWindowVisible(main),'hide status window')
+    user.PostMessageW(main,0x8000+42,1,0x203)
+    wait(lambda:user.IsWindowVisible(main),'tray double click reopens status')
+    print('PASS tray registration and double-click reopen',flush=True)
     config_path=data/'config.json';config=json.loads(config_path.read_text());config['enabled']=True;config_path.write_text(json.dumps(config))
     log=(root/'browser.log').open('w');child=subprocess.Popen([str(browser),'--headless=new','--no-first-run','--disable-extensions','--disable-gpu','--user-data-dir='+str(profile),'about:blank'],stdout=log,stderr=subprocess.STDOUT)
     countdown=wait(lambda:next((h for h,t in windows(pid) if t=='专注扩展已失联' and user.IsWindowVisible(h)),None),'countdown appears')
@@ -58,9 +64,10 @@ try:
     user.PostMessageW(main,0x111,101,0)
     wait(lambda:command(['status']).get('state')=='paused','GUI pause reaches watchdog')
     assert child.poll() is None
-    command(['stop']);command(['uninstall']);installed=False
+    command(['stop']);assert json.loads(tray_status.read_text()).get('registered') is False
+    command(['uninstall']);installed=False
     assert not command(['notify-status'])['registered']
-    result={'passed':True,'toastApiAccepted':True,'toastHistoryVerified':True,'visibleConfirmed':False,'countdownDismissal':True,'guiPause':True,'cleanup':True}
+    result={'passed':True,'toastApiAccepted':True,'toastHistoryVerified':True,'visibleConfirmed':False,'countdownDismissal':True,'guiPause':True,'trayRegistered':True,'trayReopen':True,'trayCleanup':True,'cleanup':True}
     (root/'result.json').write_text(json.dumps(result));print(json.dumps(result),root,flush=True)
 finally:
     if installed:subprocess.run([str(cli),'--data-dir',str(data),'uninstall'],capture_output=True,timeout=12)
