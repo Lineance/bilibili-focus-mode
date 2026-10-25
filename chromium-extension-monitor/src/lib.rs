@@ -1,3 +1,13 @@
 pub mod config;
+#[cfg(windows)]
+pub mod daemon;
 pub mod engine;
+#[cfg(windows)]
+pub mod host;
+#[cfg(windows)]
+pub mod platform;
 pub mod protocol;
+#[cfg(windows)]
+pub mod storage;
+#[cfg(windows)]
+pub mod windows_runtime;
