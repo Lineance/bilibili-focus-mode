@@ -1,154 +1,163 @@
-# 下一阶段计划：系统提醒、Cargo 分发与跨平台发布
+# 下一阶段计划：Windows 体验优先
 
-状态：计划，尚未执行本轮 CI/CD 改造或公开发布。保留用户要求：每个可独立验收的功能完成测试后单独 Git commit。
+状态：计划。依据最新优先级，先优化 Windows 日常使用体验，再完成 Cargo 分发；Linux/macOS 降为低优先级、暂不排期。每个可独立验收的功能完成测试后单独 Git commit。
 
-## 1. 目标与现状
+## 1. 优先级与交付目标
 
-目标：扩展失联时用户收到操作系统提醒；监控程序可用 Cargo 安装；GitHub 正确测试、打包与发布；其他平台按实际实现及验收逐步加入。
+| 优先级 | 工作 | 交付目标 |
+| --- | --- | --- |
+| P0 | Windows 系统提醒、倒计时与托盘控制 | 看得见失联原因，能直接查看和暂停保护 |
+| P1 | Windows 首次安装、故障处理、升级卸载与 CI/CD | 下载后能顺利配置、运行并维护 |
+| P2 | `bili-warden` 命名与 Cargo 发布 | Windows 体验稳定后增加完整的 Cargo 安装通道 |
+| P3 | Linux/macOS 及其他架构 | 保留设计与候选目标，Windows 验收完成后再评估 |
 
-现状已经核对：
+本阶段以普通 Windows 用户完成“安装 → 连接 → 启用 → 暂停 → 恢复 → 排错”为目标。跨平台抽象、发布矩阵扩展和 Cargo 更名均不能成为 Windows 提醒及交互改进的前置条件。
 
-- Windows 原生进程监督、扩展握手及实际关闭已实现。
-- `show_countdown()` 目前创建一个 Windows STATIC 窗口，只在恢复期及关闭阶段显示。它不是 Windows 通知中心 Toast，启动后长期未检测到扩展时也没有独立系统通知。
-- `.github/workflows/native-monitor.yml` 已有 Windows Rust 检查与构建；扩展 CI 只覆盖 main/master，使用 Node 20。
-- 旧 `build-and-release.yml` 仍引用已不存在的 `chromium-extension-monitor.exe`，没有按三个实际二进制打包，也没有 crates.io 发布。
-- Cargo 包为 `chromium-extension-monitor`，`publish = false`；缺少 description、license、repository 等正式发布元数据，仓库中也未找到许可证正文。
-- 核心状态机/协议可复用，但二进制入口直接依赖 Windows 专属模块。不能直接增加 Linux/macOS 发布矩阵就声称支持这些平台。
+现状已核对：
 
-## 2. 包名与命令
+- Windows 原生监督、握手、实例识别和实际关闭已实现。
+- 当前系统提示仅为 STATIC 倒计时窗口，未接入 Windows 通知中心。
+- 用户日常暂停、启用和诊断主要依赖 CLI；首次使用需理解三个程序并执行多条命令。
+- 启动失败主要记录在文件，桌面用户可能只感到“没有反应”。
+- Windows Rust CI 已存在，但旧 Release 工作流还引用已不存在的单个 exe，发行流程需要修复。
+- Cargo 设置 `publish = false`；非 Windows 二进制入口尚不可用。
 
-建议采用 **`bili-warden`**，中文显示名“Bilibili 专注守护”。备选为 `bili-sentinel`；若首选被占用，再考虑 `bilibili-focus-warden`。名称可用性尚未核验，正式更名前检查 crates.io 与已有同名项目。
+## 2. P0-A：Windows 系统提醒与倒计时
 
-目标命名：
+提醒由独立 Watchdog 发出，扩展被停用后依然可见。
 
-| 项目 | 名称 |
+| 场景 | 用户体验 |
 | --- | --- |
-| Cargo 包 | `bili-warden` |
-| 用户命令 | `bili-warden` |
+| 浏览器刚启动 | 允许正常启动；短暂去抖后仍未连接才提醒，避免每次开浏览器都弹告警 |
+| 长时间未检测到扩展 | 说明正在等待专注扩展，以及接下来的恢复期限 |
+| 已在线的扩展突然失联 | 发出一次 Windows 通知，并展示恢复倒计时 |
+| 心跳无响应 | 说明连接异常，不直接断言扩展已卸载 |
+| 扩展恢复 | 取消处置、关闭倒计时窗、移除或替换旧提醒 |
+| 浏览器未运行或保护已暂停 | 不发送缺失扩展告警 |
+| 配置、权限、身份识别故障 | 显示独立故障提醒，附带可执行的诊断入口 |
+
+实现重点：
+
+- 接入 Windows 通知中心 Toast，按状态转换触发，同一事件去重，使用稳定 Tag/Group 更新与撤销。
+- 完成用户级通知身份、快捷方式和激活入口的最小系统集成验证。
+- 保留倒计时窗，统一系统字体、DPI、排版和位置；更新剩余时间时不抢键盘焦点。
+- 修复关闭窗口后下一次刷新又立即重现的行为；关闭提醒不隐式取消保护。
+- 提供“查看状态”和“暂停保护”入口，日常提示以用户动作表达，不要求先记住终端命令。
+- 增加通知测试入口，说明当前通知是否被系统设置关闭；系统不展示 Toast 时保留可见的倒计时提示。
+- 通知失败写入诊断，不阻塞监督状态机，也不把 API 调用成功等同于用户已看到通知。
+
+验收：真实桌面、真实安装路径和登录启动进程分别检查未连接、失联、恢复、故障、通知去重、点击动作、免打扰/关闭通知、高 DPI 和焦点行为。自动测试覆盖事件与注册逻辑，系统显示效果需要真实桌面验收。
+
+## 3. P0-B：托盘与日常控制
+
+为用户提供一个“Bilibili 专注守护”入口，内部仍可保留 Host、Watchdog 和 CLI 的职责分工。
+
+托盘状态及菜单：
+
+- 当前状态：保护运行中、等待扩展、已暂停或发生故障。
+- 登记的浏览器及关闭范围，不把同一数据目录的多个 profile 描述成可单独关闭。
+- 启用/暂停保护；启用仍遵守首次握手验证，不能通过托盘绕过已有条件。
+- 打开状态/设置窗口、扩展管理页、诊断与日志目录，以及测试通知。
+- 明确的退出行为：退出前禁用保护并停止 Watchdog；登录启动开关另行显示，避免混淆。
+
+状态/设置窗口与扩展管理页使用同一权威状态，区分“通信已连接”和“保护已生效”。断连、模拟模式、未验证或故障时，不展示保护已生效。
+
+验收：关闭扩展、管理页和终端后仍能通过托盘查看状态并暂停；暂停取消尚未开始执行的处置；恢复保护有清晰反馈；重复启动不产生多个托盘图标。
+
+## 4. P1-A：首次安装、故障处理与维护
+
+### 首次使用
+
+将主要流程整理为一个可连续完成的引导：
+
+1. 选择检测到的 Chrome/Chromium 候选，或手动指定浏览器路径。
+2. 推荐独立数据目录，允许自选；展示实际关闭范围。
+3. 粘贴扩展 ID，给出对应浏览器加载扩展的步骤。
+4. 自动检查主机登记、后台进程、扩展握手和系统通知。
+5. 全部条件满足后，由用户明确启用保护。
+
+开始菜单提供可理解的入口，双击启动后应打开状态或引导界面。没有配置或启动失败时，应有可见说明和下一步操作，不能只留下日志后退出。
+
+### 故障处理
+
+- 将原始错误映射为具体状态：主机未登记、程序未启动、扩展 ID 不匹配、扩展未开启通信、其他安装冲突、浏览器路径失效等。
+- 提供“重新检测”“测试通知”“查看日志”等动作；可修复项经过确认后修复，只改本安装拥有的资源。
+- 提供诊断导出，默认聚焦版本、检查结果和必要日志，不收集浏览记录。
+- 扩展配置明确“保存后生效”，显示正在应用、等待连接与实际生效状态。
+
+### 升级与卸载
+
+- 升级保留目标、时限、验证记录和用户偏好，明确处理中止与恢复的步骤，避免覆盖正在运行的 exe。
+- 替换失败能回滚，界面说明当前仍在使用哪个版本。
+- 卸载清理本安装的主机登记、自启项、通知身份和快捷方式，清楚说明程序文件及数据的保留情况。
+- 用户可选择保留配置和日志；不能删除其他安装或浏览器数据。
+
+验收：全新用户从下载 ZIP 开始完成引导；覆盖中文/空格路径、重复安装、已有登记冲突、路径失效、升级失败与卸载；检查失败时用户是否能仅凭界面继续操作。
+
+## 5. P1-B：以 Windows 交付为中心完善 GitHub CI/CD
+
+这部分继续落实原先的 CI/CD 请求，与 Windows 体验建设配套推进。
+
+- 扩展使用 Node 24，显式执行 `npm run test -- --run`；检查覆盖开发分支和 PR。
+- Windows 运行 fmt、clippy、Rust 测试及 release 构建，安装和浏览器验收按顺序执行。
+- PR 做短时验证；发布前或定时任务运行 310 秒心跳及完整生命周期测试。
+- CI 自动检查通知事件、托盘状态转换和安装资源；真实桌面视觉、登录与休眠场景保留人工验收记录。
+- 修复旧 exe 路径，ZIP 包含三个实际二进制、用户说明和 SHA-256 清单；扩展 ZIP 根目录包含 manifest.json。
+- 手动触发默认生成可下载 artifact；匹配版本标签并通过检查后才创建 Release。
+- 扩展与原生程序保持独立版本，校验各自标签与元数据，失败不发布。
+- 本阶段 Release 只包含已验证的 Windows x64 和扩展产物。
+
+验收：下载 CI 或 Release 产物后，可按 Windows 引导完成配置；后台、通知身份与所有 helper 完整；检查失败不会产生正式 Release。
+
+## 6. P2：命名与 Cargo 安装通道
+
+包名建议继续使用 **`bili-warden`**，发布前核验名称占用。中文名为“Bilibili 专注守护”。
+
+| 用途 | 目标名称 |
+| --- | --- |
+| Cargo 包/用户命令 | `bili-warden` |
 | 后台程序 | `bili-warden-daemon` |
 | Native Host | `bili-warden-host` |
 
-目标安装体验是：
+Windows 体验稳定后，再完成更名、许可证/元数据、发布归档和升级兼容。保留现有 Native Host 名称、协议及配置读取，避免扩展和原生程序必须同时升级。
 
-```powershell
-cargo install bili-warden --locked
-bili-warden install --browser "C:\path\chrome.exe" --user-data-dir "D:\FocusBrowser" --extension-id "<32位扩展ID>" --autostart
-bili-warden start
-bili-warden doctor
-bili-warden enable
-```
+目标安装方式是 `cargo install bili-warden --locked`，当前尚未发布该包。Cargo 安装只放置二进制，显式的安装/引导步骤负责登记、通知身份及登录启动。
 
-这是计划中的命令，当前尚未发布这个包。`cargo install` 只安装三个可执行文件；浏览器登记、系统通知身份与登录启动仍由显式的 `install` 完成。不得让 Cargo 构建脚本修改用户注册表或登录项。
+验收包含 `cargo package --list`、`cargo package`、`cargo publish --dry-run`、空安装目录中的完整安装与卸载，以及三个程序同时可用。crates.io 公开发布是独立、受控动作。尚未支持的平台应有清楚说明，不能安装空实现后显示保护生效。
 
-更名期间保留 `com.bilibili.focus.monitor` 主机名、消息协议及现有数据目录，避免扩展必须同时更换 host name，或丢失已经登记的配置。旧文件名和 CLI 的迁移范围在更名提交中明确；不永久依赖通用的 `monitor.exe` 名称。
+此阶段只保留必要的平台边界，不预先实施 Linux/macOS 后端或全平台 GUI 重构。
 
-## 3. 阶段一：先修复现有 GitHub CI/CD
+## 7. P3：跨平台候选，暂不排期
 
-这一阶段落实原先“添加对应 CI/CD”的请求，先按当前 Windows 实现发布可用产物。
+Linux/macOS 从当前实施阶段移出。保留以下研究方向，Windows 日常体验及交付验收完成后再决定投入：
 
-- 将扩展 CI 的 Node 版本与本地验证环境统一到 Node 24；显式使用 `npm run test -- --run`。
-- Pull Request 覆盖开发分支；分支 push 执行相应检查，并用 concurrency 合并同分支重复检查。
-- 提取可复用的扩展与原生构建步骤，发布任务使用同样的质量检查，避免“CI 测试一套、Release 另编译一套”。
-- Windows 运行 fmt、clippy、Rust 测试、发行构建；下载固定版本 Chrome for Testing，顺序运行安装验收与正式扩展的浏览器验收。
-- 普通 PR 使用短时端到端验证；发布前或定时任务运行 310 秒心跳与完整生命周期验收。
-- 原生 ZIP 包含三个可执行文件、README 和 SHA-256 清单；扩展独立打包，ZIP 根目录必须有 manifest.json。
-- 手动触发默认只构建、测试、上传 artifact；创建公开 Release 只由匹配标签触发。
-- 扩展继续使用 `vX.Y.Z`；原生程序采用独立的 `bili-warden-vX.Y.Z`，避免强行要求扩展 0.0.5 与原生 0.1.0 使用同一版本号。
-- 校验标签与对应 manifest/package/Cargo 版本一致；只有所有必需检查和产物校验通过，才允许发布。
-
-验收：分支/PR、手动构建、扩展标签、原生标签四条路径有明确行为；不再寻找旧 exe；失败不创建 Release；压缩包可按 README 正常安装。
-
-## 4. 阶段二：完善 Windows 系统提醒
-
-通知由 Watchdog 产生，扩展被停用后仍然有效。事件规则：
-
-| 场景 | 提醒行为 |
-| --- | --- |
-| 浏览器刚启动、正在等待扩展 | 正常短暂启动不提醒；短暂去抖后仍未连接，提示扩展尚未检测到 |
-| 启动等待耗尽、进入恢复期 | 提醒剩余恢复时间及即将关闭的登记实例 |
-| 已连接的扩展突然失联 | 立即发出恢复期提醒 |
-| 心跳超时 | 明确说明连接无响应，不断言一定被卸载 |
-| 恢复连接 | 移除/替换失联通知，关闭倒计时窗，取消处置 |
-| 浏览器未运行或本地保护已暂停 | 不发送缺失扩展告警 |
-| 身份不确定、权限或配置故障 | 发送独立故障提醒，不能伪装成“扩展缺失” |
-
-实现：
-
-- 将通知触发从每 100 毫秒刷新窗口改为状态转换事件，同一次失联只首次通知，使用固定 Tag/Group 更新或替换。
-- 增加 Windows 通知中心 Toast，现有倒计时窗保留为可见的恢复提示。
-- 在用户级安装中登记未打包 Win32 程序所需的通知身份及相应快捷方式/激活入口；先用最小实验确认采用的 Windows API 与安装方式。
-- 提供“查看状态/诊断”和“暂停保护”等明确动作；关闭通知本身不改变保护状态。
-- 增加 `notify-test` 或等价诊断命令，检查通知身份及系统通知设置。
-- 通知失败记录具体原因并回退到倒计时窗，不阻塞监督状态机。系统禁用通知或免打扰时，不把“调用 API 成功”宣称为“用户已经看到”。
-
-验收：从真实安装位置、登录启动的进程和 Cargo 安装后的程序分别触发一次未连接、失联、恢复及故障；检查通知中心、去重和动作；断连后即使扩展进程不存在仍能提醒。
-
-## 5. 阶段三：平台结构与 Cargo 发布
-
-先整理最小平台边界，再发布源代码包，避免 Cargo 安装过程中暴露 Windows 导入错误。
-
-- 共用状态机、配置、协议、事件与命令语义。
-- 平台实现围绕四类能力分开：进程识别/关闭、IPC、系统通知、安装与登录启动。不搭建额外的通用插件框架。
-- 不再把 Windows 注册表字段作为所有系统的必填配置；增加明确的配置迁移与兼容读取。
-- Windows 第一版保留完整功能。尚未支持的平台应给出清晰的构建/功能说明；不能安装一个空实现却显示保护已启用。
-- 将 Cargo package、二进制及 CLI 迁移到上面的命名；确认三个 helper 都随 `cargo install` 安装，更新缺失 helper 的诊断。
-- 移除 `publish = false`；补齐 Rust 最低版本、description、repository、readme、keywords/categories 和与仓库声明一致的 MIT 许可证正文。
-- 明确 Cargo package 的 include/exclude：包含源码与构建所需文件，排除 target、浏览器 profile、验收日志、发行 ZIP 与本机配置。
-- 本地运行 `cargo package --list`、`cargo package`、`cargo publish --dry-run`；验证干净源码归档，不依赖仓库外的文件。
-- 在空的 Cargo 安装目录中测试安装、三个可执行文件、浏览器登记、升级与卸载。特别检查 Windows 正在运行的 exe 造成的更新锁定，文档要求升级前 stop。
-- 发布前检查归档内容、名称归属、许可证与版本；真正的 `cargo publish` 是独立发布动作。
-
-CI/CD 增量：原生标签通过验证后才产生 crates.io 发布候选。配置受保护的发布 environment；注册表支持且账号已配置时优先使用 Trusted Publishing，否则使用专用发布 token。公开发布完成后才更新安装说明为可实际运行的 crates.io 命令。
-
-验收：`cargo install bili-warden --locked` 在声明支持的平台上得到完整可用程序；发布归档不含本机数据；Cargo 版本、标签和 Release 包一致。
-
-## 6. 阶段四：Linux 支持
-
-先实现 Linux x86_64，再决定是否增加 ARM64。
-
-- 使用用户私有 Unix Domain Socket，验证对端用户身份，保持现有帧协议。
-- 使用 `/proc` 的可执行文件、cmdline、进程启动时间识别实例；在可用内核上使用 pidfd 固定进程身份，设计旧内核的明确支持边界。
-- 正常退出请求与最终终止分别实现；不能退化为 `pkill chrome`。
-- 使用用户级 Native Messaging manifest、XDG 数据目录及 systemd --user 登录管理。
-- 使用桌面 D-Bus 通知；没有通知服务或没有图形会话时明确报告状态。
-- 验证 Chrome/Chromium 的普通安装；Flatpak/Snap 沙箱的主机可见性单独评估，未验证前不承诺支持。
-
-验收：Linux 桌面环境中完成与 Windows 对等的握手、通知、停用/卸载、暂停、正常退出、重新启动、实例隔离与登录管理测试。CI 可使用隔离图形会话，但不能仅凭 headless 编译测试声明桌面通知可用。
-
-## 7. 阶段五：macOS 支持
-
-优先 Apple Silicon，之后补充 Intel。
-
-- 使用 Unix Domain Socket 与用户权限隔离。
-- 使用 macOS 进程信息 API、路径与启动时间关联实例；重新核对身份后才进行退出/终止。
-- 使用用户 Library 下的 Native Messaging 配置、Application Support 数据目录和 LaunchAgent。
-- 验证系统通知身份、授权和登录进程的实际显示行为；核实是否需要应用包或独立通知 helper。
-- 将进程监督和通知界面所需权限分开，先确认正常关闭的权限需求，避免无依据地要求管理员或辅助功能权限。
-- GitHub Release 的签名、公证和 Gatekeeper 体验单独验收；没有签名时明确说明分发状态。
-
-验收：真实 macOS 桌面运行完整生命周期与系统通知测试，再发布该平台包。
-
-## 8. 平台发布矩阵
-
-| 平台 | 目标架构 | 发布条件 |
+| 平台 | 候选目标 | 关键待实现能力 |
 | --- | --- | --- |
-| Windows | x86_64-pc-windows-msvc | 当前实现基础上补齐系统提醒，持续运行完整验收 |
-| Linux | x86_64-unknown-linux-gnu | Linux 后端和桌面通知验收完成 |
-| macOS Apple Silicon | aarch64-apple-darwin | macOS 后端、通知和分发体验验收完成 |
-| Windows ARM64 / Linux ARM64 / macOS Intel | 对应 Rust target | 后续增加，不仅靠交叉编译开启 Release |
+| Linux | x86_64-unknown-linux-gnu | Unix Socket、进程身份、用户服务、Native Messaging 登记和桌面通知 |
+| macOS | aarch64-apple-darwin | Unix Socket、进程身份、LaunchAgent、通知授权及分发体验 |
+| 其他架构 | Windows ARM64 / Linux ARM64 / macOS Intel | 对应硬件、原生能力与运行验收 |
 
-每个平台的版本产物包含相应可执行文件、使用说明和校验清单。Cargo 源代码包与 GitHub 二进制包使用同一版本源码，但不把“能编译”当作“实际监督及通知已经支持”。
+只有对应平台的真实监督、通知和安装通过验收后才发布二进制。跨平台编译检查可以后续加入，但不能以此宣称完整支持。
+
+## 8. 当前阶段完成标准
+
+- 用户能从 Windows 入口完成安装和连接，理解保护范围及实际状态。
+- 扩展缺失/失联时有一次清晰的系统提醒，恢复后不残留错误倒计时。
+- 不打开终端也能查看、暂停和恢复保护。
+- 启动或配置失败有可见的原因与修复入口。
+- 升级保留配置，卸载清理本安装的系统登记。
+- 真实有界面浏览器、高 DPI、登录启动与休眠恢复均有验收记录。
+- Windows CI/CD 能稳定交付已验证的产物；每个功能独立测试和提交。
 
 ## 9. 提交顺序
 
-1. `ci: repair extension and native release packaging`
-2. `refactor: isolate notification and platform events`
-3. `feat(windows): notify on missing extension and connection loss`
-4. `feat: name and package bili-warden for cargo installation`
-5. `ci: validate crate packaging and gate registry publication`
-6. `feat(linux): add supervision installation and desktop notifications`
-7. `ci(linux): test lifecycle and publish validated binaries`
-8. `feat(macos): add supervision launch agent and notifications`
-9. `ci(macos): build and release verified platform artifacts`
+1. `refactor(windows): drive notifications from supervision events`
+2. `feat(windows): add system notifications and improve countdown behavior`
+3. `feat(windows): add tray status and pause controls`
+4. `feat(windows): add first-run setup and actionable diagnostics`
+5. `feat(windows): preserve configuration across upgrade and clean owned registrations`
+6. `ci: repair and verify Windows and extension release packaging`
+7. `feat: package bili-warden for Windows cargo installation`
+8. `ci: validate crate archives and gate registry publication`
 
-每一步有自己的验收和 Git commit。通知先做最小系统集成验证；平台未通过真实运行验收时，不发布该平台的完整支持声明。
+Linux/macOS 不列入本阶段提交序列。
