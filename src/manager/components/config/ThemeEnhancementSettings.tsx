@@ -14,9 +14,9 @@ export function ThemeEnhancementSettings({ config, updateConfig }: ThemeEnhancem
   };
 
   return (
-    <div className="bg-gray-800 p-4 rounded-lg">
+    <div className="bg-secondary p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">🌓 主题增强</h3>
-      <p className="text-sm text-gray-400 mb-3">
+      <p className="text-sm text-tertiary mb-3">
         主题和封面相关增强功能
       </p>
       
@@ -31,7 +31,7 @@ export function ThemeEnhancementSettings({ config, updateConfig }: ThemeEnhancem
           />
           <span>夜间模式跟随系统</span>
         </label>
-        <p className="text-xs text-gray-500 ml-6">
+        <p className="text-xs text-muted ml-6">
           自动跟随系统深色模式设置
         </p>
 
@@ -45,7 +45,7 @@ export function ThemeEnhancementSettings({ config, updateConfig }: ThemeEnhancem
           />
           <span>替换标题党封面</span>
         </label>
-        <p className="text-xs text-gray-500 ml-6">
+        <p className="text-xs text-muted ml-6">
           用视频预览帧替换夸张的封面图片
         </p>
       </div>

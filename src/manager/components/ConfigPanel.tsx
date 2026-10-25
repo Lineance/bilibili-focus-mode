@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { DEFAULT_CONFIG } from '@core/constants';
 import { ConfigService } from '@core/services';
 import type { ExtensionConfig } from '@core/types';
+import { Button, PageIntro, toast } from '@ui';
 
 import { TimeWindowSettings } from './config/TimeWindowSettings';
 import { LimboSettings } from './config/LimboSettings';
@@ -38,55 +39,57 @@ export function ConfigPanel(): React.JSX.Element {
     const result = await configService.saveConfig(config);
     if (result.ok) {
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      toast.success('配置已保存');
+      window.setTimeout(() => setSaved(false), 2000);
     } else {
       const errors = result.error.details as { field: string; message: string }[] | undefined;
-      alert('保存失败：' + errors?.map(e => e.message).join(', '));
+      toast.error('保存失败：' + (errors?.map((e) => e.message).join('，') ?? '未知错误'));
     }
   };
 
   const handleReset = async () => {
-    if (confirm('确定要重置为默认配置吗？')) {
-      await configService.resetToDefaults();
-      const defaultConfig = await configService.loadConfig();
-      setConfig(defaultConfig);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+    if (!confirm('确定要重置为默认配置吗？')) {
+      return;
     }
+    await configService.resetToDefaults();
+    const defaultConfig = await configService.loadConfig();
+    setConfig(defaultConfig);
+    setSaved(true);
+    toast.success('已重置为默认配置');
+    window.setTimeout(() => setSaved(false), 2000);
   };
 
   const descriptions = configService.getConfigDescriptions();
 
   const updateConfig = (field: keyof ExtensionConfig, value: unknown) => {
-    setConfig(prev => ({ ...prev, [field]: value }));
+    setConfig((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">配置</h2>
+      <PageIntro
+        eyebrow="Settings"
+        title="配置"
+        description="所有规则保存在本地。修改后需要点击「保存配置」才会生效。"
+      />
+
+      <div className="sticky top-[73px] z-20 -mx-1 mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-secondary px-4 py-3 backdrop-blur"
+        style={{ background: 'color-mix(in srgb, var(--fm-bg-primary) 88%, transparent)' }}
+      >
+        <p className="text-[12px] text-tertiary">
+          {saved ? '✓ 已保存' : '修改后记得保存'}
+        </p>
         <div className="flex gap-2">
-          {saved && (
-            <span className="px-3 py-1 bg-green-600 rounded text-sm">
-              ✓ 已保存
-            </span>
-          )}
-          <button
-            onClick={handleReset}
-            className="px-3 py-1 bg-tertiary border border-secondary rounded text-sm hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <Button variant="ghost" size="sm" icon="history" onClick={handleReset}>
             重置默认
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-3 py-1 bg-accent-primary rounded text-sm hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          </Button>
+          <Button variant="primary" size="sm" icon="check" onClick={handleSave}>
             保存配置
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="grid gap-4">
+      <div className="fm-config">
         <TimeWindowSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <LimboSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <InstantSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />

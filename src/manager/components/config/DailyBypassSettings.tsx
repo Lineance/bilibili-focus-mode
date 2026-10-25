@@ -8,9 +8,9 @@ interface DailyBypassSettingsProps {
 
 export function DailyBypassSettings({ config, updateConfig, descriptions }: DailyBypassSettingsProps): React.JSX.Element {
   return (
-    <div className="bg-gray-800 p-4 rounded-lg">
+    <div className="bg-secondary p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">🎫 每日放行</h3>
-      <p className="text-sm text-gray-400 mb-3">
+      <p className="text-sm text-tertiary mb-3">
         允许每天使用指定次数的放行功能，暂时跳过视频拦截
       </p>
       <div className="space-y-3">
@@ -27,7 +27,7 @@ export function DailyBypassSettings({ config, updateConfig, descriptions }: Dail
         {config.dailyBypassEnabled && (
           <div className="grid grid-cols-2 gap-4 ml-6">
             <div>
-              <label className="block text-sm text-gray-400 mb-1">
+              <label className="block text-sm text-tertiary mb-1">
                 {descriptions.dailyBypassQuota.label}
               </label>
               <input
@@ -37,11 +37,11 @@ export function DailyBypassSettings({ config, updateConfig, descriptions }: Dail
                 min={descriptions.dailyBypassQuota.min}
                 max={descriptions.dailyBypassQuota.max}
                 step={descriptions.dailyBypassQuota.step}
-                className="w-full px-3 py-2 bg-gray-700 rounded"
+                className="w-full px-3 py-2 bg-tertiary rounded"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">
+              <label className="block text-sm text-tertiary mb-1">
                 {descriptions.dailyBypassDurationMinutes.label}
               </label>
               <input
@@ -51,7 +51,7 @@ export function DailyBypassSettings({ config, updateConfig, descriptions }: Dail
                 min={descriptions.dailyBypassDurationMinutes.min}
                 max={descriptions.dailyBypassDurationMinutes.max}
                 step={descriptions.dailyBypassDurationMinutes.step}
-                className="w-full px-3 py-2 bg-gray-700 rounded"
+                className="w-full px-3 py-2 bg-tertiary rounded"
               />
             </div>
           </div>

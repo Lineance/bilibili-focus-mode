@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180" role="img" aria-label="无封面">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#171d28"/>
+      <stop offset="1" stop-color="#0a0d13"/>
+    </linearGradient>
+    <pattern id="p" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="8" height="16" fill="#ffffff" opacity="0.03"/>
+    </pattern>
+  </defs>
+  <rect width="320" height="180" fill="url(#g)"/>
+  <rect width="320" height="180" fill="url(#p)"/>
+  <g fill="none" stroke="#3a4558" stroke-width="2">
+    <rect x="128" y="66" width="64" height="48" rx="6"/>
+    <path d="M160 82l20 14-20 14z" fill="#3a4558" stroke="none"/>
+  </g>
+</svg>

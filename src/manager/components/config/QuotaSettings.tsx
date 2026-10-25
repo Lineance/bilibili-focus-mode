@@ -8,11 +8,11 @@ interface QuotaSettingsProps {
 
 export function QuotaSettings({ config, updateConfig, descriptions }: QuotaSettingsProps): React.JSX.Element {
   return (
-    <div className="bg-gray-800 p-4 rounded-lg">
+    <div className="bg-secondary p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">📊 配额</h3>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">
+          <label className="block text-sm text-tertiary mb-1">
             {descriptions.dailyInstantQuota.label}
           </label>
           <input
@@ -21,7 +21,7 @@ export function QuotaSettings({ config, updateConfig, descriptions }: QuotaSetti
             onChange={(e) => updateConfig('dailyInstantQuota', parseInt(e.target.value))}
             min={0}
             max={100}
-            className="w-full px-3 py-2 bg-gray-700 rounded"
+            className="w-full px-3 py-2 bg-tertiary rounded"
           />
         </div>
       </div>

@@ -39,6 +39,7 @@ export default defineConfig({
       '@background': resolve(__dirname, 'src/background'),
       '@manager': resolve(__dirname, 'src/manager'),
       '@popup': resolve(__dirname, 'src/popup'),
+      '@ui': resolve(__dirname, 'src/ui'),
     },
   },
 });

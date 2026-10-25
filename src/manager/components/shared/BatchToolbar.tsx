@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button, Icon } from '@ui';
 
 export const BatchToolbar = React.memo(function BatchToolbar({
   selectedCount,
@@ -16,27 +17,25 @@ export const BatchToolbar = React.memo(function BatchToolbar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-secondary border border-secondary rounded-lg px-6 py-3 flex items-center gap-4 shadow-lg z-50">
-      <span className="text-sm">已选择 {selectedCount} 项</span>
-      <div className="flex gap-2">
-        <button
-          onClick={onSelectAll}
-          className="px-3 py-1 bg-tertiary border border-secondary rounded text-sm hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+    <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
+      <div
+        className="flex items-center gap-3 rounded-full border border-secondary px-4 py-2 shadow-xl backdrop-blur"
+        style={{ background: 'color-mix(in srgb, var(--fm-bg-secondary) 96%, transparent)' }}
+      >
+        <span className="flex items-center gap-1.5 text-[12.5px] text-secondary">
+          <Icon name="check" size={14} />
+          已选择 <span className="font-mono text-primary">{selectedCount}</span> 项
+        </span>
+        <div className="h-4 w-px bg-[var(--fm-border-secondary)]" />
+        <Button variant="subtle" size="sm" onClick={onSelectAll}>
           全选 ({totalCount})
-        </button>
-        <button
-          onClick={onClearSelection}
-          className="px-3 py-1 bg-tertiary border border-secondary rounded text-sm hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+        </Button>
+        <Button variant="subtle" size="sm" onClick={onClearSelection}>
           取消选择
-        </button>
-        <button
-          onClick={onDeleteSelected}
-          className="px-3 py-1 bg-error text-white rounded text-sm hover:bg-error/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+        </Button>
+        <Button variant="danger" size="sm" icon="trash" onClick={onDeleteSelected}>
           批量删除
-        </button>
+        </Button>
       </div>
     </div>
   );

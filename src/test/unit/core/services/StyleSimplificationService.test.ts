@@ -141,9 +141,11 @@ describe('StyleSimplificationService', () => {
       expect(css.length).toBeGreaterThan(0);
     });
 
-    it('should contain header hiding rules', () => {
+    it('should not hide the global site header', () => {
       const css = service.generateGlobalStyles();
-      expect(css).toContain('#bili-header-container');
+      // The header must remain visible: hiding it unconditionally is a display bug
+      // that also breaks navigation on pages without simplification enabled.
+      expect(css).not.toContain('#bili-header-container');
     });
   });
 

@@ -7,7 +7,7 @@ export class DynamicCSSGenerator {
     if (options.hideLiveStreams) {
       rules.push(`
         .live-card, .live-box, .living-box,
-        [class*="live-"], [class*="living"],
+        .bili-dyn-live-card,
         .bili-dyn-item[data-type="live"],
         .dyn-live {
           display: none !important;
@@ -18,7 +18,7 @@ export class DynamicCSSGenerator {
     if (options.hideRecommendations) {
       rules.push(`
         .rcmd-box, .recommend-box,
-        [class*="recommend"], [class*="rcmd"],
+        .bili-dyn-recommend-card,
         .bili-dyn-item[data-type="recommend"] {
           display: none !important;
         }
@@ -28,7 +28,6 @@ export class DynamicCSSGenerator {
     if (options.hideAds) {
       rules.push(`
         .ad-report, .ad-floor,
-        [class*="ad-"], [class*="advertisement"],
         .bili-dyn-item[data-type="ad"] {
           display: none !important;
         }

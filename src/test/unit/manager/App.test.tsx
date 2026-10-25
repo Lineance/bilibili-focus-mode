@@ -68,22 +68,22 @@ describe('Manager App', () => {
     render(<App />);
     
     expect(screen.getByText('Bilibili Focus Mode')).toBeTruthy();
-    expect(screen.getByText('意图性娱乐时间管理工具')).toBeTruthy();
+    expect(screen.getByText('意图性娱乐 · 时间资产管理')).toBeTruthy();
   });
 
   it('should render navigation tabs', () => {
     render(<App />);
     
-    expect(screen.getByText('待审池')).toBeTruthy();
-    expect(screen.getByText('即时许可')).toBeTruthy();
-    expect(screen.getByText('永久分组')).toBeTruthy();
-    expect(screen.getByText('统计')).toBeTruthy();
+    expect(screen.getAllByText('待审池').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('即时许可').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('永久分组').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('统计').length).toBeGreaterThanOrEqual(1);
   });
 
   it('should show empty limbo message', () => {
     render(<App />);
     
-    expect(screen.getByText('待审池为空，在B站播放页添加视频')).toBeTruthy();
+    expect(screen.getByText('待审池为空')).toBeTruthy();
   });
 
   it('should switch tabs when clicked', () => {
@@ -113,7 +113,7 @@ describe('Manager App', () => {
     expect(screen.getByText('Test Video')).toBeTruthy();
     expect(screen.getByText('Test Uploader')).toBeTruthy();
     // Check for tag display and action buttons
-    expect(screen.getByText('🎮 娱乐')).toBeTruthy();
+    expect(screen.getAllByText(/娱乐/).length).toBeGreaterThanOrEqual(1);
     // Use getAllByText for buttons that also appear in nav
     expect(screen.getAllByText('永久').length).toBeGreaterThan(0);
     expect(screen.getAllByText('立即').length).toBeGreaterThan(0);
@@ -156,8 +156,8 @@ describe('Manager App', () => {
     expect(screen.getByText('屏幕使用时间')).toBeTruthy();
     expect(screen.getByText(/观看时间健康|观看时间较多/)).toBeTruthy();
     // Check for watch time statistics
-    expect(screen.getAllByText('娱乐').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('学习').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/娱乐/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/学习/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('should show bankruptcy warning', () => {
@@ -178,7 +178,7 @@ describe('Manager App', () => {
     
     fireEvent.click(screen.getByText('统计'));
     
-    expect(screen.getByText('⚠️ 已接近今日观看限额')).toBeTruthy();
+    expect(screen.getByText('已接近今日观看限额')).toBeTruthy();
   });
 
   describe('Limbo Review Actions', () => {
@@ -268,11 +268,9 @@ describe('Manager App', () => {
       render(<App />);
       fireEvent.click(screen.getByText('永久分组'));
       
-      // Check for the two-column layout with learning and entertainment sections
-      expect(screen.getByText('📚')).toBeTruthy();
-      expect(screen.getByText('🎮')).toBeTruthy();
-      expect(screen.getByText('学习 (1)')).toBeTruthy();
-      expect(screen.getByText('娱乐 (1)')).toBeTruthy();
+      // Check for the grouped sections
+      expect(screen.getAllByText(/学习/).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(/娱乐/).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText('Learning Video')).toBeTruthy();
       expect(screen.getByText('Entertainment Video')).toBeTruthy();
       expect(screen.getByText('Uploader')).toBeTruthy();

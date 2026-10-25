@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { MS_PER_MINUTE } from '@core/constants';
 import type { DebtAccount, ExtensionConfig, WatchRecord } from '@core/types';
 import { useNow } from '@hooks/useNow';
+import { Card, Icon, Progress, StatusChip } from '@ui';
 
 interface DebtStatusProps {
   account: DebtAccount;
@@ -18,9 +19,7 @@ interface TimeStats {
 
 function getTimeRange(type: 'today' | 'week' | 'month'): number {
   const now = new Date();
-  if (type === 'today') {
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  }
+  if (type === 'today') return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   if (type === 'week') {
     const day = now.getDay() || 7;
     return new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1).getTime();
@@ -30,31 +29,37 @@ function getTimeRange(type: 'today' | 'week' | 'month'): number {
 
 function aggregateByPeriod(history: WatchRecord[], since: number): TimeStats {
   const stats: TimeStats = { entertainment: 0, learning: 0, music: 0, total: 0 };
-  for (const r of history) {
-    if (r.startedAt < since) continue;
-    if (r.tag === 'ENTERTAINMENT') stats.entertainment += r.totalMinutes;
-    else if (r.tag === 'LEARNING') stats.learning += r.totalMinutes;
-    else if (r.tag === 'MUSIC') stats.music += r.totalMinutes;
-    stats.total += r.totalMinutes;
+  for (const record of history) {
+    if (record.startedAt < since) continue;
+    if (record.tag === 'ENTERTAINMENT') stats.entertainment += record.totalMinutes;
+    else if (record.tag === 'LEARNING') stats.learning += record.totalMinutes;
+    else if (record.tag === 'MUSIC') stats.music += record.totalMinutes;
+    stats.total += record.totalMinutes;
   }
   return stats;
 }
 
 function formatMinutes(m: number): string {
-  if (m < 60) return `${Math.round(m)}分钟`;
+  if (m < 60) return `${Math.round(m)} 分钟`;
   const h = Math.floor(m / 60);
   const min = Math.round(m % 60);
-  return min > 0 ? `${h}小时${min}分` : `${h}小时`;
+  return min > 0 ? `${h} 小时 ${min} 分` : `${h} 小时`;
 }
 
-function TimeStatsRow({ label, stats }: { label: string; stats: TimeStats }) {
+function PeriodRow({ label, stats }: { label: string; stats: TimeStats }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-secondary last:border-0">
-      <span className="text-secondary text-sm">{label}</span>
-      <div className="flex gap-3 text-sm">
-        <span className="text-warning">🎮{formatMinutes(stats.entertainment)}</span>
-        <span className="text-info">🎵{formatMinutes(stats.music)}</span>
-        <span className="text-success">📚{formatMinutes(stats.learning)}</span>
+    <div className="flex items-center justify-between border-b border-secondary py-2.5 last:border-0">
+      <span className="text-[12px] text-tertiary">{label}</span>
+      <div className="flex gap-3">
+        <span className="font-mono text-[11.5px] tabular-nums" style={{ color: 'var(--fm-warning)' }}>
+          娱乐 {Math.round(stats.entertainment)}
+        </span>
+        <span className="font-mono text-[11.5px] tabular-nums" style={{ color: 'var(--fm-info)' }}>
+          音乐 {Math.round(stats.music)}
+        </span>
+        <span className="font-mono text-[11.5px] tabular-nums" style={{ color: 'var(--fm-success)' }}>
+          学习 {Math.round(stats.learning)}
+        </span>
       </div>
     </div>
   );
@@ -88,43 +93,73 @@ export function DebtStatus({ account, config, watchHistory }: DebtStatusProps): 
   };
 
   return (
-    <div className="card">
-      <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 cursor-pointer" onClick={openStats}>
-        <span>📊</span>
-        <span>观看统计</span>
-        <span className="text-xs text-muted ml-auto">点击查看详情 →</span>
-      </h2>
+    <Card>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <p className="fm-label">债务账户</p>
+          <h2 className="mt-1.5 text-[20px]">观看统计</h2>
+        </div>
+        <button
+          type="button"
+          onClick={openStats}
+          className="flex items-center gap-1.5 rounded-full border border-secondary px-3 py-1.5 text-[11.5px] text-tertiary transition-colors hover:text-primary"
+        >
+          详情
+          <Icon name="arrowRight" size={13} />
+        </button>
+      </div>
 
-      {/* 主债务显示 */}
-      <div className={`p-4 rounded-lg mb-4 ${effectiveBankrupt ? 'bg-error/20 border border-error/50' : 'bg-tertiary'}`}>
-        <div className="flex items-center justify-between">
+      <div
+        className="rounded-xl border p-4"
+        style={{
+          background: effectiveBankrupt
+            ? 'color-mix(in srgb, var(--fm-error) 9%, transparent)'
+            : 'var(--fm-bg-tertiary)',
+          borderColor: effectiveBankrupt
+            ? 'color-mix(in srgb, var(--fm-error) 35%, transparent)'
+            : 'var(--fm-border-secondary)',
+        }}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="text-3xl font-bold mb-1">
-              {debt < 0
-                ? `信用额度: ${Math.abs(debt).toFixed(1)} 分钟`
-                : `${debt.toFixed(1)} 分钟`}
+            <p className="fm-label">{debt < 0 ? '可用信用额度' : '当前债务'}</p>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="fm-stat__value text-[30px]">
+                {Math.abs(debt).toFixed(1)}
+              </span>
+              <span className="text-[12px] text-tertiary">分钟</span>
             </div>
-            <p className="text-sm text-secondary">
-              {effectiveBankrupt
-                ? '⚠️ 已破产，暂停新申请'
-                : debt > config.maxDebtMinutes * 0.5
-                  ? '债务较高，建议观看学习类视频'
-                  : '债务状况良好'}
-            </p>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-muted">累计观看</p>
-            <p className="text-xl font-bold">{formatMinutes(totalStats.total)}</p>
+          <StatusChip
+            tone={effectiveBankrupt ? 'error' : debt > config.maxDebtMinutes * 0.5 ? 'warning' : 'success'}
+            icon={effectiveBankrupt ? 'alert' : 'check'}
+          >
+            {effectiveBankrupt
+              ? '已破产，暂停新申请'
+              : debt > config.maxDebtMinutes * 0.5
+                ? '债务较高，建议学习偿还'
+                : '债务状况良好'}
+          </StatusChip>
+        </div>
+
+        <div className="mt-4">
+          <Progress
+            value={Math.max(0, debt)}
+            max={config.maxDebtMinutes}
+            tone={effectiveBankrupt ? 'error' : debt > config.maxDebtMinutes * 0.5 ? 'warning' : 'success'}
+          />
+          <div className="mt-2 flex justify-between text-[11px] text-muted">
+            <span>破产阈值 {config.maxDebtMinutes} 分钟</span>
+            <span>累计观看 {formatMinutes(totalStats.total)}</span>
           </div>
         </div>
       </div>
 
-      {/* 分时段统计 */}
-      <div className="bg-tertiary rounded-lg p-4">
-        <TimeStatsRow label="📅 今日" stats={todayStats} />
-        <TimeStatsRow label="📆 本周" stats={weekStats} />
-        <TimeStatsRow label="🗓️ 本月" stats={monthStats} />
+      <div className="mt-4 rounded-xl bg-tertiary px-4 py-2">
+        <PeriodRow label="今日" stats={todayStats} />
+        <PeriodRow label="本周" stats={weekStats} />
+        <PeriodRow label="本月" stats={monthStats} />
       </div>
-    </div>
+    </Card>
   );
 }

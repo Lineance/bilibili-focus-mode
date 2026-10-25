@@ -99,7 +99,7 @@ export class SearchBoxManager {
   }
 
   private mount(keyword: string, centered: boolean): void {
-    this.remove();
+    this.unmountContent();
 
     this.container = document.createElement('div');
     this.container.id = 'bilibili-focus-mode-searchbox-host';
@@ -111,7 +111,7 @@ export class SearchBoxManager {
     );
   }
 
-  remove(): void {
+  private unmountContent(): void {
     if (this.root) {
       this.root.unmount();
       this.root = null;
@@ -120,6 +120,10 @@ export class SearchBoxManager {
       this.container.remove();
       this.container = null;
     }
+  }
+
+  remove(): void {
+    this.unmountContent();
     if (this.styleEl) {
       this.styleEl.remove();
       this.styleEl = null;

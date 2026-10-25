@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
-import { VideoTag, type AllowedUploader } from '@core/types';
+import { type AllowedUploader, type VideoTag } from '@core/types';
 import { StorageRepository } from '@core/storage/StorageRepository';
+import {
+  Button,
+  Card,
+  EmptyState,
+  Icon,
+  SectionHeader,
+  TagChip,
+  confirmAction,
+  toast,
+} from '@ui';
 
-const TAG_OPTIONS: { value: VideoTag; label: string; emoji: string }[] = [
-  { value: 'LEARNING', label: '学习', emoji: '📚' },
-  { value: 'MUSIC', label: '音乐', emoji: '🎵' },
-  { value: 'ENTERTAINMENT', label: '娱乐', emoji: '🎮' },
+const TAG_OPTIONS: { value: VideoTag; label: string }[] = [
+  { value: 'LEARNING', label: '学习' },
+  { value: 'MUSIC', label: '音乐' },
+  { value: 'ENTERTAINMENT', label: '娱乐' },
 ];
-
-const TAG_STYLES: Record<VideoTag, string> = {
-  LEARNING: 'bg-success',
-  MUSIC: 'bg-info',
-  ENTERTAINMENT: 'bg-warning',
-};
 
 export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] }): React.JSX.Element {
   const [newUploaderName, setNewUploaderName] = useState('');
@@ -20,162 +24,164 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const handleAdd = async () => {
-    if (!newUploaderName.trim()) return;
+    const name = newUploaderName.trim();
+    if (!name) return;
 
     try {
       const { allowedUploaders: currentUploaders } = await StorageRepository.getKeys('allowedUploaders');
 
-      if (currentUploaders.some((u) => u.name === newUploaderName.trim())) {
-        console.warn('[UploaderAllowlist] 该 UP 主已在白名单中');
+      if (currentUploaders.some((uploader) => uploader.name === name)) {
+        toast.error('该 UP 主已在白名单中');
         return;
       }
 
       const newUploader: AllowedUploader = {
         id: `uploader_${Date.now()}`,
-        name: newUploaderName.trim(),
+        name,
         tag: selectedTag,
         addedAt: Date.now(),
       };
 
-      await StorageRepository.set({
-        allowedUploaders: [...currentUploaders, newUploader],
-      });
-
+      await StorageRepository.set({ allowedUploaders: [...currentUploaders, newUploader] });
       setNewUploaderName('');
-      console.info('[UploaderAllowlist] 添加成功！');
+      toast.success(`已添加 ${name}`);
     } catch (error) {
       console.error('[UploaderAllowlist] Failed to add uploader:', error);
-      alert('添加失败，请重试');
+      toast.error('添加失败，请重试');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('确定要移除这个 UP 主吗？')) return;
+  const handleDelete = async (uploader: AllowedUploader) => {
+    const ok = await confirmAction({
+      title: '移除 UP 主',
+      description: `确定要将「${uploader.name}」移出白名单吗？其视频将重新需要审批。`,
+      confirmLabel: '移除',
+      danger: true,
+    });
+    if (!ok) return;
 
     try {
-      await StorageRepository.update('allowedUploaders', (current) =>
-        current.filter((u) => u.id !== id)
-      );
+      await StorageRepository.update('allowedUploaders', (current) => current.filter((item) => item.id !== uploader.id));
+      toast.success('已移除');
     } catch (error) {
       console.error('[UploaderAllowlist] Failed to delete uploader:', error);
-      alert('删除失败，请重试');
+      toast.error('删除失败，请重试');
     }
   };
 
   const handleTagChange = async (id: string, newTag: VideoTag) => {
     try {
       await StorageRepository.update('allowedUploaders', (current) =>
-        current.map((u) => u.id === id ? { ...u, tag: newTag } : u)
+        current.map((uploader) => (uploader.id === id ? { ...uploader, tag: newTag } : uploader))
       );
-
       setEditingId(null);
     } catch (error) {
       console.error('[UploaderAllowlist] Failed to update tag:', error);
-      alert('更新失败，请重试');
+      toast.error('更新失败，请重试');
     }
   };
 
   const handleClearAll = async () => {
-    if (!confirm('确定要清空所有UP主吗？')) return;
+    const ok = await confirmAction({
+      title: '清空 UP 主白名单',
+      description: '所有白名单都会被移除。',
+      confirmLabel: '清空',
+      danger: true,
+    });
+    if (!ok) return;
+
     try {
       await StorageRepository.set({ allowedUploaders: [] });
+      toast.success('已清空');
     } catch (error) {
       console.error('[UploaderAllowlist] Failed to clear uploaders:', error);
-      alert('清空失败，请重试');
+      toast.error('清空失败，请重试');
     }
   };
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">UP主白名单</h2>
-        {uploaders.length > 0 && (
-          <button
-            onClick={handleClearAll}
-            className="px-3 py-1 bg-error text-white rounded text-sm hover:bg-error/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            清空所有
-          </button>
-        )}
-      </div>
+      <SectionHeader
+        title="UP 主白名单"
+        icon="user"
+        count={uploaders.length}
+        description="白名单 UP 主的视频会自动放行，并按标签计入债务/偿还。"
+        actions={
+          uploaders.length > 0 ? (
+            <Button variant="danger" size="sm" icon="trash" onClick={handleClearAll}>
+              清空所有
+            </Button>
+          ) : undefined
+        }
+      />
 
-      {/* Add new uploader */}
-      <div className="bg-secondary p-4 rounded-lg mb-4">
-        <h3 className="text-lg font-medium mb-3">添加UP主</h3>
-        <div className="flex gap-3 flex-wrap">
+      <Card className="mb-5">
+        <p className="mb-3 text-[13px] font-medium">添加 UP 主</p>
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="text"
             value={newUploaderName}
             onChange={(e) => setNewUploaderName(e.target.value)}
-            placeholder="输入UP主名称"
-            className="flex-1 min-w-[200px] px-3 py-2 bg-tertiary rounded"
+            onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+            placeholder="输入 UP 主名称（需与 B 站显示名一致）"
+            className="min-w-[220px] flex-1"
           />
-          <select
-            value={selectedTag}
-            onChange={(e) => setSelectedTag(e.target.value as VideoTag)}
-            className="px-3 py-2 bg-tertiary rounded"
-          >
-            {TAG_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.emoji} {opt.label}
+          <select value={selectedTag} onChange={(e) => setSelectedTag(e.target.value as VideoTag)} aria-label="默认标签">
+            {TAG_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
-          <button
-            onClick={handleAdd}
-            className="px-4 py-2 bg-accent-primary rounded hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <Button variant="primary" icon="plus" onClick={handleAdd} disabled={!newUploaderName.trim()}>
             添加
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
-      {/* Uploader list */}
       {uploaders.length === 0 ? (
-        <p className="text-muted">暂无UP主白名单</p>
+        <EmptyState icon="user" title="暂无 UP 主白名单" description="把长期信任的 UP 主加入白名单，减少反复审批。" />
       ) : (
-        <div className="grid gap-3">
+        <div className="grid gap-2.5">
           {uploaders.map((uploader) => (
-            <div
-              key={uploader.id}
-              className="bg-secondary p-4 rounded-lg flex justify-between items-center"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">👤</span>
-                <div>
-                  <p className="font-medium">{uploader.name}</p>
-                  {editingId === uploader.id ? (
-                    <select
-                      value={uploader.tag}
-                      onChange={(e) => handleTagChange(uploader.id, e.target.value as VideoTag)}
-                      onBlur={() => setEditingId(null)}
-                      autoFocus
-                      className="px-2 py-1 bg-tertiary rounded border border-primary text-sm"
-                    >
-                      {TAG_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.emoji} {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <button
-                      onClick={() => setEditingId(uploader.id)}
-                      className={`px-2 py-0.5 rounded text-xs cursor-pointer hover:opacity-80 transition-opacity ${TAG_STYLES[uploader.tag]}`}
-                      title="点击修改标签"
-                    >
-                      {TAG_OPTIONS.find((opt) => opt.value === uploader.tag)?.emoji}{' '}
-                      {TAG_OPTIONS.find((opt) => opt.value === uploader.tag)?.label}
-                    </button>
-                  )}
-                </div>
+            <div key={uploader.id} className="fm-row items-center">
+              <span className="grid h-9 w-9 flex-none place-items-center rounded-full bg-tertiary text-secondary">
+                <Icon name="user" size={16} />
+              </span>
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-medium">{uploader.name}</p>
+                <p className="mt-0.5 text-[11px] text-muted">
+                  添加于 {new Date(uploader.addedAt).toLocaleDateString('zh-CN')}
+                </p>
               </div>
-              <button
-                onClick={() => handleDelete(uploader.id)}
-                className="px-3 py-1 bg-error text-white rounded text-sm hover:bg-error/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                移除
-              </button>
+
+              <div className="flex shrink-0 items-center gap-2">
+                {editingId === uploader.id ? (
+                  <select
+                    value={uploader.tag}
+                    onChange={(e) => handleTagChange(uploader.id, e.target.value as VideoTag)}
+                    onBlur={() => setEditingId(null)}
+                    autoFocus
+                    className="min-h-8 py-1 text-[12px]"
+                    aria-label="标签"
+                  >
+                    {TAG_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <button type="button" onClick={() => setEditingId(uploader.id)} title="点击修改标签">
+                    <TagChip tag={uploader.tag} />
+                  </button>
+                )}
+
+                <Button variant="subtle" size="sm" icon="trash" onClick={() => handleDelete(uploader)}>
+                  移除
+                </Button>
+              </div>
             </div>
           ))}
         </div>

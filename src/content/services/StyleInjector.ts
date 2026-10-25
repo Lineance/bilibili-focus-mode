@@ -4,6 +4,7 @@ export class StyleInjector {
   private namedElements = new Map<string, HTMLStyleElement>();
 
   injectGlobal(css: string): void {
+    if (this.globalStyleEl?.textContent === css) return;
     this.removeGlobal();
     this.globalStyleEl = document.createElement('style');
     this.globalStyleEl.id = 'bilibili-focus-mode-global-styles';
@@ -12,6 +13,7 @@ export class StyleInjector {
   }
 
   injectPage(css: string): void {
+    if (this.pageStyleEl?.textContent === css) return;
     this.removePage();
     this.pageStyleEl = document.createElement('style');
     this.pageStyleEl.id = 'bilibili-focus-mode-page-styles';
@@ -20,6 +22,8 @@ export class StyleInjector {
   }
 
   injectNamed(name: string, css: string): void {
+    const existing = this.namedElements.get(name);
+    if (existing?.textContent === css) return;
     this.removeNamed(name);
     const el = document.createElement('style');
     el.id = `bilibili-focus-mode-${name}`;

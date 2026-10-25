@@ -155,7 +155,10 @@ export const DEFAULT_DEBT_ACCOUNT: DebtAccount = {
 export const DEFAULT_BEHAVIOR_LOG: BehaviorLogState = {
   lastInstantApplication: 0,
   instantApplicationsToday: 0,
-  lastQuotaResetDate: new Date().toISOString().slice(0, 10),
+  lastQuotaResetDate: (() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  })(),
   lastWatchEnd: 0,
   currentCooldownUntil: null,
   dailyBypassesUsedToday: 0,

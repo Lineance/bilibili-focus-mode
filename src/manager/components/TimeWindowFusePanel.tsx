@@ -4,6 +4,7 @@ import { logger } from '@core/utils/logger';
 import { sendMessage } from 'webext-bridge/options';
 import { BehaviorLoggingService } from '@core/services';
 import type { ProtocolMap } from '@core/protocol';
+import { Icon } from '@ui';
 
 interface FuseStats {
   week: number;
@@ -32,9 +33,9 @@ interface FuseCodeDisplayProps {
 
 function FuseCodeDisplay({ fuseCode, timeLeft }: FuseCodeDisplayProps): React.JSX.Element {
   return (
-    <div className="bg-black/40 p-3 rounded-lg border border-orange-500/30">
+    <div className="bg-black/40 p-3 rounded-lg border border-accent/30">
       <div className="flex justify-between items-center mb-2">
-        <span className="text-xs text-orange-500 font-semibold uppercase tracking-wider">临时熔断码</span>
+        <span className="text-xs text-accent font-semibold uppercase tracking-wider">临时熔断码</span>
         <span className="text-xs text-muted font-mono">
           有效时间: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
         </span>
@@ -84,13 +85,13 @@ function FuseVerificationInput({ inputCode, onInputChange, onVerify, isLoading }
           value={inputCode}
           onChange={(e) => onInputChange(e.target.value)}
           placeholder="在此输入或粘贴熔断码"
-          className="flex-1 px-3 py-2 bg-primary border border-secondary rounded text-sm focus:border-orange-500 outline-none font-mono"
+          className="flex-1 px-3 py-2 bg-primary border border-secondary rounded text-sm focus:border-accent outline-none font-mono"
           autoFocus
         />
         <button
           onClick={onVerify}
           disabled={isLoading || !inputCode.trim()}
-          className="px-6 py-2 bg-success rounded font-medium hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-2 bg-success text-on-accent rounded font-medium hover:bg-success/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? '验证中...' : '确认'}
         </button>
@@ -191,11 +192,11 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
   const timeLeft = expiresAt ? Math.max(0, Math.floor((expiresAt - nowTs) / MS_PER_SECOND)) : 0;
 
   return (
-    <div className="bg-secondary border border-orange-900/50 rounded-lg p-4 shadow-xl">
+    <div className="bg-secondary border border-accent/40 rounded-lg p-4 shadow-xl">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-orange-500 font-bold flex items-center gap-2">
-            <span>⚡</span> 时间窗口熔断申请
+          <h3 className="text-accent font-bold flex items-center gap-2">
+            <Icon name="bolt" size={15} /> 时间窗口熔断申请
           </h3>
           <p className="text-xs text-secondary mt-1">
             熔断机制允许你在非审批时间内强行开启窗口，但这会削弱你的自律意志。
@@ -218,7 +219,7 @@ export function TimeWindowFusePanel({ onFuseApplied }: { onFuseApplied: () => vo
           <button
             onClick={handleApplyFuse}
             disabled={isLoading}
-            className="w-full py-2 bg-accent-primary rounded font-medium hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-2 bg-accent text-on-accent rounded font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>

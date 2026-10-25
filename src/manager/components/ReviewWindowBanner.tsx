@@ -1,4 +1,5 @@
 import type { ExtensionConfig } from '@core/types';
+import { Icon } from '@ui';
 
 import { TimeWindowFusePanel } from './TimeWindowFusePanel';
 
@@ -9,25 +10,47 @@ interface ReviewWindowBannerProps {
 }
 
 export function ReviewWindowBanner({ config, isInReviewWindow, onFuseApplied }: ReviewWindowBannerProps): React.JSX.Element {
+  const active = !config.timeWindowEnabled || isInReviewWindow;
+  const tone = active
+    ? { color: 'var(--fm-success)', bg: 'color-mix(in srgb, var(--fm-success) 9%, transparent)', border: 'color-mix(in srgb, var(--fm-success) 32%, transparent)' }
+    : { color: 'var(--fm-warning)', bg: 'color-mix(in srgb, var(--fm-warning) 9%, transparent)', border: 'color-mix(in srgb, var(--fm-warning) 32%, transparent)' };
+
   return (
-    <div className={`mb-4 p-3 rounded-lg ${isInReviewWindow ? 'bg-success/20 border border-success' : 'bg-warning/20 border border-warning'}`}>
-      <div className={`flex ${isInReviewWindow ? 'items-center justify-between' : 'flex-col gap-4'}`}>
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{isInReviewWindow ? '✅' : '⏰'}</span>
-          <span className={isInReviewWindow ? 'text-success font-medium' : 'text-warning font-medium'}>
-            {!config.timeWindowEnabled
-              ? '时间窗口已关闭，随时可审批'
-              : isInReviewWindow
-                ? `当前是审批时间 (${config.windowStart} - ${config.windowEnd})`
-                : `当前非审批时间 - 审批时间: ${config.windowStart} - ${config.windowEnd}`}
+    <div
+      className="mb-6 rounded-[14px] border p-4"
+      style={{ background: tone.bg, borderColor: tone.border }}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <span style={{ color: tone.color }}>
+            <Icon name={active ? 'check' : 'clock'} size={18} />
           </span>
-        </div>
-        {!config.timeWindowEnabled || isInReviewWindow ? null : (
           <div>
-            <TimeWindowFusePanel onFuseApplied={onFuseApplied} />
+            <p className="text-[13px] font-medium" style={{ color: tone.color }}>
+              {!config.timeWindowEnabled
+                ? '时间窗口已关闭，随时可审批'
+                : isInReviewWindow
+                  ? '当前处于审批时间'
+                  : '当前不在审批时间'}
+            </p>
+            <p className="mt-0.5 text-[12px] text-tertiary">
+              审批窗口 {config.windowStart} – {config.windowEnd}
+            </p>
           </div>
+        </div>
+
+        {!active && (
+          <p className="text-[12px] text-tertiary">
+            需要现在处理？可生成一枚时间窗熔断码强制开启 1 小时。
+          </p>
         )}
       </div>
+
+      {!active && (
+        <div className="mt-4 border-t border-secondary pt-4">
+          <TimeWindowFusePanel onFuseApplied={onFuseApplied} />
+        </div>
+      )}
     </div>
   );
 }

@@ -34,9 +34,14 @@ export class StyleOrchestrator {
 
       this.styleInjector.injectGlobal(this.styleService.generateGlobalStyles());
 
+      // Collect the rules for the current SPA route into a single stylesheet.
+      // Injecting once (instead of per branch) keeps the sheet diffable and
+      // removes rules left over from the previous route.
+      const pageCss: string[] = [];
+
       if (this.styleService.isVideoPlayerPage() && config.videoPlayerSimplification?.enabled) {
         const vps = config.videoPlayerSimplification;
-        this.styleInjector.injectPage(this.styleService.generateVideoPlayerStyles({
+        pageCss.push(this.styleService.generateVideoPlayerStyles({
           hideComments: vps.hideComments,
           hideRecommendations: vps.hideRecommendations,
           hideDanmaku: vps.hideDanmaku,
@@ -47,16 +52,16 @@ export class StyleOrchestrator {
       }
 
       if (this.styleService.isHomepage() && config.homepageSimplification?.enabled) {
-        this.styleInjector.injectPage(this.styleService.generateHomepageStyles(config.homepageSimplification));
+        pageCss.push(this.styleService.generateHomepageStyles(config.homepageSimplification));
       }
 
       if (this.styleService.isDynamicPage() && config.dynamicSimplification?.enabled) {
-        this.styleInjector.injectPage(this.styleService.generateDynamicStyles(config.dynamicSimplification));
+        pageCss.push(this.styleService.generateDynamicStyles(config.dynamicSimplification));
       }
 
       if (this.styleService.isLivePage() && config.liveSimplification?.enabled) {
         const ls = config.liveSimplification;
-        this.styleInjector.injectPage(this.styleService.generateLiveStyles({
+        pageCss.push(this.styleService.generateLiveStyles({
           hideComments: ls.hideComments,
           hideGiftEffects: ls.hideGiftEffects,
           hideAds: ls.hideAds,
@@ -66,7 +71,13 @@ export class StyleOrchestrator {
       }
 
       if (this.styleService.isSearchPage() && config.searchSimplification?.enabled) {
-        this.styleInjector.injectPage(this.styleService.generateSearchPageStyles());
+        pageCss.push(this.styleService.generateSearchPageStyles());
+      }
+
+      if (pageCss.length > 0) {
+        this.styleInjector.injectPage(pageCss.join('\n'));
+      } else {
+        this.styleInjector.removePage();
       }
 
       // Apply migrated components

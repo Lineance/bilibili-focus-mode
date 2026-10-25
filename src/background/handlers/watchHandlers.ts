@@ -21,8 +21,7 @@ export async function handleWatchEnded(request: unknown): Promise<unknown> {
 
   // Update watch history with metadata if available
   if (data.title || data.uploader || data.tag) {
-    const watchHistoryStorage = await chrome.storage.local.get('watchHistory');
-    const watchHistory: WatchRecord[] = (watchHistoryStorage.watchHistory as WatchRecord[] | undefined) || [];
+    const watchHistory: WatchRecord[] = storage.watchHistory || [];
     const existingIndex = watchHistory.findIndex((r) => r.bvid === data.bvid);
     if (existingIndex >= 0) {
       const existing = watchHistory[existingIndex];

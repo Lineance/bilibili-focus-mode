@@ -14,9 +14,9 @@ export function LiveEnhancementSettings({ config, updateConfig }: LiveEnhancemen
   };
 
   return (
-    <div className="bg-gray-800 p-4 rounded-lg">
+    <div className="bg-secondary p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">📺 直播增强</h3>
-      <p className="text-sm text-gray-400 mb-3">
+      <p className="text-sm text-tertiary mb-3">
         优化直播页面体验
       </p>
       

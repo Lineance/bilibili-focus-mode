@@ -33,7 +33,7 @@ describe('UploaderAllowlist', () => {
   it('should log add success as info instead of warning', async () => {
     render(<UploaderAllowlist uploaders={[]} />);
 
-    fireEvent.change(screen.getByPlaceholderText('输入UP主名称'), {
+    fireEvent.change(screen.getByPlaceholderText('输入 UP 主名称（需与 B 站显示名一致）'), {
       target: { value: 'Test Uploader' },
     });
     fireEvent.click(screen.getByText('添加'));
@@ -42,7 +42,9 @@ describe('UploaderAllowlist', () => {
       expect(mockSet).toHaveBeenCalled();
     });
 
-    expect(infoSpy).toHaveBeenCalledWith('[UploaderAllowlist] 添加成功！');
+    expect(mockSet).toHaveBeenCalledWith({
+      allowedUploaders: [expect.objectContaining({ name: 'Test Uploader', tag: 'LEARNING' })],
+    });
     expect(warnSpy).not.toHaveBeenCalledWith('[UploaderAllowlist] 添加成功！');
   });
 });

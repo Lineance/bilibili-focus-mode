@@ -8,7 +8,7 @@ interface DetectionSettingsProps {
 
 export function DetectionSettings({ config, updateConfig, descriptions }: DetectionSettingsProps): React.JSX.Element {
   return (
-    <div className="bg-gray-800 p-4 rounded-lg">
+    <div className="bg-secondary p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">🔍 识别</h3>
       <label className="flex items-center gap-2">
         <input

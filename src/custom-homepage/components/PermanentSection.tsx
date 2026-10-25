@@ -1,72 +1,79 @@
 import React from 'react';
 import type { PermanentGroup, VideoMetadata } from '@core/types';
+import { Card, EmptyState, Icon, SectionHeader, TagChip, type IconName } from '@ui';
 
 interface PermanentSectionProps {
   groups: PermanentGroup[];
 }
 
+const COVER_PLACEHOLDER = chrome.runtime.getURL('cover-placeholder.svg');
+
+const GROUP_ICON: Record<string, IconName> = {
+  learning: 'book',
+  entertainment: 'gamepad',
+  music: 'music',
+};
+
 export function PermanentSection({ groups }: PermanentSectionProps): React.JSX.Element {
-  const openVideo = (bvid: string) => {
-    window.open(`https://www.bilibili.com/video/${bvid}`, '_blank');
-  };
+  const total = groups.reduce((sum, group) => sum + group.items.length, 0);
 
-  const renderGroup = (group: PermanentGroup) => (
-    <div key={group.id} className="card">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <span>{group.id === 'learning' ? '📚' : '🎮'}</span>
-          <span>{group.name}</span>
-          <span className="text-sm font-normal text-muted">({group.items.length})</span>
-        </h3>
+  const renderCard = (item: VideoMetadata) => (
+    <div
+      key={item.bvid}
+      className="video-card cursor-pointer"
+      onClick={() => window.open(`https://www.bilibili.com/video/${item.bvid}`, '_blank')}
+    >
+      <img
+        src={item.coverUrl || COVER_PLACEHOLDER}
+        alt={item.title}
+        className="video-card-cover"
+        loading="lazy"
+        onError={(e) => {
+          (e.target as HTMLImageElement).src = COVER_PLACEHOLDER;
+        }}
+      />
+      <div className="video-card-info">
+        <p className="video-card-title">{item.title}</p>
+        <p className="video-card-uploader">{item.uploader}</p>
       </div>
-
-      {group.items.length === 0 ? (
-        <p className="text-muted text-center py-4">暂无视频</p>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {group.items.map((item: VideoMetadata) => (
-            <div
-              key={item.bvid}
-              className="video-card cursor-pointer"
-              onClick={() => openVideo(item.bvid)}
-            >
-              <img
-                src={item.coverUrl || `https://picsum.photos/seed/${item.bvid}/320/180`}
-                alt={item.title}
-                className="video-card-cover"
-                loading="lazy"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://picsum.photos/seed/${item.bvid}/320/180`;
-                }}
-              />
-              <div className="video-card-info">
-                <p className="video-card-title">{item.title}</p>
-                <p className="video-card-uploader">{item.uploader}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <span>📁</span>
-          <span>永久分组</span>
-        </h2>
-      </div>
+      <SectionHeader
+        title="永久分组"
+        icon="folder"
+        count={total}
+        description="长期免审的收藏级视频，按标签归档。"
+      />
 
-      {groups.length === 0 ? (
-        <div className="card text-center py-8">
-          <p className="text-muted">暂无永久分组</p>
-          <p className="text-sm text-muted mt-1">在待审池中审批视频时选择"永久"添加</p>
-        </div>
+      {total === 0 ? (
+        <EmptyState icon="folder" title="暂无永久分组" description="在待审池中选择「永久」即可长期放行。" />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {groups.map(renderGroup)}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {groups.map((group) => (
+            <Card key={group.id}>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h3 className="fm-section-title mb-0">
+                  <Icon name={GROUP_ICON[group.id] ?? 'folder'} size={16} />
+                  {group.name}
+                  <span className="rounded-full bg-tertiary px-2 py-0.5 font-mono text-[11px] font-normal text-tertiary">
+                    {group.items.length}
+                  </span>
+                </h3>
+                <TagChip tag={group.items[0]?.tag ?? 'ENTERTAINMENT'} showIcon={false} />
+              </div>
+
+              {group.items.length === 0 ? (
+                <p className="fm-hint py-4 text-center">暂无视频</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {group.items.map(renderCard)}
+                </div>
+              )}
+            </Card>
+          ))}
         </div>
       )}
     </div>

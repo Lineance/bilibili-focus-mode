@@ -35,6 +35,8 @@ export class BlockOverlayManager {
   private root: Root | null = null;
   private tagContainer: HTMLDivElement | null = null;
   private tagRoot: Root | null = null;
+  /** Player elements hidden while the block screen is up, with their previous inline display. */
+  private hiddenElements = new Map<HTMLElement, string>();
 
   show(
     metadata: VideoMetadata,
@@ -47,16 +49,17 @@ export class BlockOverlayManager {
     onDailyBypass: () => void
   ): void {
     this.applyHardBlock();
-    this.remove();
 
+    // Reuse the mounted root so repeated permission checks (e.g. triggered by a
+    // storage change) update the overlay instead of unmounting/remounting it.
     if (!this.container) {
       this.container = document.createElement('div');
       this.container.id = 'bilibili-focus-mode-overlay-host';
       document.body.appendChild(this.container);
+      this.root = createRoot(this.container);
     }
 
-    this.root = createRoot(this.container);
-    this.root.render(
+    this.root!.render(
       <OverlayShell
         metadata={metadata}
         reason={reason}
@@ -79,6 +82,7 @@ export class BlockOverlayManager {
       this.container.remove();
       this.container = null;
     }
+    this.restoreHardBlock();
   }
 
   showTagSelectionDialog(metadata: VideoMetadata): Promise<VideoTag | null> {
@@ -144,13 +148,34 @@ export class BlockOverlayManager {
       '#player',
     ].join(', ');
 
-    document.querySelectorAll(playerSelector).forEach((player) => {
-      (player as HTMLElement).style.display = 'none';
+    // Native fullscreen renders above any extension overlay; leave it first.
+    if (document.fullscreenElement) {
+      const exit = document.exitFullscreen?.();
+      if (exit) exit.catch(() => { /* ignore */ });
+    }
+
+    document.querySelectorAll(playerSelector).forEach((element) => {
+      const node = element as HTMLElement;
+      if (!this.hiddenElements.has(node)) {
+        this.hiddenElements.set(node, node.style.display);
+      }
+      node.style.display = 'none';
     });
 
+    // Pause playback, but never rewind: an accidental check should not lose the
+    // user's position once permission is granted.
     document.querySelectorAll('video').forEach((video) => {
-      video.pause();
-      video.currentTime = 0;
+      if (!video.paused) video.pause();
     });
+  }
+
+  /** Restore every player we hid, so dismissing the block screen never leaves a blank page. */
+  private restoreHardBlock(): void {
+    for (const [element, previousDisplay] of this.hiddenElements) {
+      if (element.isConnected) {
+        element.style.display = previousDisplay;
+      }
+    }
+    this.hiddenElements.clear();
   }
 }

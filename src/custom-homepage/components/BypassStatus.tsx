@@ -1,15 +1,25 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { sendMessage } from 'webext-bridge/popup';
 import type { BehaviorLogState, ExtensionConfig } from '@core/types';
 import { getTodayKey, resetQuotaIfNeeded } from '@core/utils/dateUtils';
+import { Button, Card, Icon, StatusChip, toast } from '@ui';
 
 interface BypassStatusProps {
   config: ExtensionConfig;
   behaviorLog: BehaviorLogState;
 }
 
+function formatDuration(ms: number): string {
+  const minutes = Math.ceil(ms / 60000);
+  if (minutes < 60) return `${minutes} 分钟`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours} 小时 ${mins} 分` : `${hours} 小时`;
+}
+
 export function BypassStatus({ config, behaviorLog }: BypassStatusProps): React.JSX.Element {
-  const [bypassUntil, setBypassUntil] = useState<number>(0);
-  const [currentTime, setCurrentTime] = useState<number>(() => Date.now());
+  const [bypassUntil, setBypassUntil] = useState(0);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   useEffect(() => {
     const loadBypassUntil = async () => {
@@ -18,7 +28,7 @@ export function BypassStatus({ config, behaviorLog }: BypassStatusProps): React.
     };
     loadBypassUntil();
 
-    const timer = setInterval(() => setCurrentTime(Date.now()), 60000);
+    const timer = window.setInterval(() => setCurrentTime(Date.now()), 60_000);
 
     const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
       if (area === 'local' && changes.dailyBypassUntil) {
@@ -28,97 +38,88 @@ export function BypassStatus({ config, behaviorLog }: BypassStatusProps): React.
     chrome.storage.onChanged.addListener(listener);
     return () => {
       chrome.storage.onChanged.removeListener(listener);
-      clearInterval(timer);
+      window.clearInterval(timer);
     };
   }, []);
 
   const isBypassActive = currentTime < bypassUntil;
 
-  const { remainingUses } = useMemo(() => {
-    const today = getTodayKey();
-    const needsReset = resetQuotaIfNeeded(behaviorLog.lastQuotaResetDate, today);
-    const dailyBypassesUsedToday = needsReset ? 0 : (behaviorLog.dailyBypassesUsedToday || 0);
-    return { remainingUses: Math.max(0, config.dailyBypassQuota - dailyBypassesUsedToday) };
+  const remainingUses = useMemo(() => {
+    const needsReset = resetQuotaIfNeeded(behaviorLog.lastQuotaResetDate, getTodayKey());
+    const used = needsReset ? 0 : (behaviorLog.dailyBypassesUsedToday || 0);
+    return Math.max(0, config.dailyBypassQuota - used);
   }, [behaviorLog, config.dailyBypassQuota]);
-
-  const formatTime = (ms: number): string => {
-    const minutes = Math.ceil(ms / (1000 * 60));
-    if (minutes < 60) return `${minutes}分钟`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return mins > 0 ? `${hours}小时${mins}分钟` : `${hours}小时`;
-  };
-
-  const remainingTime = bypassUntil - currentTime;
 
   const handleBypass = async () => {
     try {
-      const response = await chrome.runtime.sendMessage({ type: 'daily-bypass' });
+      const response = await sendMessage('daily-bypass', {}) as { success?: boolean; message?: string };
       if (response?.success) {
-        // 重新加载状态
         const data = await chrome.storage.local.get('dailyBypassUntil');
         setBypassUntil((data.dailyBypassUntil as number) || 0);
+        toast.success('已开启每日放行');
       } else {
-        alert(response?.message || '操作失败');
+        toast.error(response?.message || '操作失败');
       }
     } catch {
-      alert('操作失败，请重试');
+      toast.error('操作失败，请重试');
     }
   };
 
   return (
-    <div className="card">
-      <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <span>🛡️</span>
-        <span>每日放行状态</span>
+    <Card>
+      <h2 className="fm-section-title">
+        <Icon name="shield" size={16} />
+        每日放行
       </h2>
 
       <div className="space-y-3">
-        {/* 放行次数 */}
         <div className="flex items-center justify-between">
-          <span className="text-secondary">今日剩余次数</span>
-          <span className={`font-bold text-lg ${remainingUses > 0 ? 'text-success' : 'text-error'}`}>
-            {remainingUses}/{config.dailyBypassQuota}
+          <span className="text-[12.5px] text-secondary">今日剩余次数</span>
+          <span
+            className="font-mono text-[15px] font-semibold tabular-nums"
+            style={{ color: remainingUses > 0 ? 'var(--fm-success)' : 'var(--fm-error)' }}
+          >
+            {remainingUses} / {config.dailyBypassQuota}
           </span>
         </div>
 
-        {/* 放行时长配置 */}
         <div className="flex items-center justify-between">
-          <span className="text-secondary">每次放行时长</span>
-          <span className="text-primary">{config.dailyBypassDurationMinutes}分钟</span>
+          <span className="text-[12.5px] text-secondary">每次放行时长</span>
+          <span className="text-[12.5px] text-primary">{config.dailyBypassDurationMinutes} 分钟</span>
         </div>
 
-        {/* 当前状态 */}
         {isBypassActive ? (
-          <div className="bg-success/20 border border-success/50 rounded-lg p-3">
-            <p className="text-success font-medium">✅ 放行中</p>
-            <p className="text-sm text-secondary mt-1">
-              剩余 {formatTime(remainingTime)}
-            </p>
+          <div
+            className="rounded-lg border p-3"
+            style={{
+              borderColor: 'color-mix(in srgb, var(--fm-success) 35%, transparent)',
+              background: 'color-mix(in srgb, var(--fm-success) 9%, transparent)',
+            }}
+          >
+            <StatusChip tone="success" icon="check">放行中</StatusChip>
+            <p className="mt-2 text-[11.5px] text-tertiary">剩余 {formatDuration(bypassUntil - currentTime)}</p>
           </div>
         ) : (
-          <div className="bg-tertiary rounded-lg p-3">
-            <p className="text-muted">未激活</p>
+          <div className="flex items-center justify-between rounded-lg bg-tertiary p-3">
+            <span className="text-[12px] text-tertiary">未激活</span>
+            <span className="text-[11px] text-muted">每天有 {config.dailyBypassQuota} 次机会</span>
           </div>
         )}
 
-        {/* 放行按钮 */}
-        <button
+        <Button
+          variant={isBypassActive || remainingUses <= 0 ? 'ghost' : 'primary'}
+          block
+          icon="bolt"
           onClick={handleBypass}
           disabled={isBypassActive || remainingUses <= 0}
-          className={`w-full py-2 rounded-lg font-medium transition-all ${
-            isBypassActive || remainingUses <= 0
-              ? 'bg-tertiary text-muted cursor-not-allowed'
-              : 'bg-success text-white hover:opacity-90'
-          }`}
         >
           {isBypassActive
-            ? '放行中...'
+            ? '放行中…'
             : remainingUses > 0
-              ? `立即放行 (${config.dailyBypassDurationMinutes}分钟)`
+              ? `立即放行 ${config.dailyBypassDurationMinutes} 分钟`
               : '今日次数已用完'}
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }

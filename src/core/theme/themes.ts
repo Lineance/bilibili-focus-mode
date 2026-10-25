@@ -1,150 +1,133 @@
 import type { ThemeDefinition } from '../types/theme';
 
-export const MINIMAL_THEME: ThemeDefinition = {
+/**
+ * Palette metadata.
+ *
+ * The values mirror `src/styles/tokens.css`, which is the rendering source of
+ * truth. They are duplicated here only so the theme picker can render accurate
+ * color swatches without reading computed styles.
+ */
+export const PAPER_INK_THEME: ThemeDefinition = {
   id: 'minimal',
-  name: '极简黑白',
-  description: '高对比度、简洁线条的极简主义设计',
+  name: '纸墨',
+  description: '暖白纸张、朱砂强调，编辑排版式的克制美学',
   light: {
-    // Background
-    bgPrimary: '#FFFFFF',
-    bgSecondary: '#E8E8E8',
-    bgTertiary: '#D0D0D0',
-    bgHover: '#B8B8B8',
-    
-    // Text
-    textPrimary: '#000000',
-    textSecondary: '#333333',
-    textTertiary: '#666666',
-    textMuted: '#999999',
-    
-    // Border
-    borderPrimary: '#000000',
-    borderSecondary: '#CCCCCC',
-    
-    // Accent
-    accentPrimary: '#000000',
-    accentHover: '#333333',
-    accentActive: '#666666',
-    accentText: '#FFFFFF',
-    
-    // Status
-    success: '#000000',
-    warning: '#666666',
-    error: '#000000',
-    info: '#333333',
-    
-    // Special
-    overlay: 'rgba(0, 0, 0, 0.8)',
-    shadow: 'rgba(0, 0, 0, 0.1)',
+    bgPrimary: '#F6F2E9',
+    bgSecondary: '#FCF9F2',
+    bgTertiary: '#EEE7D8',
+    bgHover: '#E3DAC8',
+
+    textPrimary: '#1A1714',
+    textSecondary: '#4A443B',
+    textTertiary: '#766E60',
+    textMuted: '#9A9182',
+
+    borderPrimary: '#B4442E',
+    borderSecondary: '#D9CFBD',
+
+    accentPrimary: '#B4442E',
+    accentHover: '#9C3724',
+    accentActive: '#812C1C',
+    accentText: '#FCF9F2',
+
+    success: '#3F6F4E',
+    warning: '#A9741F',
+    error: '#B4442E',
+    info: '#3B5C7A',
+
+    overlay: 'rgba(26, 23, 20, 0.9)',
+    shadow: 'rgba(26, 23, 20, 0.16)',
   },
   dark: {
-    // Background
-    bgPrimary: '#000000',
-    bgSecondary: '#1A1A1A',
-    bgTertiary: '#2D2D2D',
-    bgHover: '#3D3D3D',
-    
-    // Text
-    textPrimary: '#FFFFFF',
-    textSecondary: '#E0E0E0',
-    textTertiary: '#B0B0B0',
-    textMuted: '#808080',
-    
-    // Border
-    borderPrimary: '#FFFFFF',
-    borderSecondary: '#404040',
-    
-    // Accent
-    accentPrimary: '#FFFFFF',
-    accentHover: '#CCCCCC',
-    accentActive: '#999999',
-    accentText: '#000000',
-    
-    // Status
-    success: '#FFFFFF',
-    warning: '#B0B0B0',
-    error: '#FFFFFF',
-    info: '#E0E0E0',
-    
-    // Special
-    overlay: 'rgba(255, 255, 255, 0.1)',
+    bgPrimary: '#14110E',
+    bgSecondary: '#1B1713',
+    bgTertiary: '#241F19',
+    bgHover: '#322A22',
+
+    textPrimary: '#F0E8D9',
+    textSecondary: '#C6BBA6',
+    textTertiary: '#968C7A',
+    textMuted: '#6F6759',
+
+    borderPrimary: '#E2704F',
+    borderSecondary: '#2F2821',
+
+    accentPrimary: '#E2704F',
+    accentHover: '#F08A6A',
+    accentActive: '#C75C3D',
+    accentText: '#171310',
+
+    success: '#86BE93',
+    warning: '#E0B45C',
+    error: '#EC7A6B',
+    info: '#8FB6D6',
+
+    overlay: 'rgba(10, 8, 6, 0.95)',
+    shadow: 'rgba(0, 0, 0, 0.55)',
+  },
+};
+
+export const TOKYO_NIGHT_THEME: ThemeDefinition = {
+  id: 'tokyo',
+  name: '夜幕',
+  description: '深靛底色与电光蓝强调，夜间专注的低亮度方案',
+  light: {
+    bgPrimary: '#F3F6FC',
+    bgSecondary: '#FFFFFF',
+    bgTertiary: '#E9EEF8',
+    bgHover: '#DCE4F3',
+
+    textPrimary: '#101625',
+    textSecondary: '#38435A',
+    textTertiary: '#5D6980',
+    textMuted: '#8590A5',
+
+    borderPrimary: '#2F5FBF',
+    borderSecondary: '#C9D4E7',
+
+    accentPrimary: '#2F5FBF',
+    accentHover: '#254E9F',
+    accentActive: '#1D3F82',
+    accentText: '#FFFFFF',
+
+    success: '#1F7A52',
+    warning: '#A6651B',
+    error: '#C23B48',
+    info: '#166D9E',
+
+    overlay: 'rgba(246, 248, 252, 0.92)',
+    shadow: 'rgba(16, 22, 37, 0.14)',
+  },
+  dark: {
+    bgPrimary: '#0A0D13',
+    bgSecondary: '#11161F',
+    bgTertiary: '#171D28',
+    bgHover: '#212A38',
+
+    textPrimary: '#E8EDF7',
+    textSecondary: '#A6B2C6',
+    textTertiary: '#7B879E',
+    textMuted: '#5A657C',
+
+    borderPrimary: '#7AA2F7',
+    borderSecondary: '#232B3A',
+
+    accentPrimary: '#7AA2F7',
+    accentHover: '#9BBBFB',
+    accentActive: '#5D87E5',
+    accentText: '#08101F',
+
+    success: '#5FD1A0',
+    warning: '#E8B15C',
+    error: '#F0737B',
+    info: '#7DD3FC',
+
+    overlay: 'rgba(6, 9, 14, 0.94)',
     shadow: 'rgba(0, 0, 0, 0.5)',
   },
 };
 
-export const TOKYO_THEME: ThemeDefinition = {
-  id: 'tokyo',
-  name: 'Tokyo Nights',
-  description: '深邃的东京之夜配色方案',
-  light: {
-    // Background
-    bgPrimary: '#F8F9FA',
-    bgSecondary: '#DEE2E6',
-    bgTertiary: '#CED4DA',
-    bgHover: '#ADB5BD',
-    
-    // Text
-    textPrimary: '#212529',
-    textSecondary: '#495057',
-    textTertiary: '#6C757D',
-    textMuted: '#ADB5BD',
-    
-    // Border
-    borderPrimary: '#6F42C1',
-    borderSecondary: '#DEE2E6',
-    
-    // Accent - Tokyo purple
-    accentPrimary: '#6F42C1',
-    accentHover: '#593499',
-    accentActive: '#442875',
-    accentText: '#FFFFFF',
-    
-    // Status
-    success: '#28A745',
-    warning: '#FFC107',
-    error: '#DC3545',
-    info: '#17A2B8',
-    
-    // Special
-    overlay: 'rgba(33, 37, 41, 0.5)',
-    shadow: 'rgba(111, 66, 193, 0.15)',
-  },
-  dark: {
-    // Background - Deep Tokyo night
-    bgPrimary: '#1A1B26',
-    bgSecondary: '#24283B',
-    bgTertiary: '#2F3549',
-    bgHover: '#414868',
-    
-    // Text
-    textPrimary: '#C0CAF5',
-    textSecondary: '#A9B1D6',
-    textTertiary: '#787C99',
-    textMuted: '#565F89',
-    
-    // Border
-    borderPrimary: '#7AA2F7',
-    borderSecondary: '#414868',
-    
-    // Accent - Tokyo night purple
-    accentPrimary: '#7AA2F7',
-    accentHover: '#5D87E5',
-    accentActive: '#3F6BC9',
-    accentText: '#FFFFFF',
-    
-    // Status
-    success: '#9ECE6A',
-    warning: '#E0AF68',
-    error: '#F7768E',
-    info: '#7DCFFF',
-    
-    // Special
-    overlay: 'rgba(26, 27, 38, 0.9)',
-    shadow: 'rgba(0, 0, 0, 0.3)',
-  },
-};
-
 export const THEMES: Record<string, ThemeDefinition> = {
-  minimal: MINIMAL_THEME,
-  tokyo: TOKYO_THEME,
+  tokyo: TOKYO_NIGHT_THEME,
+  minimal: PAPER_INK_THEME,
 };

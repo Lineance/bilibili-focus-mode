@@ -1,88 +1,142 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import type { ExtensionConfig, InstantItem } from '@core/types';
 import { useSelection } from '@hooks/useSelection';
 import { useStorageActions } from '../hooks/useStorageActions';
+import { Button, EmptyState, SectionHeader, StatusChip, confirmAction, toast } from '@ui';
 
-import { BatchToolbar, ItemCard } from './shared';
+import { BatchToolbar, VideoRow } from './shared';
 import { FuseApplicationDialog } from './FuseApplicationDialog';
 
+function formatRemaining(ms: number): string {
+  if (ms <= 0) return '已过期';
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 60) return `剩余 ${Math.max(1, minutes)} 分钟`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `剩余 ${hours} 小时`;
+  return `剩余 ${Math.floor(hours / 24)} 天`;
+}
+
 export const InstantList = React.memo(function InstantList({ items, config }: { items: readonly InstantItem[]; config: ExtensionConfig }): React.JSX.Element {
-  const allBvids = items.map((item) => item.bvid);
+  const allBvids = useMemo(() => items.map((item) => item.bvid), [items]);
   const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
   const { deleteFromList, batchDelete, clearList } = useStorageActions();
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 60000);
-    return () => clearInterval(id);
+    const id = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(id);
   }, []);
 
   const handleDelete = async (bvid: string) => {
-    if (!confirm('确定要删除这个视频吗？')) return;
+    const ok = await confirmAction({
+      title: '删除即时许可',
+      description: '删除后该视频会重新进入拦截状态。',
+      confirmLabel: '删除',
+      danger: true,
+    });
+    if (!ok) return;
+
     const success = await deleteFromList('instantList', bvid);
-    if (!success) { alert('删除失败，请重试'); return; }
+    if (!success) {
+      toast.error('删除失败，请重试');
+      return;
+    }
     if (isSelected(bvid)) toggleSelection(bvid);
+    toast.success('已删除');
   };
 
   const handleBatchDelete = async () => {
     if (selected.size === 0) return;
-    if (!confirm(`确定要删除选中的 ${selected.size} 个视频吗？`)) return;
+    const ok = await confirmAction({
+      title: `删除 ${selected.size} 个即时许可`,
+      description: '这些视频会重新进入拦截状态。',
+      confirmLabel: '批量删除',
+      danger: true,
+    });
+    if (!ok) return;
+
     const success = await batchDelete('instantList', selected);
-    if (!success) alert('批量删除失败，请重试');
-    else clearSelection();
+    if (!success) {
+      toast.error('批量删除失败，请重试');
+      return;
+    }
+    clearSelection();
+    toast.success('已批量删除');
   };
 
   const handleClearAll = async () => {
-    if (!confirm('确定要清空即时许可列表吗？')) return;
+    const ok = await confirmAction({
+      title: '清空即时许可',
+      description: '所有即时许可都会被移除，且不可恢复。',
+      confirmLabel: '清空',
+      danger: true,
+    });
+    if (!ok) return;
+
     const success = await clearList('instantList');
-    if (!success) alert('清空失败，请重试');
-    else clearSelection();
+    if (!success) {
+      toast.error('清空失败，请重试');
+      return;
+    }
+    clearSelection();
+    toast.success('已清空');
   };
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">即时许可 ({items.length})</h2>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowApplyDialog(true)}
-            className="px-3 py-1 bg-accent-primary rounded text-sm hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            申请熔断码
-          </button>
-          {items.length > 0 && (
-            <button
-              onClick={handleClearAll}
-              className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
-            >
-              清空列表
-            </button>
-          )}
-        </div>
-      </div>
+      <SectionHeader
+        title="即时许可"
+        icon="bolt"
+        count={items.length}
+        description="带有效期的临时放行。到期后自动失效，重新回到拦截状态。"
+        actions={
+          <>
+            <Button variant="primary" size="sm" icon="key" onClick={() => setShowApplyDialog(true)}>
+              申请熔断码
+            </Button>
+            {items.length > 0 && (
+              <Button variant="danger" size="sm" icon="trash" onClick={handleClearAll}>
+                清空
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {items.length === 0 ? (
-        <p className="text-muted">没有即时许可</p>
+        <EmptyState
+          icon="bolt"
+          title="没有即时许可"
+          description="在待审池审批视频时选择「立即」，即可生成带期限的即时许可。"
+        />
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {items.map((item) => {
-            const isExpired = now >= item.expiresAt;
-            const hoursLeft = Math.ceil((item.expiresAt - now) / 3600000);
-
+            const remaining = item.expiresAt - now;
+            const expired = remaining <= 0;
             return (
-              <ItemCard
+              <VideoRow
                 key={item.bvid}
-                item={item}
-                selected={selected.has(item.bvid)}
+                bvid={item.bvid}
+                title={item.title}
+                uploader={item.uploader}
+                coverUrl={item.coverUrl}
+                tag={item.tag}
+                selected={isSelected(item.bvid)}
                 onSelect={() => toggleSelection(item.bvid)}
-                onDelete={() => handleDelete(item.bvid)}
-              >
-                <p className={`text-sm mt-2 ${isExpired ? 'text-error' : 'text-success'}`}>
-                  {isExpired ? '已过期' : `剩余 ${hoursLeft} 小时`}
-                </p>
-              </ItemCard>
+                meta={
+                  <StatusChip tone={expired ? 'error' : 'success'} icon="clock">
+                    {formatRemaining(remaining)}
+                  </StatusChip>
+                }
+                actions={
+                  <Button variant="subtle" size="sm" icon="trash" onClick={() => handleDelete(item.bvid)}>
+                    删除
+                  </Button>
+                }
+              />
             );
           })}
         </div>
@@ -91,7 +145,7 @@ export const InstantList = React.memo(function InstantList({ items, config }: { 
       {showApplyDialog && (
         <FuseApplicationDialog
           instantDurationHours={config.instantDurationHours}
-          onApply={() => {}}
+          onApply={() => undefined}
           onClose={() => setShowApplyDialog(false)}
         />
       )}

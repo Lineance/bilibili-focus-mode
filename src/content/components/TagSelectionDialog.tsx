@@ -1,4 +1,5 @@
 import type { VideoMetadata, VideoTag } from '@core/types';
+import { Icon } from '../../ui/Icon';
 
 interface TagSelectionDialogProps {
   metadata: VideoMetadata;
@@ -23,19 +24,19 @@ export function TagSelectionDialog({ metadata, onSelect }: TagSelectionDialogPro
             className="bfm-tag-btn bfm-tag-btn--learning"
             onClick={() => onSelect('LEARNING')}
           >
-            📚 学习
+            <Icon name="book" size={15} /> 学习
           </button>
           <button
             className="bfm-tag-btn bfm-tag-btn--music"
             onClick={() => onSelect('MUSIC')}
           >
-            🎵 音乐
+            <Icon name="music" size={15} /> 音乐
           </button>
           <button
             className="bfm-tag-btn bfm-tag-btn--entertainment"
             onClick={() => onSelect('ENTERTAINMENT')}
           >
-            🎮 娱乐
+            <Icon name="gamepad" size={15} /> 娱乐
           </button>
         </div>
         <button

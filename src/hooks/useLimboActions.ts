@@ -10,6 +10,7 @@ import type {
   VideoTag,
 } from '@core/types';
 import { StorageRepository } from '@core/storage/StorageRepository';
+import { confirmAction, toast } from '@ui';
 import { getTodayKey, resetQuotaIfNeeded } from '@core/utils/dateUtils';
 import { extractBvid, getVideoUrl } from '@core/utils/videoUrl';
 import { logger } from '@core/utils/logger';
@@ -53,7 +54,7 @@ export function useLimboActions(config: ExtensionConfig) {
 
         if (action === 'instant') {
           if (config.dailyInstantQuota > 0 && behaviorLog.instantApplicationsToday >= config.dailyInstantQuota) {
-            alert('已达到今日即时配额，请明天再试');
+            toast.error('已达到今日即时配额，请明天再试');
             return false;
           }
 
@@ -72,7 +73,7 @@ export function useLimboActions(config: ExtensionConfig) {
             instantList: [...filteredInstantList, instantItem],
             behaviorLog: updatedBehaviorLog,
           });
-          alert(`已加入即时许可，有效期 ${hours} 小时`);
+          toast.success(`已加入即时许可，有效期 ${hours} 小时`);
         } else {
           const permanentGroups = storage.permanentGroups;
 
@@ -80,13 +81,13 @@ export function useLimboActions(config: ExtensionConfig) {
             g.items.some(i => i.bvid === item.bvid)
           );
           if (existsInAnyGroup) {
-            alert('该视频已在其他永久分组中');
+            toast.error('该视频已在其他永久分组中');
             return false;
           }
 
           const totalPermanentItems = permanentGroups.reduce((sum, group) => sum + group.items.length, 0);
           if (totalPermanentItems >= config.totalPermanentLimit) {
-            alert('已达到永久分组总限制');
+            toast.error('已达到永久分组总限制');
             return false;
           }
 
@@ -96,7 +97,7 @@ export function useLimboActions(config: ExtensionConfig) {
           let targetGroup = permanentGroups.find((g) => g.id === groupId);
           if (!targetGroup) {
             if (permanentGroups.length >= config.maxGroups) {
-              alert('已达到最大分组数');
+              toast.error('已达到最大分组数');
               return false;
             }
             targetGroup = {
@@ -109,7 +110,7 @@ export function useLimboActions(config: ExtensionConfig) {
           }
 
           if (targetGroup.items.length >= config.maxItemsPerGroup) {
-            alert('该分组已达到最大项目数');
+            toast.error('该分组已达到最大项目数');
             return false;
           }
 
@@ -123,7 +124,7 @@ export function useLimboActions(config: ExtensionConfig) {
           });
 
           const tagText = item.tag === 'LEARNING' ? '学习' : '娱乐';
-          alert(`已加入永久分组（${tagText}）`);
+          toast.success(`已加入永久分组（${tagText}）`);
         }
 
         logger.debug('LimboReview', `${action}:`, item.bvid);
@@ -139,7 +140,13 @@ export function useLimboActions(config: ExtensionConfig) {
   );
 
   const handleDelete = useCallback(async (bvid: string) => {
-    if (!confirm('确定要删除这个视频吗？')) return false;
+    const ok = await confirmAction({
+      title: '删除视频',
+      description: '从待审池中移除这个视频。',
+      confirmLabel: '删除',
+      danger: true,
+    });
+    if (!ok) return false;
 
     try {
       const { limboList } = await StorageRepository.getKeys('limboList');
@@ -155,7 +162,13 @@ export function useLimboActions(config: ExtensionConfig) {
 
   const handleBatchDelete = useCallback(async (bvids: Set<string>) => {
     if (bvids.size === 0) return false;
-    if (!confirm(`确定要删除选中的 ${bvids.size} 个视频吗？`)) return false;
+    const ok = await confirmAction({
+      title: `删除 ${bvids.size} 个视频`,
+      description: '从待审池中批量移除选中的视频。',
+      confirmLabel: '批量删除',
+      danger: true,
+    });
+    if (!ok) return false;
 
     try {
       const { limboList } = await StorageRepository.getKeys('limboList');
@@ -170,7 +183,13 @@ export function useLimboActions(config: ExtensionConfig) {
   }, []);
 
   const handleClearAll = useCallback(async () => {
-    if (!confirm('确定要清空待审池吗？')) return false;
+    const ok = await confirmAction({
+      title: '清空待审池',
+      description: '所有待审视频都会被移除，且不可恢复。',
+      confirmLabel: '清空',
+      danger: true,
+    });
+    if (!ok) return false;
 
     try {
       await StorageRepository.set({ limboList: [] });
@@ -185,7 +204,7 @@ export function useLimboActions(config: ExtensionConfig) {
   const handleAddByUrl = useCallback(async (input: string, tag: VideoTag): Promise<boolean> => {
     const bvid = extractBvid(input);
     if (!bvid) {
-      alert('无法识别 BV 号，请检查输入');
+      toast.error('无法识别 BV 号，请检查输入');
       return false;
     }
 
@@ -193,12 +212,12 @@ export function useLimboActions(config: ExtensionConfig) {
       const { limboList } = await StorageRepository.getKeys('limboList');
 
       if (limboList.some((item) => item.bvid === bvid)) {
-        alert('该视频已在待审池中');
+        toast.error('该视频已在待审池中');
         return false;
       }
 
       if (limboList.length >= config.limboCapacity) {
-        alert(`待审池已满（${config.limboCapacity}个），请先处理后再添加`);
+        toast.error(`待审池已满（${config.limboCapacity} 个），请先处理后再添加`);
         return false;
       }
 
@@ -229,6 +248,7 @@ export function useLimboActions(config: ExtensionConfig) {
       };
 
       await StorageRepository.set({ limboList: [...limboList, newItem] });
+      toast.success(`已加入待审池：${title}`);
       logger.debug('LimboReview', 'Added by URL:', bvid);
       return true;
     } catch (error) {

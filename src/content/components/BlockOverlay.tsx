@@ -1,4 +1,5 @@
 import type { VideoMetadata } from '@core/types';
+import { Icon } from '../../ui/Icon';
 import './BlockOverlay.css';
 
 export interface BlockOverlayProps {
@@ -46,20 +47,20 @@ function StatusBox({
     <div className={`bfm-status-box ${boxClass}`}>
       {isBankruptcy ? (
         <>
-          <p className={`bfm-status-label ${labelClass}`}>❌ 破产锁定中</p>
+          <p className={`bfm-status-label ${labelClass}`}><Icon name="alert" size={14} /> 破产锁定中</p>
           <p className="bfm-status-text">
             破产期间禁止所有娱乐消费。虽然当前是审批时间，但你已陷入债务破产，请先前往管理页偿还债务。
           </p>
         </>
       ) : isOutsideWindow ? (
         <>
-          <p className={`bfm-status-label ${labelClass}`}>⏰ 当前不在审批时间</p>
+          <p className={`bfm-status-label ${labelClass}`}><Icon name="clock" size={14} /> 当前不在审批时间</p>
           <p className="bfm-status-text">距离下次审批时间：{timeText}</p>
           <span className="bfm-status-hint">审批时间才能处理待审池视频</span>
         </>
       ) : (
         <>
-          <p className={`bfm-status-label ${labelClass}`}>✅ 当前是审批时间</p>
+          <p className={`bfm-status-label ${labelClass}`}><Icon name="check" size={14} /> 当前是审批时间</p>
           <p className="bfm-status-text">
             你可以现在处理待审池视频。请先将此视频"加入待审池"，然后在管理页点击通过即可开始观看。
           </p>
@@ -88,7 +89,8 @@ export function BlockOverlay({
   return (
     <div className="bilibili-focus-mode-block-overlay">
       <div className="bilibili-focus-mode-block-overlay-container">
-        <h2 className="bfm-title">🔒 视频未审批</h2>
+        <p className="bfm-eyebrow">Focus Mode · 访问受限</p>
+        <h2 className="bfm-title"><Icon name="lock" size={22} /> 视频未审批</h2>
         <p className="bfm-video-title">{metadata.title}</p>
         <p className="bfm-uploader">UP 主：{metadata.uploader}</p>
 
@@ -111,8 +113,9 @@ export function BlockOverlay({
               }
             }}
           >
+            <Icon name="shield" size={15} />
             {effectiveBypass.remainingUses > 0
-              ? `每日放行 (${effectiveBypass.remainingUses}次)`
+              ? `每日放行 (${effectiveBypass.remainingUses} 次)`
               : '每日放行 (已用完)'}
           </button>
           {!isBankruptcy && (
@@ -121,6 +124,7 @@ export function BlockOverlay({
               className="bfm-btn bfm-btn--submit"
               onClick={() => onAddToLimbo(metadata)}
             >
+              <Icon name="list" size={15} />
               加入待审池
             </button>
           )}
@@ -133,6 +137,7 @@ export function BlockOverlay({
               onOpenManager();
             }}
           >
+            <Icon name="external" size={15} />
             打开管理页
           </button>
         </div>

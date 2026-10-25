@@ -12,8 +12,10 @@ export function ensureStorageDefaults(data: Partial<ExtensionStorage>): Extensio
   };
 }
 
+/** Local (not UTC) date key, so daily quotas reset at local midnight. */
 export function getTodayKey(): string {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 export function normalizeBehaviorLog(behaviorLog?: Partial<BehaviorLogState>): BehaviorLogState {

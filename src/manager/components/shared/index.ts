@@ -1,3 +1,3 @@
 export { BatchToolbar } from './BatchToolbar';
-export { ItemCard } from './ItemCard';
+export { VideoRow } from './VideoRow';
 export { VideoCover } from './VideoCover';

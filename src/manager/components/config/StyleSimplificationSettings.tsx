@@ -40,7 +40,7 @@ export function StyleSimplificationSettings({ config, updateConfig }: StyleSimpl
   };
 
   return (
-    <div className="bg-gray-800 p-4 rounded-lg">
+    <div className="bg-secondary p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">🎨 样式简化</h3>
       <div className="space-y-3">
         <VideoPlayerSection

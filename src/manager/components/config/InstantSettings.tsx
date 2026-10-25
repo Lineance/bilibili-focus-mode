@@ -1,4 +1,5 @@
 import type { ExtensionConfig, FieldDescription } from '@core/types';
+import { Icon } from '@ui';
 
 interface InstantSettingsProps {
   config: ExtensionConfig;
@@ -8,11 +9,11 @@ interface InstantSettingsProps {
 
 export function InstantSettings({ config, updateConfig, descriptions }: InstantSettingsProps): React.JSX.Element {
   return (
-    <div className="bg-gray-800 p-4 rounded-lg">
-      <h3 className="text-lg font-medium mb-3">⚡ 即时许可</h3>
+    <div className="bg-secondary p-4 rounded-lg">
+      <h3 className="text-lg font-medium mb-3"><Icon name="bolt" size={15} /> 即时许可</h3>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">
+          <label className="block text-sm text-tertiary mb-1">
             {descriptions.instantDurationHours.label}
           </label>
           <input
@@ -21,7 +22,7 @@ export function InstantSettings({ config, updateConfig, descriptions }: InstantS
             onChange={(e) => updateConfig('instantDurationHours', parseInt(e.target.value))}
             min={1}
             max={24}
-            className="w-full px-3 py-2 bg-gray-700 rounded"
+            className="w-full px-3 py-2 bg-tertiary rounded"
           />
         </div>
         <div className="flex items-center">

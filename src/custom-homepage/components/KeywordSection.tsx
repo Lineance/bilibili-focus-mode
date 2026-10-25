@@ -1,11 +1,8 @@
 import React from 'react';
 import type { ExtensionConfig } from '@core/types';
+import { Card, EmptyState, Icon, StatusChip } from '@ui';
 
-interface KeywordSectionProps {
-  config: ExtensionConfig;
-}
-
-export function KeywordSection({ config }: KeywordSectionProps): React.JSX.Element {
+export function KeywordSection({ config }: { config: ExtensionConfig }): React.JSX.Element {
   const openManager = () => {
     window.open(chrome.runtime.getURL('src/manager/index.html#keywords'), '_blank');
   };
@@ -14,43 +11,39 @@ export function KeywordSection({ config }: KeywordSectionProps): React.JSX.Eleme
   const isEnabled = config.keywordRules?.enabled ?? false;
 
   return (
-    <div className="card">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <span>🔑</span>
-          <span>关键词规则</span>
-          <span className="text-sm font-normal text-muted">({keywords.length})</span>
+    <Card>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="fm-section-title mb-0">
+          <Icon name="tag" size={16} />
+          关键词规则
+          <span className="rounded-full bg-tertiary px-2 py-0.5 font-mono text-[11px] font-normal text-tertiary">
+            {keywords.length}
+          </span>
         </h2>
-        <button onClick={openManager} className="text-sm text-accent-primary hover:underline">
+        <button type="button" onClick={openManager} className="text-[12px] text-accent hover:underline">
           管理
         </button>
       </div>
 
-      {/* 状态指示 */}
-      <div className={`rounded-lg p-3 mb-3 ${isEnabled ? 'bg-success/20 border border-success/50' : 'bg-tertiary'}`}>
-        <p className={`text-sm font-medium ${isEnabled ? 'text-success' : 'text-muted'}`}>
-          {isEnabled ? '✅ 已启用自动放行' : '⏸️ 自动放行已禁用'}
-        </p>
+      <div className="mb-3">
+        <StatusChip tone={isEnabled ? 'success' : 'neutral'} icon={isEnabled ? 'check' : 'clock'}>
+          {isEnabled ? '自动放行已启用' : '自动放行已停用'}
+        </StatusChip>
       </div>
 
       {keywords.length === 0 ? (
-        <p className="text-muted text-center py-4">暂无关键词规则</p>
+        <EmptyState icon="tag" title="暂无关键词规则" description="标题命中关键词的视频会自动放行。" />
       ) : (
         <div className="flex flex-wrap gap-2">
-          {keywords.map((keyword, index) => (
-            <span
-              key={index}
-              className="px-3 py-1 bg-tertiary rounded-full text-sm text-primary"
-            >
+          {keywords.map((keyword) => (
+            <span key={keyword} className="rounded-full bg-tertiary px-3 py-1 font-mono text-[12px] text-primary">
               {keyword}
             </span>
           ))}
         </div>
       )}
 
-      <p className="text-xs text-muted mt-3">
-        包含这些关键词的视频标题将自动放行
-      </p>
-    </div>
+      <p className="fm-hint mt-3">包含这些关键词的视频标题将自动放行，并按标签计入债务。</p>
+    </Card>
   );
 }

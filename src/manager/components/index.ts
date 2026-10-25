@@ -1,5 +1,4 @@
 export { ConfigPanel } from './ConfigPanel';
-export { DebtDashboard } from './DebtDashboard';
 export { StatsDashboard } from './StatsDashboard';
 export { InstantList } from './InstantList';
 export { KeywordRulesPanel } from './KeywordRulesPanel';

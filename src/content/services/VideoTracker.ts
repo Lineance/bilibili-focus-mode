@@ -14,15 +14,17 @@ export class VideoTracker {
   private latestVideoTag: VideoTag = 'ENTERTAINMENT';
   private latestTitle = '';
   private latestUploader = '';
-  private getCurrentBvid: () => string | null;
+  /**
+   * The video whose watch time is currently being accumulated. Kept separately
+   * from PermissionChecker because a permission check for the *next* video runs
+   * before the previous timer is flushed; using the new bvid there would credit
+   * the previous video's minutes to the wrong entry.
+   */
+  private currentBvid: string | null = null;
   private safeSendMessage: SafeSendMessage;
 
-  constructor(
-    safeSendMessage: SafeSendMessage,
-    getCurrentBvid: () => string | null
-  ) {
+  constructor(safeSendMessage: SafeSendMessage) {
     this.safeSendMessage = safeSendMessage;
-    this.getCurrentBvid = getCurrentBvid;
   }
 
   /**
@@ -45,6 +47,22 @@ export class VideoTracker {
   updateVideoMetadata(title: string, uploader: string): void {
     this.latestTitle = title;
     this.latestUploader = uploader;
+  }
+
+  /**
+   * Switch the tracked video. Flushes the previous video's pending minutes
+   * before the bvid changes so cross-video SPA navigation stays accurate.
+   */
+  updateBvid(bvid: string): void {
+    if (this.currentBvid === bvid) return;
+    this.stopWatchTimer(true);
+    this.currentBvid = bvid;
+  }
+
+  /** Stop accumulating time (e.g. left the video page). */
+  stopTracking(): void {
+    this.stopWatchTimer(true);
+    this.currentBvid = null;
   }
 
   /**
@@ -86,7 +104,7 @@ export class VideoTracker {
    */
   private handleEnded = (): void => {
     this.stopWatchTimer(true);
-    const bvid = this.getCurrentBvid();
+    const bvid = this.currentBvid;
     if (!bvid) return;
     this.safeSendMessage('watch-ended', {
       bvid,
@@ -115,24 +133,30 @@ export class VideoTracker {
    */
   private stopWatchTimer(sendFinal: boolean): void {
     if (!this.watchIntervalId) return;
-    clearInterval(this.watchIntervalId);
-    this.watchIntervalId = null;
     if (sendFinal) {
+      // Flush before clearing the id so sendDebtDelta still sees the interval.
       this.sendDebtDelta();
     }
+    clearInterval(this.watchIntervalId);
+    this.watchIntervalId = null;
   }
 
   /**
    * Send debt delta
    */
   private sendDebtDelta(): void {
-    if (!this.latestConfig?.debtEnabled) return;
+    if (!this.latestConfig?.debtEnabled) {
+      // Do not accrue time while debt tracking is off; otherwise re-enabling it
+      // would flush the whole disabled period as a single delta.
+      this.lastWatchTick = Date.now();
+      return;
+    }
     const now = Date.now();
     const minutes = (now - this.lastWatchTick) / MS_PER_MINUTE;
     if (minutes <= 0) return;
     this.lastWatchTick = now;
 
-    const bvid = this.getCurrentBvid();
+    const bvid = this.currentBvid;
     if (!bvid) return;
 
     this.safeSendMessage('update-debt', {

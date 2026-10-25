@@ -14,9 +14,9 @@ export function AppearanceEnhancementSettings({ config, updateConfig }: Appearan
   };
 
   return (
-    <div className="bg-gray-800 p-4 rounded-lg">
+    <div className="bg-secondary p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">🎨 外观增强</h3>
-      <p className="text-sm text-gray-400 mb-3">
+      <p className="text-sm text-tertiary mb-3">
         自定义页面外观，隐藏不需要的元素
       </p>
       

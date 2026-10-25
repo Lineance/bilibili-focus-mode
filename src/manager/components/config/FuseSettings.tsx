@@ -8,11 +8,11 @@ interface FuseSettingsProps {
 
 export function FuseSettings({ config, updateConfig, descriptions }: FuseSettingsProps): React.JSX.Element {
   return (
-    <div className="bg-gray-800 p-4 rounded-lg">
+    <div className="bg-secondary p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">🔐 熔断码</h3>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">
+          <label className="block text-sm text-tertiary mb-1">
             {descriptions.baseFuseLength.label}
           </label>
           <input
@@ -21,11 +21,11 @@ export function FuseSettings({ config, updateConfig, descriptions }: FuseSetting
             onChange={(e) => updateConfig('baseFuseLength', parseInt(e.target.value))}
             min={4}
             max={16}
-            className="w-full px-3 py-2 bg-gray-700 rounded"
+            className="w-full px-3 py-2 bg-tertiary rounded"
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">
+          <label className="block text-sm text-tertiary mb-1">
             {descriptions.maxFuseLength.label}
           </label>
           <input
@@ -34,11 +34,11 @@ export function FuseSettings({ config, updateConfig, descriptions }: FuseSetting
             onChange={(e) => updateConfig('maxFuseLength', parseInt(e.target.value))}
             min={config.baseFuseLength}
             max={128}
-            className="w-full px-3 py-2 bg-gray-700 rounded"
+            className="w-full px-3 py-2 bg-tertiary rounded"
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">
+          <label className="block text-sm text-tertiary mb-1">
             {descriptions.bankruptcyOverrideMaxFuse.label}
           </label>
           <input
@@ -47,7 +47,7 @@ export function FuseSettings({ config, updateConfig, descriptions }: FuseSetting
             onChange={(e) => updateConfig('bankruptcyOverrideMaxFuse', parseInt(e.target.value))}
             min={config.baseFuseLength}
             max={128}
-            className="w-full px-3 py-2 bg-gray-700 rounded"
+            className="w-full px-3 py-2 bg-tertiary rounded"
           />
         </div>
       </div>

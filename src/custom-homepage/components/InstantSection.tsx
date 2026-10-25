@@ -1,78 +1,64 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import type { InstantItem } from '@core/types';
+import { EmptyState, SectionHeader, TagChip } from '@ui';
 
 interface InstantSectionProps {
   items: InstantItem[];
 }
 
+const COVER_PLACEHOLDER = chrome.runtime.getURL('cover-placeholder.svg');
+
 export function InstantSection({ items }: InstantSectionProps): React.JSX.Element {
   const [currentTime, setCurrentTime] = useState<number>(() => Date.now());
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(Date.now()), 60000);
-    return () => clearInterval(timer);
+    const timer = window.setInterval(() => setCurrentTime(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const formatExpiry = useCallback((expiresAt: number): string => {
     const remaining = expiresAt - currentTime;
     if (remaining <= 0) return '已过期';
-
     const hours = Math.floor(remaining / (1000 * 60 * 60));
     const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (hours >= 24) {
-      const days = Math.floor(hours / 24);
-      return `${days}天后过期`;
-    }
-    return hours > 0 ? `${hours}小时${minutes}分钟后过期` : `${minutes}分钟后过期`;
+    if (hours >= 24) return `${Math.floor(hours / 24)} 天后过期`;
+    return hours > 0 ? `${hours} 小时 ${minutes} 分后过期` : `${minutes} 分钟后过期`;
   }, [currentTime]);
-
-  const openVideo = (bvid: string) => {
-    window.open(`https://www.bilibili.com/video/${bvid}`, '_blank');
-  };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <span>⚡</span>
-          <span>即时许可</span>
-          <span className="text-sm font-normal text-muted">({items.length})</span>
-        </h2>
-      </div>
+      <SectionHeader
+        title="即时许可"
+        icon="bolt"
+        count={items.length}
+        description="带有效期的放行；到期后自动失效。"
+      />
 
       {items.length === 0 ? (
-        <div className="card text-center py-8">
-          <p className="text-muted">暂无即时许可视频</p>
-          <p className="text-sm text-muted mt-1">在待审池中审批视频时选择"立即"添加</p>
-        </div>
+        <EmptyState icon="bolt" title="暂无即时许可" description="在待审池中选择「立即」即可添加。" />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {items.map((item) => (
             <div
               key={item.bvid}
               className="video-card cursor-pointer"
-              onClick={() => openVideo(item.bvid)}
+              onClick={() => window.open(`https://www.bilibili.com/video/${item.bvid}`, '_blank')}
             >
               <img
-                src={item.coverUrl || `https://picsum.photos/seed/${item.bvid}/320/180`}
+                src={item.coverUrl || COVER_PLACEHOLDER}
                 alt={item.title}
                 className="video-card-cover"
                 loading="lazy"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://picsum.photos/seed/${item.bvid}/320/180`;
+                  (e.target as HTMLImageElement).src = COVER_PLACEHOLDER;
                 }}
               />
               <div className="video-card-info">
                 <p className="video-card-title">{item.title}</p>
                 <p className="video-card-uploader">{item.uploader}</p>
-                <div className="flex items-center justify-between mt-2">
-                  <span className={`tag ${item.tag === 'LEARNING' ? 'tag-learning' : item.tag === 'MUSIC' ? 'tag-music' : 'tag-entertainment'}`}>
-                    {item.tag === 'LEARNING' ? '📚 学习' : item.tag === 'MUSIC' ? '🎵 音乐' : '🎮 娱乐'}
-                  </span>
-                  <span className="text-xs text-muted">
-                    {formatExpiry(item.expiresAt)}
-                  </span>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <TagChip tag={item.tag} showIcon={false} />
+                  <span className="text-[10.5px] text-muted">{formatExpiry(item.expiresAt)}</span>
                 </div>
               </div>
             </div>

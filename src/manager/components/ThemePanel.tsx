@@ -1,253 +1,186 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ThemeService } from '@core/services';
+import { THEMES } from '@core/theme/themes';
 import type { ThemeMode, ThemeColorScheme } from '@core/types';
+import { Button, Card, Icon, PageIntro, SectionHeader, Toggle } from '@ui';
+
+const themeService = ThemeService.getInstance();
+
+function Swatches({ scheme, mode }: { scheme: ThemeColorScheme; mode: ThemeMode }) {
+  const palette = THEMES[scheme][mode];
+  return (
+    <div className="flex items-center gap-1.5">
+      {[palette.bgPrimary, palette.bgTertiary, palette.accentPrimary, palette.warning, palette.success].map((color, index) => (
+        <span
+          key={`${scheme}-${index}`}
+          className="h-4 w-4 rounded-full"
+          style={{ backgroundColor: color, boxShadow: 'inset 0 0 0 1px rgba(127,127,127,0.25)' }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export function ThemePanel(): React.JSX.Element {
-  const [themeService] = useState(() => new ThemeService());
   const [mode, setMode] = useState<ThemeMode>(themeService.getThemeConfig().mode);
   const [scheme, setScheme] = useState<ThemeColorScheme>(themeService.getThemeConfig().colorScheme);
 
-  // Initialize theme service on mount
-  useEffect(() => {
-    themeService.initialize();
-  }, [themeService]);
-
-  // Subscribe to theme changes
-  useEffect(() => {
-    const unsubscribe = themeService.subscribe((config) => {
-      setMode(config.mode);
-      setScheme(config.colorScheme);
-    });
-
-    return () => unsubscribe();
-  }, [themeService]);
-
-  const handleModeToggle = () => {
-    themeService.toggleMode();
-  };
-
-  const handleSchemeChange = (newScheme: ThemeColorScheme) => {
-    themeService.setScheme(newScheme);
-  };
+  useEffect(() => themeService.subscribe((config) => {
+    setMode(config.mode);
+    setScheme(config.colorScheme);
+  }), []);
 
   const handleResetTheme = () => {
-    if (confirm('确定要重置主题为默认设置吗？')) {
-      themeService.setMode('dark');
-      themeService.setScheme('tokyo');
-    }
+    if (!confirm('确定要重置主题为默认设置吗？')) return;
+    themeService.setMode('dark');
+    themeService.setScheme('tokyo');
   };
 
-  const availableThemes = themeService.getAvailableThemes();
-
   return (
-    <div className="bg-secondary border border-secondary rounded-lg p-6 shadow-xl">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-primary mb-2">🎨 主题配置</h2>
-          <p className="text-secondary">自定义您的视觉体验</p>
-        </div>
-        <button
-          onClick={handleResetTheme}
-          className="px-4 py-2 bg-tertiary text-primary rounded text-sm hover:bg-accent-primary hover:text-white transition-all duration-300"
-        >
+    <div>
+      <PageIntro
+        eyebrow="Appearance"
+        title="主题"
+        description="两套配色共用同一套语义槽位；切换只影响强调色与底色，不改信息层级。"
+      />
+
+      <div className="mb-6 flex justify-end">
+        <Button variant="ghost" size="sm" icon="history" onClick={handleResetTheme}>
           重置默认
-        </button>
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        {/* Mode Toggle Card */}
-        <div className="bg-tertiary border border-secondary rounded-lg p-5">
-          <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
-            <span className="text-xl">🌓</span>
-            显示模式
-          </h3>
-          
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex flex-col">
-              <span className="text-primary font-medium mb-1">
-                {mode === 'light' ? '浅色模式' : '深色模式'}
+      <div className="mb-6 grid gap-4 md:grid-cols-2">
+        <Card>
+          <p className="fm-label">显示模式</p>
+          <div className="mt-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-tertiary text-secondary">
+                <Icon name={mode === 'light' ? 'sun' : 'moon'} size={16} />
               </span>
-              <span className="text-muted text-sm">
-                {mode === 'light' ? '明亮清爽，适合白天使用' : '柔和护眼，适合夜间使用'}
-              </span>
-            </div>
-            
-            <button
-              onClick={handleModeToggle}
-              className="relative w-16 h-8 bg-tertiary border-2 border-secondary rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2"
-              aria-label={`切换到${mode === 'light' ? '深色' : '浅色'}模式`}
-            >
-              <div
-                className={`absolute top-0.5 w-6 h-6 rounded-full transition-all duration-300 flex items-center justify-center text-sm shadow-md ${
-                  mode === 'light' 
-                    ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 translate-x-1' 
-                    : 'bg-gradient-to-br from-indigo-400 to-purple-600 translate-x-8'
-                }`}
-              >
-                {mode === 'light' ? '☀️' : '🌙'}
-              </div>
-            </button>
-          </div>
-
-          <div className="flex gap-2 mt-4">
-            <div className="flex-1 h-10 rounded bg-primary border border-secondary flex items-center justify-center transition-colors">
-              <span className="text-xs text-primary">背景</span>
-            </div>
-            <div className="flex-1 h-10 rounded bg-secondary border border-secondary flex items-center justify-center transition-colors">
-              <span className="text-xs text-secondary">次要</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Color Scheme Selection Card */}
-        <div className="bg-tertiary border border-secondary rounded-lg p-5">
-          <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
-            <span className="text-xl">🎨</span>
-            配色方案
-          </h3>
-
-          <div className="space-y-3">
-            {availableThemes.map((theme) => (
-              <button
-                key={theme.id}
-                onClick={() => handleSchemeChange(theme.id)}
-                className={`w-full p-4 rounded-lg border-2 transition-all duration-300 text-left ${
-                  scheme === theme.id
-                    ? 'border-accent-primary bg-accent-primary/25 shadow-lg scale-[1.02] ring-2 ring-accent-primary/30'
-                    : 'border-secondary hover:border-accent-hover hover:scale-[1.01]'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">
-                      {theme.id === 'minimal' ? '⚫' : '🌃'}
-                    </span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-base font-semibold ${
-                          scheme === theme.id ? 'text-accent-primary font-bold' : 'text-primary'
-                        }`}>
-                          {theme.name}
-                        </span>
-                        {scheme === theme.id && (
-                          <div className="w-5 h-5 bg-accent-primary rounded-full flex items-center justify-center">
-                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted mt-0.5">{theme.description}</p>
-                    </div>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Color Preview Section */}
-      <div className="bg-tertiary border border-secondary rounded-lg p-5 mb-6">
-        <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
-          <span className="text-xl">👁️</span>
-          颜色预览
-        </h3>
-
-        <div className="space-y-4">
-          {/* Background Colors */}
-          <div>
-            <h4 className="text-sm text-muted mb-2">背景色</h4>
-            <div className="grid grid-cols-4 gap-3">
-              <div className="h-16 rounded-lg bg-primary border border-secondary flex items-end justify-center pb-2">
-                <span className="text-xs text-primary">主要</span>
-              </div>
-              <div className="h-16 rounded-lg bg-secondary border border-secondary flex items-end justify-center pb-2">
-                <span className="text-xs text-secondary">次要</span>
-              </div>
-              <div className="h-16 rounded-lg bg-tertiary border border-secondary flex items-end justify-center pb-2">
-                <span className="text-xs text-tertiary">第三</span>
-              </div>
-              <div className="h-16 rounded-lg bg-hover border border-secondary flex items-end justify-center pb-2">
-                <span className="text-xs text-primary">悬停</span>
+              <div>
+                <p className="text-[13px] font-medium">{mode === 'light' ? '浅色' : '深色'}</p>
+                <p className="mt-0.5 text-[11.5px] text-tertiary">
+                  {mode === 'light' ? '明亮通透，适合白天' : '低亮度护眼，适合夜间'}
+                </p>
               </div>
             </div>
-          </div>
-
-          {/* Accent Colors */}
-          <div>
-            <h4 className="text-sm text-muted mb-2">强调色</h4>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="h-12 rounded-lg bg-accent-primary flex items-center justify-center">
-                <span className="text-xs text-white font-medium">主色</span>
-              </div>
-              <div className="h-12 rounded-lg bg-accent-hover flex items-center justify-center">
-                <span className="text-xs text-white font-medium">悬停</span>
-              </div>
-              <div className="h-12 rounded-lg bg-accent-active flex items-center justify-center">
-                <span className="text-xs text-white font-medium">激活</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Status Colors */}
-          <div>
-            <h4 className="text-sm text-muted mb-2">状态色</h4>
-            <div className="grid grid-cols-4 gap-3">
-              <div className="h-12 rounded-lg border border-success flex items-center justify-center">
-                <span className="text-xs text-success font-medium">成功</span>
-              </div>
-              <div className="h-12 rounded-lg border border-warning flex items-center justify-center">
-                <span className="text-xs text-warning font-medium">警告</span>
-              </div>
-              <div className="h-12 rounded-lg border border-error flex items-center justify-center">
-                <span className="text-xs text-error font-medium">错误</span>
-              </div>
-              <div className="h-12 rounded-lg border border-info flex items-center justify-center">
-                <span className="text-xs text-info font-medium">信息</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Interactive Elements Preview */}
-      <div className="bg-tertiary border border-secondary rounded-lg p-5">
-        <h3 className="text-lg font-semibold text-primary mb-4 flex items-center gap-2">
-          <span className="text-xl">🔧</span>
-          交互元素预览
-        </h3>
-
-        <div className="space-y-4">
-          {/* Buttons */}
-          <div className="flex flex-wrap gap-3">
-            <button className="px-4 py-2 bg-accent-primary text-white rounded-lg hover:bg-accent-hover transition-colors">
-              主要按钮
-            </button>
-            <button className="px-4 py-2 bg-secondary text-primary border border-secondary rounded-lg hover:bg-accent-primary/10 transition-colors">
-              次要按钮
-            </button>
-            <button className="px-4 py-2 bg-success text-white rounded-lg hover:bg-success/80 transition-colors">
-              成功
-            </button>
-            <button className="px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 transition-colors">
-              危险
-            </button>
-          </div>
-
-          {/* Input Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input
-              type="text"
-              placeholder="输入框"
-              className="w-full px-4 py-2 bg-secondary border border-secondary rounded-lg text-primary placeholder-muted focus:border-accent-primary focus:outline-none transition-colors"
+            <Toggle
+              checked={mode === 'dark'}
+              onChange={(next) => themeService.setMode(next ? 'dark' : 'light')}
+              label="切换深色模式"
             />
-            <select className="w-full px-4 py-2 bg-secondary border border-secondary rounded-lg text-primary focus:border-accent-primary focus:outline-none transition-colors">
-              <option>下拉选择框</option>
-            </select>
+          </div>
+        </Card>
+
+        <Card>
+          <p className="fm-label">跟随系统</p>
+          <div className="mt-3 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[13px] font-medium">使用系统外观</p>
+              <p className="mt-0.5 text-[11.5px] text-tertiary">在浅色/深色之间自动切换。</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon="spark"
+              onClick={() => {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                themeService.setMode(prefersDark ? 'dark' : 'light');
+              }}
+            >
+              应用系统设置
+            </Button>
+          </div>
+        </Card>
+      </div>
+
+      <SectionHeader title="配色方案" icon="palette" description="选择一套底色与强调色组合，所有页面会立即更新。" />
+
+      <div className="mb-6 grid gap-3 md:grid-cols-2">
+        {themeService.getAvailableThemes().map((theme) => {
+          const isActive = scheme === theme.id;
+          return (
+            <button
+              key={theme.id}
+              type="button"
+              onClick={() => themeService.setScheme(theme.id)}
+              className={`rounded-[14px] border p-4 text-left transition-colors ${
+                isActive ? 'border-accent bg-accent/10' : 'border-secondary bg-secondary hover:border-accent/40'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className={`text-[14px] font-semibold ${isActive ? 'text-accent' : 'text-primary'}`}>
+                    {theme.name}
+                  </p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-tertiary">{theme.description}</p>
+                </div>
+                <Swatches scheme={theme.id} mode={mode} />
+              </div>
+              {isActive && (
+                <p className="mt-3 flex items-center gap-1.5 text-[11px] text-accent">
+                  <Icon name="check" size={13} /> 当前使用
+                </p>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <Card>
+        <h3 className="fm-section-title">色板预览</h3>
+
+        <div className="space-y-5">
+          <div>
+            <p className="fm-label mb-2">表层</p>
+            <div className="grid grid-cols-4 gap-3">
+              {[
+                { className: 'bg-primary', label: '底色', text: 'text-tertiary' },
+                { className: 'bg-secondary', label: '卡片', text: 'text-tertiary' },
+                { className: 'bg-tertiary', label: '次级', text: 'text-tertiary' },
+                { className: 'bg-accent', label: '强调', text: 'text-on-accent' },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className={`flex h-16 items-end justify-center rounded-lg border border-secondary pb-2 ${item.className}`}
+                >
+                  <span className={`text-[11px] ${item.text}`}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="fm-label mb-2">语义状态</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                { color: 'var(--fm-success)', label: '学习', icon: 'book' as const },
+                { color: 'var(--fm-warning)', label: '娱乐', icon: 'gamepad' as const },
+                { color: 'var(--fm-info)', label: '音乐', icon: 'music' as const },
+                { color: 'var(--fm-error)', label: '风险', icon: 'alert' as const },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg border border-secondary px-3 py-3" style={{ color: item.color }}>
+                  <Icon name={item.icon} size={15} />
+                  <span className="mt-2 block text-[12.5px] font-medium">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="fm-label mb-2">交互元素</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button variant="primary" icon="check">主要按钮</Button>
+              <Button variant="ghost">次要按钮</Button>
+              <Button variant="danger" icon="trash">危险操作</Button>
+              <span className="fm-chip fm-chip--study"><Icon name="book" size={12} />学习</span>
+              <span className="fm-chip fm-chip--ent"><Icon name="gamepad" size={12} />娱乐</span>
+              <span className="fm-chip fm-chip--music"><Icon name="music" size={12} />音乐</span>
+            </div>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -8,7 +8,7 @@ export class VideoPlayerCSSGenerator {
       rules.push(`
         #comment, #commentapp, .comment-area, .reply-wrapper,
         .comment-list, .comment-header, .comment-send,
-        bili-comments, [class*="comment"], [id*="comment"] {
+        bili-comments, .bili-comments, .reply-list {
           display: none !important;
         }
       `);
@@ -18,7 +18,7 @@ export class VideoPlayerCSSGenerator {
       rules.push(`
         .recommend-list, .next-play, .related-video,
         .rec-list, .video-page-card-small,
-        [class*="recommend"], [class*="related"] {
+        .bili-video-card.related-card {
           display: none !important;
         }
       `);
@@ -48,8 +48,7 @@ export class VideoPlayerCSSGenerator {
         .ad-report, .ad-floor, .banner-ad,
         .strip-ad, .strip-ad-inner, .left-banner,
         .right-bottom-banner, .ad-floor-exp,
-        [class*="ad-"], [class*="advertisement"],
-        [class*="strip-ad"], [id*="ad"] {
+        .bili-video-card__stats--ad, .ad-feedback-entry {
           display: none !important;
         }
       `);

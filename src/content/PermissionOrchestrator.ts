@@ -68,6 +68,7 @@ export class PermissionOrchestrator {
 
     if (!metadata) {
       logger.debug('Content', 'No metadata found, removing block');
+      this.videoTracker.stopTracking();
       this.blockOverlayManager.remove();
       return;
     }
@@ -80,6 +81,7 @@ export class PermissionOrchestrator {
       return;
     }
 
+    this.videoTracker.updateBvid(metadata.bvid);
     this.videoTracker.updateConfig(result.config || null);
     this.videoTracker.updateVideoTag(result.videoTag || 'ENTERTAINMENT');
     this.videoTracker.updateVideoMetadata(metadata.title, metadata.uploader);

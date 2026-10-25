@@ -9,6 +9,16 @@ const mockCreate = vi.fn();
 vi.stubGlobal('chrome', {
   runtime: {
     openOptionsPage: mockOpenOptionsPage,
+    getURL: (path: string) => `chrome-extension://test/${path}`,
+  },
+  storage: {
+    local: {
+      get: vi.fn(() => Promise.resolve({})),
+    },
+    onChanged: {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+    },
   },
   tabs: {
     create: mockCreate,
@@ -23,10 +33,9 @@ describe('Popup', () => {
   it('should render popup content', () => {
     render(<Popup />);
     
-    expect(screen.getByText('Bilibili Focus Mode')).toBeTruthy();
+    expect(screen.getByText('Focus Mode')).toBeTruthy();
     expect(screen.getByText('打开管理页')).toBeTruthy();
-    expect(screen.getByText('前往B站')).toBeTruthy();
-    expect(screen.getByText('快捷键: Ctrl+Shift+A 快速添加')).toBeTruthy();
+    expect(screen.getByText('前往 B 站')).toBeTruthy();
   });
 
   it('should open options page when button clicked', () => {
@@ -40,7 +49,7 @@ describe('Popup', () => {
   it('should open bilibili when button clicked', () => {
     render(<Popup />);
     
-    fireEvent.click(screen.getByText('前往B站'));
+    fireEvent.click(screen.getByText('前往 B 站'));
     
     expect(mockCreate).toHaveBeenCalledWith({ url: 'https://www.bilibili.com' });
   });

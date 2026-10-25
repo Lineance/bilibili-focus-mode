@@ -2,9 +2,15 @@ import { logger } from '@core/utils/logger';
 
 const SPEED_STORAGE_KEY = 'videoSpeedMemory';
 
+interface PatchedVideo extends HTMLVideoElement {
+  __bfmSpeedPatched?: boolean;
+  __bfmOriginalPlaybackRate?: PropertyDescriptor;
+}
+
 export class SpeedController {
-  private videoElement: HTMLVideoElement | null = null;
+  private videoElement: PatchedVideo | null = null;
   private speedObserver: MutationObserver | null = null;
+  private loadedDataHandler: (() => void) | null = null;
   private enabled = false;
   private speedMemoryEnabled = false;
   private minSpeed = 0.0625;
@@ -32,8 +38,12 @@ export class SpeedController {
   }
 
   private setupVideoElement(): void {
-    const video = document.querySelector('video');
+    const video = document.querySelector('video') as PatchedVideo | null;
     if (!video || video === this.videoElement) return;
+
+    // Switching videos (SPA navigation) must release resources attached to the
+    // previous element, otherwise observers and property patches pile up.
+    this.releaseVideoElement();
 
     this.videoElement = video;
 
@@ -46,11 +56,12 @@ export class SpeedController {
       this.watchSpeedChanges();
     }
 
-    video.addEventListener('loadeddata', () => {
+    this.loadedDataHandler = () => {
       if (this.speedMemoryEnabled) {
         this.restoreSpeed();
       }
-    });
+    };
+    video.addEventListener('loadeddata', this.loadedDataHandler);
   }
 
   private injectExtendedSpeedOptions(): void {
@@ -59,6 +70,7 @@ export class SpeedController {
     const player = this.videoElement.closest('.bpx-player-container, .bilibili-player');
     if (!player) return;
 
+    this.speedObserver?.disconnect();
     this.speedObserver = new MutationObserver(() => {
       this.addCustomSpeedOptions();
     });
@@ -115,26 +127,25 @@ export class SpeedController {
   }
 
   private watchSpeedChanges(): void {
-    if (!this.videoElement) return;
+    const video = this.videoElement;
+    if (!video || video.__bfmSpeedPatched) return;
 
     const originalRate = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'playbackRate');
     if (!originalRate) return;
 
-    const { speedMemoryEnabled, saveSpeed } = this;
-    const video = this.videoElement;
-
     Object.defineProperty(video, 'playbackRate', {
-      get() {
-        return originalRate.get?.call(this) ?? 1;
-      },
-      set(rate: number) {
-        originalRate.set?.call(this, rate);
-        if (speedMemoryEnabled) {
-          saveSpeed(rate);
+      get: () => originalRate.get?.call(video) ?? 1,
+      set: (rate: number) => {
+        originalRate.set?.call(video, rate);
+        if (this.speedMemoryEnabled) {
+          void this.saveSpeed(rate);
         }
       },
       configurable: true,
     });
+
+    video.__bfmSpeedPatched = true;
+    video.__bfmOriginalPlaybackRate = originalRate;
   }
 
   private async saveSpeed(rate: number): Promise<void> {
@@ -176,17 +187,35 @@ export class SpeedController {
     return match ? match[1] : null;
   }
 
-  private cleanup(): void {
+  private releaseVideoElement(): void {
     if (this.speedObserver) {
       this.speedObserver.disconnect();
       this.speedObserver = null;
     }
 
+    if (this.videoElement) {
+      if (this.loadedDataHandler) {
+        this.videoElement.removeEventListener('loadeddata', this.loadedDataHandler);
+      }
+      if (this.videoElement.__bfmSpeedPatched) {
+        // Remove the instance-level override so the native prototype accessor
+        // is used again (and so a future video does not inherit this patch).
+        delete (this.videoElement as unknown as Record<string, unknown>).playbackRate;
+        delete this.videoElement.__bfmSpeedPatched;
+        delete this.videoElement.__bfmOriginalPlaybackRate;
+      }
+    }
+
+    this.loadedDataHandler = null;
+    this.videoElement = null;
+  }
+
+  private cleanup(): void {
+    this.releaseVideoElement();
+
     const customSpeed = document.querySelector('.bfm-custom-speed');
     if (customSpeed) {
       customSpeed.remove();
     }
-
-    this.videoElement = null;
   }
 }

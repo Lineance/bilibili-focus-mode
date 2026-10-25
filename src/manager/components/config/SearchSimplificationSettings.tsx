@@ -14,9 +14,9 @@ export function SearchSimplificationSettings({ config, updateConfig }: SearchSim
   };
 
   return (
-    <div className="bg-gray-800 p-4 rounded-lg">
+    <div className="bg-secondary p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">🔍 搜索结果简化</h3>
-      <p className="text-sm text-gray-400 mb-3">
+      <p className="text-sm text-tertiary mb-3">
         简化搜索结果页面，隐藏广告和推荐内容
       </p>
       
@@ -55,7 +55,7 @@ export function SearchSimplificationSettings({ config, updateConfig }: SearchSim
               />
               <span className="text-sm">隐藏标题不含关键词的结果</span>
             </label>
-            <p className="text-xs text-gray-500 ml-6">
+            <p className="text-xs text-muted ml-6">
               搜索词与标题有任意公共子串即匹配
             </p>
 

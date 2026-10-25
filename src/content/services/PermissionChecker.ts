@@ -20,9 +20,17 @@ export class PermissionChecker {
   private latestConfig: ProtocolMap['check-permission']['res']['config'] | null = null;
   private latestVideoTag: ProtocolMap['check-permission']['res']['videoTag'] = 'ENTERTAINMENT';
   private currentBvid: string | null = null;
+  private fullConfig: ExtensionConfig | null = null;
+  private fullConfigLoadedAt = 0;
 
   constructor(safeSendMessage: SafeSendMessage) {
     this.safeSendMessage = safeSendMessage;
+  }
+
+  /** Drop the cached full config; call when the config key changes. */
+  invalidateConfig(): void {
+    this.fullConfig = null;
+    this.fullConfigLoadedAt = 0;
   }
 
   /**
@@ -89,11 +97,20 @@ export class PermissionChecker {
   }
 
   /**
-   * Get full config from background
+   * Get full config from background. Cached briefly so a single navigation does
+   * not issue one round-trip per consumer (redirect + style + permission check).
    */
-  async getFullConfig(): Promise<ExtensionConfig | null> {
+  async getFullConfig(force = false): Promise<ExtensionConfig | null> {
+    if (!force && this.fullConfig && Date.now() - this.fullConfigLoadedAt < 30_000) {
+      return this.fullConfig;
+    }
+
     try {
       const response = await this.safeSendMessage<ProtocolMap['get-full-config']['res']>('get-full-config', {});
+      if (response?.config) {
+        this.fullConfig = response.config;
+        this.fullConfigLoadedAt = Date.now();
+      }
       return response?.config || null;
     } catch (error) {
       console.error('[Content] Failed to get full config:', error);

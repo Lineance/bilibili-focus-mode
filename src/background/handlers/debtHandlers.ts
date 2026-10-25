@@ -61,9 +61,8 @@ export async function handleUpdateDebt(request: unknown): Promise<unknown> {
     ];
   }
 
-  // Update watch history
-  const watchHistoryStorage = await chrome.storage.local.get('watchHistory');
-  const watchHistory: WatchRecord[] = (watchHistoryStorage.watchHistory as WatchRecord[] | undefined) || [];
+  // Update watch history (reuse the snapshot already read above)
+  const watchHistory: WatchRecord[] = storage.watchHistory || [];
   const existingIndex = watchHistory.findIndex((r) => r.bvid === data.bvid);
   if (existingIndex >= 0) {
     watchHistory[existingIndex] = {

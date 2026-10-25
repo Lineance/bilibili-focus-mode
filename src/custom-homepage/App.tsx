@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { DEFAULT_CONFIG } from '@core/constants';
 import type { ExtensionStorage } from '@core/types';
 import { StorageRepository } from '@core/storage/StorageRepository';
+import { ThemeService } from '@core/services';
+import { Icon, IconButton } from '@ui';
 import { DebtStatus } from './components/DebtStatus';
 import { BypassStatus } from './components/BypassStatus';
 import { InstantSection } from './components/InstantSection';
@@ -10,8 +12,13 @@ import { UploaderSection } from './components/UploaderSection';
 import { KeywordSection } from './components/KeywordSection';
 import { QuickActions } from './components/QuickActions';
 
+const themeService = ThemeService.getInstance();
+
 export function App(): React.JSX.Element {
   const [storage, setStorage] = useState<ExtensionStorage | null>(null);
+  const [mode, setMode] = useState(themeService.getThemeConfig().mode);
+
+  useEffect(() => themeService.subscribe((config) => setMode(config.mode)), []);
 
   useEffect(() => {
     const loadStorage = async () => {
@@ -31,8 +38,8 @@ export function App(): React.JSX.Element {
 
   if (!storage) {
     return (
-      <div className="min-h-screen bg-primary flex items-center justify-center">
-        <p className="text-muted">加载中...</p>
+      <div className="fm-shell grid min-h-screen place-items-center">
+        <p className="fm-hint">加载中…</p>
       </div>
     );
   }
@@ -40,56 +47,62 @@ export function App(): React.JSX.Element {
   const config = storage.config || DEFAULT_CONFIG;
 
   return (
-    <div className="min-h-screen bg-primary text-primary">
-      {/* 头部 */}
-      <header className="bg-secondary border-b border-secondary sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold">🎯 Bilibili Focus Mode</h1>
-            <span className="text-sm text-muted">专注首页</span>
+    <div className="fm-shell">
+      <header className="fm-header">
+        <div className="fm-brand">
+          <span className="fm-brand__mark" aria-hidden="true">
+            <Icon name="shield" size={18} />
+          </span>
+          <div>
+            <h1 className="fm-wordmark">专注首页</h1>
+            <p className="fm-subtitle">Bilibili Focus Mode</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => window.open('https://search.bilibili.com/', '_blank')}
-              className="btn-primary"
-            >
-              🔍 搜索
-            </button>
-            <button
-              onClick={() => window.open(chrome.runtime.getURL('src/manager/index.html'), '_blank')}
-              className="btn-secondary"
-            >
-              打开管理页
-            </button>
-          </div>
+        </div>
+
+        <div className="fm-actions">
+          <IconButton
+            icon={mode === 'dark' ? 'sun' : 'moon'}
+            label={mode === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
+            onClick={() => themeService.toggleMode()}
+          />
+          <button
+            type="button"
+            onClick={() => window.open('https://search.bilibili.com/', '_blank')}
+            className="fm-btn fm-btn--ghost"
+          >
+            <Icon name="search" size={16} />
+            搜索
+          </button>
+          <button
+            type="button"
+            onClick={() => window.open(chrome.runtime.getURL('src/manager/index.html'), '_blank')}
+            className="fm-btn fm-btn--primary"
+          >
+            <Icon name="sliders" size={16} />
+            打开管理页
+          </button>
         </div>
       </header>
 
-      {/* 主内容 */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        {/* 债务仪表盘 */}
+      <main className="fm-main">
         <section className="mb-6">
           <DebtStatus account={storage.debtAccount} config={config} watchHistory={storage.watchHistory || []} />
         </section>
 
-        {/* 状态栏 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
           <BypassStatus config={config} behaviorLog={storage.behaviorLog} />
           <QuickActions config={config} />
         </div>
 
-        {/* 即时许可 */}
         <section className="mb-8">
           <InstantSection items={storage.instantList || []} />
         </section>
 
-        {/* 永久分组 */}
         <section className="mb-8">
           <PermanentSection groups={storage.permanentGroups || []} />
         </section>
 
-        {/* 底部区域：UP主和关键词 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <section>
             <UploaderSection uploaders={storage.allowedUploaders || []} />
           </section>
@@ -99,11 +112,8 @@ export function App(): React.JSX.Element {
         </div>
       </main>
 
-      {/* 底部 */}
-      <footer className="bg-secondary border-t border-secondary mt-8 py-4">
-        <div className="max-w-7xl mx-auto px-4 text-center text-sm text-muted">
-          <p>Bilibili Focus Mode - 意图性娱乐，掌控你的时间</p>
-        </div>
+      <footer className="mt-10 border-t border-secondary py-6 text-center">
+        <p className="fm-hint">Bilibili Focus Mode · 意图性娱乐，掌控你的时间</p>
       </footer>
     </div>
   );

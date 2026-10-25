@@ -1,29 +1,40 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { logger } from '@core/utils/logger';
-
 import type { ExtensionConfig, VideoTag } from '@core/types';
 import { StorageRepository } from '@core/storage/StorageRepository';
+import {
+  Button,
+  Card,
+  EmptyState,
+  SectionHeader,
+  Toggle,
+  confirmAction,
+  toast,
+} from '@ui';
 
 interface KeywordItem {
   keyword: string;
   tag: VideoTag;
 }
 
+const TAG_OPTIONS: { value: VideoTag; label: string }[] = [
+  { value: 'LEARNING', label: '学习' },
+  { value: 'MUSIC', label: '音乐' },
+];
+
 export function KeywordRulesPanel({ config }: { config: ExtensionConfig }): React.JSX.Element {
-  // 优先使用 items 字段（每个关键词独立标签），否则从 keywords 数组创建
   const [keywordItems, setKeywordItems] = useState<KeywordItem[]>(() => {
     if (config.keywordRules?.items && config.keywordRules.items.length > 0) {
       return config.keywordRules.items;
     }
-    return config.keywordRules?.keywords?.map((k: string) => ({
-      keyword: k,
+    return config.keywordRules?.keywords?.map((keyword: string) => ({
+      keyword,
       tag: config.keywordRules?.tag || 'LEARNING',
     })) || [];
   });
   const [newKeyword, setNewKeyword] = useState('');
   const [newTag, setNewTag] = useState<VideoTag>('LEARNING');
   const [enabled, setEnabled] = useState(config.keywordRules?.enabled ?? true);
-  const [message, setMessage] = useState('');
 
   const saveToStorage = useCallback(async (items: KeywordItem[], newEnabled: boolean) => {
     try {
@@ -31,26 +42,25 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }): Reac
         ...current,
         keywordRules: {
           enabled: newEnabled,
-          keywords: items.map(item => item.keyword),
+          keywords: items.map((item) => item.keyword),
           tag: 'LEARNING',
-          items: items,
+          items,
         },
       }));
-      setMessage('保存成功');
-      setTimeout(() => setMessage(''), 2000);
     } catch (error) {
       logger.error('KeywordRulesPanel', 'Failed to save keyword rules:', error);
-      setMessage('保存失败');
+      toast.error('保存失败，请重试');
     }
   }, []);
 
-  // 迁移旧格式数据：如果有 keywords 但没有 items，自动保存一次
+  // Migrate legacy `keywords`-only data to the per-keyword `items` format once.
   useEffect(() => {
-    const needsMigration = config.keywordRules?.keywords?.length > 0 && 
-                          (!config.keywordRules.items || config.keywordRules.items.length === 0);
+    const needsMigration =
+      config.keywordRules?.keywords?.length > 0 &&
+      (!config.keywordRules.items || config.keywordRules.items.length === 0);
     if (needsMigration && keywordItems.length > 0) {
       logger.info('KeywordRulesPanel', 'Migrating keyword rules to items format');
-      saveToStorage(keywordItems, enabled);
+      void saveToStorage(keywordItems, enabled);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -58,116 +68,119 @@ export function KeywordRulesPanel({ config }: { config: ExtensionConfig }): Reac
   const handleAdd = async () => {
     const trimmed = newKeyword.trim();
     if (!trimmed) return;
-    if (keywordItems.some(item => item.keyword === trimmed)) {
-      setMessage('关键词已存在');
+    if (keywordItems.some((item) => item.keyword === trimmed)) {
+      toast.error('关键词已存在');
       return;
     }
+
     const newItems = [...keywordItems, { keyword: trimmed, tag: newTag }];
     setKeywordItems(newItems);
     setNewKeyword('');
     await saveToStorage(newItems, enabled);
+    toast.success(`已添加关键词「${trimmed}」`);
   };
 
   const handleDelete = async (keyword: string) => {
-    const newItems = keywordItems.filter(item => item.keyword !== keyword);
+    const ok = await confirmAction({
+      title: '删除关键词',
+      description: `删除后标题包含「${keyword}」的视频将不再自动放行。`,
+      confirmLabel: '删除',
+      danger: true,
+    });
+    if (!ok) return;
+
+    const newItems = keywordItems.filter((item) => item.keyword !== keyword);
     setKeywordItems(newItems);
     await saveToStorage(newItems, enabled);
+    toast.success('已删除');
   };
 
-  const handleTagChange = async (keyword: string, newTag: VideoTag) => {
-    const newItems = keywordItems.map(item =>
-      item.keyword === keyword ? { ...item, tag: newTag } : item
+  const handleTagChange = async (keyword: string, newTagValue: VideoTag) => {
+    const newItems = keywordItems.map((item) =>
+      item.keyword === keyword ? { ...item, tag: newTagValue } : item
     );
     setKeywordItems(newItems);
     await saveToStorage(newItems, enabled);
   };
 
-  const handleToggleEnabled = async () => {
-    const newEnabled = !enabled;
-    setEnabled(newEnabled);
-    await saveToStorage(keywordItems, newEnabled);
+  const handleToggleEnabled = async (next: boolean) => {
+    setEnabled(next);
+    await saveToStorage(keywordItems, next);
+    toast.info(next ? '关键词规则已启用' : '关键词规则已停用');
   };
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">关键词自动放行规则</h2>
-        <label className="flex items-center gap-2 cursor-pointer">
+      <SectionHeader
+        title="关键词自动放行"
+        icon="tag"
+        count={keywordItems.length}
+        description="标题包含关键词的视频会自动放行，并按对应标签计入债务。"
+        actions={
+          <div className="flex items-center gap-2.5 rounded-full border border-secondary px-3 py-1.5">
+            <span className="text-[12px] text-tertiary">{enabled ? '已启用' : '已停用'}</span>
+            <Toggle checked={enabled} onChange={handleToggleEnabled} label="启用关键词规则" />
+          </div>
+        }
+      />
+
+      <Card className="mb-5">
+        <div className="flex flex-wrap items-center gap-2">
           <input
-            type="checkbox"
-            checked={enabled}
-            onChange={handleToggleEnabled}
-            className="w-4 h-4 rounded"
+            type="text"
+            value={newKeyword}
+            onChange={(e) => setNewKeyword(e.target.value)}
+            placeholder="输入关键词（如：高数、歌单）"
+            className="min-w-[220px] flex-1"
+            onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           />
-          <span className={enabled ? 'text-green-400' : 'text-secondary'}>
-            {enabled ? '已启用' : '已禁用'}
-          </span>
-        </label>
-      </div>
-
-      <p className="text-secondary mb-4 text-sm">
-        当视频标题包含以下关键词时，将自动放行并标记为对应类型
-      </p>
-
-      <div className="flex gap-2 mb-4">
-        <input
-          type="text"
-          value={newKeyword}
-          onChange={(e) => setNewKeyword(e.target.value)}
-          placeholder="输入关键词"
-          className="flex-1 px-3 py-2 bg-secondary rounded border border-secondary"
-          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-        />
-        <select
-          value={newTag}
-          onChange={(e) => setNewTag(e.target.value as VideoTag)}
-          className="px-3 py-2 bg-secondary rounded border border-secondary"
-        >
-          <option value="LEARNING">学习</option>
-          <option value="MUSIC">音乐</option>
-        </select>
-        <button
-          onClick={handleAdd}
-          className="px-4 py-2 bg-accent-primary rounded hover:bg-accent-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          添加
-        </button>
-      </div>
+          <select value={newTag} onChange={(e) => setNewTag(e.target.value as VideoTag)} aria-label="关键词标签">
+            {TAG_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <Button variant="primary" icon="plus" onClick={handleAdd} disabled={!newKeyword.trim() || !enabled}>
+            添加
+          </Button>
+        </div>
+      </Card>
 
       {keywordItems.length === 0 ? (
-        <p className="text-muted">暂无关键词规则</p>
+        <EmptyState icon="tag" title="暂无关键词规则" description="添加关键词后，相关视频会自动放行。" />
       ) : (
-        <div className="grid gap-2">
+        <div className="grid gap-2.5">
           {keywordItems.map((item) => (
-            <div
-              key={item.keyword}
-              className="flex justify-between items-center bg-secondary p-3 rounded"
-            >
-              <div className="flex items-center gap-4 flex-1">
-                <span className="font-mono text-green-400">{item.keyword}</span>
+            <div key={item.keyword} className="fm-row items-center">
+              <span className="grid h-8 w-8 flex-none place-items-center rounded-md bg-tertiary text-tertiary">
+                <span className="font-mono text-[12px]">#</span>
+              </span>
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-mono text-[13px] text-primary">{item.keyword}</p>
+                <p className="mt-0.5 text-[11px] text-muted">标题包含即放行</p>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
                 <select
                   value={item.tag}
                   onChange={(e) => handleTagChange(item.keyword, e.target.value as VideoTag)}
-                  className="px-2 py-1 bg-tertiary rounded border border-primary text-sm"
+                  className="min-h-8 py-1 text-[12px]"
+                  aria-label={`${item.keyword} 的标签`}
                 >
-                  <option value="LEARNING">学习</option>
-                  <option value="MUSIC">音乐</option>
+                  {TAG_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
+                <Button variant="subtle" size="sm" icon="trash" onClick={() => handleDelete(item.keyword)}>
+                  删除
+                </Button>
               </div>
-              <button
-                onClick={() => handleDelete(item.keyword)}
-                className="px-2 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
-              >
-                删除
-              </button>
             </div>
           ))}
-        </div>
-      )}
-
-      {message && (
-        <div className={`mt-4 text-sm ${message.includes('成功') ? 'text-green-400' : 'text-red-400'}`}>
-          {message}
         </div>
       )}
     </div>

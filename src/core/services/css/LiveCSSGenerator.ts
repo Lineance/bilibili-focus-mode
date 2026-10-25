@@ -11,9 +11,7 @@ export class LiveCSSGenerator {
         .chat-history-panel,
         .chat-control-panel,
         #rank-list-vm,
-        .rank-list,
-        [class*="chat"],
-        [class*="comment"] {
+        .rank-list {
           display: none !important;
         }
       `);
@@ -25,8 +23,6 @@ export class LiveCSSGenerator {
         .gift-control,
         #my-dear-haruna-vm,
         .gift-box,
-        [class*="gift"],
-        [class*="present"],
         .gift-icon,
         .gift-effect {
           display: none !important;
@@ -38,8 +34,7 @@ export class LiveCSSGenerator {
       rules.push(`
         .ad-report,
         .ad-floor,
-        [class*="ad-"],
-        [class*="advertisement"] {
+        .live-ad-card {
           display: none !important;
         }
       `);

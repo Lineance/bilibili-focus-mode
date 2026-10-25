@@ -14,9 +14,9 @@ export function VideoPlayerEnhancementSettings({ config, updateConfig }: VideoPl
   };
 
   return (
-    <div className="bg-gray-800 p-4 rounded-lg">
+    <div className="bg-secondary p-4 rounded-lg">
       <h3 className="text-lg font-medium mb-3">🎬 播放器增强</h3>
-      <p className="text-sm text-gray-400 mb-3">
+      <p className="text-sm text-tertiary mb-3">
         增强视频播放器功能
       </p>
       
@@ -44,7 +44,7 @@ export function VideoPlayerEnhancementSettings({ config, updateConfig }: VideoPl
               />
               <span className="text-sm">扩展倍速 (0.0625x-16x)</span>
             </label>
-            <p className="text-xs text-gray-500 ml-6">
+            <p className="text-xs text-muted ml-6">
               支持更精细的播放速度控制
             </p>
 
@@ -58,7 +58,7 @@ export function VideoPlayerEnhancementSettings({ config, updateConfig }: VideoPl
               />
               <span className="text-sm">记忆倍速</span>
             </label>
-            <p className="text-xs text-gray-500 ml-6">
+            <p className="text-xs text-muted ml-6">
               自动记住上次使用的播放速度
             </p>
           </div>

@@ -64,6 +64,8 @@ src/
 
 - [开发文档索引](./docs/README.md) - 文档导航入口
 - [架构文档](./docs/ARCHITECTURE.md) - 当前代码结构与模块职责
+- [设计系统](./docs/DESIGN-SYSTEM.md) - 调色板、排版、组件与内容脚本样式规范
+- [优化评审](./docs/OPTIMIZATION-REVIEW.md) - 显示/实现/性能问题清单与路线图
 - [GitHub Actions 指南](./docs/github-action.md) - CI / Release 使用说明
 - [AI 代理指南](./AGENTS.md) - 开发规范与指南
 

@@ -1,142 +1,163 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { PermanentGroup } from '@core/types';
 import { StorageRepository } from '@core/storage/StorageRepository';
 import { useSelection } from '@hooks/useSelection';
+import { Button, EmptyState, Icon, SectionHeader, confirmAction, toast } from '@ui';
+import type { IconName } from '@ui';
 
-import { BatchToolbar, ItemCard } from './shared';
+import { BatchToolbar, VideoRow } from './shared';
+
+const GROUP_ICON: Record<string, IconName> = {
+  learning: 'book',
+  entertainment: 'gamepad',
+  music: 'music',
+};
+
+const GROUP_COLOR: Record<string, string> = {
+  learning: 'var(--fm-success)',
+  entertainment: 'var(--fm-warning)',
+  music: 'var(--fm-info)',
+};
 
 export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] }): React.JSX.Element {
-  // Flatten all items from all groups and separate by tag
-  const allItems = groups.flatMap(group => group.items);
-  const allBvids = allItems.map((item) => item.bvid);
+  const allItems = useMemo(() => groups.flatMap((group) => group.items), [groups]);
+  const allBvids = useMemo(() => allItems.map((item) => item.bvid), [allItems]);
   const { selected, toggleSelection, selectAll, clearSelection, isSelected } = useSelection(allBvids);
-  const learningItems = allItems.filter(item => item.tag === 'LEARNING');
-  const musicItems = allItems.filter(item => item.tag === 'MUSIC');
-  const entertainmentItems = allItems.filter(item => item.tag === 'ENTERTAINMENT');
-  const totalItems = allItems.length;
+
+  const removeItems = async (bvids: Set<string>) => {
+    const { permanentGroups } = await StorageRepository.getKeys('permanentGroups');
+    const updated = permanentGroups.map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !bvids.has(item.bvid)),
+    }));
+    await StorageRepository.set({ permanentGroups: updated });
+  };
 
   const handleDeleteItem = async (bvid: string) => {
-    if (!confirm('确定要删除这个视频吗？')) return;
+    const ok = await confirmAction({
+      title: '删除永久许可',
+      description: '该视频会重新进入未审批状态。',
+      confirmLabel: '删除',
+      danger: true,
+    });
+    if (!ok) return;
 
     try {
-      const { permanentGroups } = await StorageRepository.getKeys('permanentGroups');
-
-      // Remove item from whichever group it belongs to
-      const updatedGroups = permanentGroups.map((group) => ({
-        ...group,
-        items: group.items.filter((item) => item.bvid !== bvid),
-      }));
-
-      await StorageRepository.set({ permanentGroups: updatedGroups });
-
-      if (isSelected(bvid)) {
-        toggleSelection(bvid);
-      }
+      await removeItems(new Set([bvid]));
+      if (isSelected(bvid)) toggleSelection(bvid);
+      toast.success('已删除');
     } catch (error) {
       console.error('[PermanentGroups] Failed to delete item:', error);
-      alert('删除失败，请重试');
+      toast.error('删除失败，请重试');
     }
   };
 
   const handleBatchDelete = async () => {
     if (selected.size === 0) return;
-    if (!confirm(`确定要删除选中的 ${selected.size} 个视频吗？`)) return;
+    const ok = await confirmAction({
+      title: `删除 ${selected.size} 个永久许可`,
+      description: '这些视频会重新进入未审批状态。',
+      confirmLabel: '批量删除',
+      danger: true,
+    });
+    if (!ok) return;
 
     try {
-      const { permanentGroups } = await StorageRepository.getKeys('permanentGroups');
-
-      const updatedGroups = permanentGroups.map((group) => ({
-        ...group,
-        items: group.items.filter((item) => !selected.has(item.bvid)),
-      }));
-
-      await StorageRepository.set({ permanentGroups: updatedGroups });
+      await removeItems(selected);
       clearSelection();
+      toast.success('已批量删除');
     } catch (error) {
       console.error('[PermanentGroups] Failed to batch delete:', error);
-      alert('批量删除失败，请重试');
+      toast.error('批量删除失败，请重试');
     }
   };
 
   const handleClearAll = async () => {
-    if (!confirm('确定要清空所有永久分组吗？')) return;
+    const ok = await confirmAction({
+      title: '清空所有永久分组',
+      description: '全部永久许可都会被移除，且不可恢复。',
+      confirmLabel: '清空',
+      danger: true,
+    });
+    if (!ok) return;
+
     try {
       await StorageRepository.set({ permanentGroups: [] });
       clearSelection();
+      toast.success('已清空所有分组');
     } catch (error) {
       console.error('[PermanentGroups] Failed to clear groups:', error);
-      alert('清空失败，请重试');
+      toast.error('清空失败，请重试');
     }
   };
 
-  const renderCard = (item: { bvid: string; title: string; uploader: string; coverUrl: string }) => {
-    if (!item.bvid) return null;
-    return (
-      <ItemCard
-        key={item.bvid}
-        item={item}
-        selected={selected.has(item.bvid)}
-        onSelect={() => toggleSelection(item.bvid)}
-        onDelete={() => handleDeleteItem(item.bvid)}
-        small
-      />
-    );
-  }
+  const totalItems = allItems.length;
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h2 className="text-xl font-semibold">永久分组 ({totalItems} 个视频)</h2>
-          <div className="flex gap-4 text-sm">
-            <span className="text-green-400">学习: {learningItems.length}</span>
-            <span className="text-blue-400">音乐: {musicItems.length}</span>
-            <span className="text-yellow-400">娱乐: {entertainmentItems.length}</span>
-          </div>
-        </div>
-        {totalItems > 0 && (
-          <button
-            onClick={handleClearAll}
-            className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors"
-          >
-            清空所有
-          </button>
-        )}
-      </div>
+      <SectionHeader
+        title="永久分组"
+        icon="folder"
+        count={totalItems}
+        description="长期免审的收藏级视频。分组按标签归档，删除后需要重新审批。"
+        actions={
+          totalItems > 0 ? (
+            <Button variant="danger" size="sm" icon="trash" onClick={handleClearAll}>
+              清空所有
+            </Button>
+          ) : undefined
+        }
+      />
 
       {totalItems === 0 ? (
-        <p className="text-muted">没有永久分组视频</p>
+        <EmptyState
+          icon="folder"
+          title="没有永久分组"
+          description="在待审池审批视频时选择「永久」，即可长期放行。"
+        />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Learning Column */}
-          <div className="bg-secondary p-4 rounded-lg">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">📚</span>
-              <h3 className="text-lg font-medium text-green-400">学习 ({learningItems.length})</h3>
-            </div>
-            <div className="grid gap-3">
-              {learningItems.length === 0 ? (
-                <p className="text-muted text-sm">暂无学习类视频</p>
-              ) : (
-                learningItems.map(renderCard)
-              )}
-            </div>
-          </div>
+        <div className="grid gap-5 lg:grid-cols-2">
+          {groups.map((group) => {
+            const tone = GROUP_COLOR[group.id] ?? 'var(--fm-accent-primary)';
+            return (
+              <div key={group.id} className="fm-card">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <span style={{ color: tone }}>
+                      <Icon name={GROUP_ICON[group.id] ?? 'folder'} size={17} />
+                    </span>
+                    <h3 className="text-[14px] font-semibold">{group.name}</h3>
+                    <span className="rounded-full bg-tertiary px-2 py-0.5 font-mono text-[11px] text-tertiary">
+                      {group.items.length}
+                    </span>
+                  </div>
+                </div>
 
-          {/* Entertainment Column */}
-          <div className="bg-secondary p-4 rounded-lg">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">🎮</span>
-              <h3 className="text-lg font-medium text-yellow-400">娱乐 ({entertainmentItems.length})</h3>
-            </div>
-            <div className="grid gap-3">
-              {entertainmentItems.length === 0 ? (
-                <p className="text-muted text-sm">暂无娱乐类视频</p>
-              ) : (
-                entertainmentItems.map(renderCard)
-              )}
-            </div>
-          </div>
+                {group.items.length === 0 ? (
+                  <p className="fm-hint py-4 text-center">暂无视频</p>
+                ) : (
+                  <div className="grid gap-2.5">
+                    {group.items.map((item) => (
+                      <VideoRow
+                        key={item.bvid}
+                        bvid={item.bvid}
+                        title={item.title}
+                        uploader={item.uploader}
+                        coverUrl={item.coverUrl}
+                        selected={isSelected(item.bvid)}
+                        onSelect={() => toggleSelection(item.bvid)}
+                        actions={
+                          <Button variant="subtle" size="sm" icon="trash" onClick={() => handleDeleteItem(item.bvid)}>
+                            删除
+                          </Button>
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

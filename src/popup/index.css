@@ -1,5 +1,110 @@
 @import "tailwindcss";
+@import "../styles/tokens.css";
+@import "../styles/base.css";
 
 body {
-  margin: 0;
+  width: 300px;
+}
+
+.fm-popup {
+  padding: 18px;
+  border: 1px solid var(--fm-border-secondary);
+  background:
+    radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--fm-accent-primary) 14%, transparent), transparent 60%),
+    var(--fm-bg-primary);
+}
+
+.fm-popup__head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--fm-border-secondary);
+}
+
+.fm-popup__title {
+  font-family: var(--fm-font-display);
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+
+.fm-popup__sub {
+  margin-top: 2px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fm-text-tertiary);
+}
+
+.fm-popup__actions {
+  display: grid;
+  gap: 8px;
+}
+
+.fm-popup__hint {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--fm-border-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--fm-text-muted);
+}
+
+.fm-kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--fm-border-secondary);
+  border-radius: 5px;
+  background: var(--fm-bg-tertiary);
+  font-family: var(--fm-font-mono);
+  font-size: 10px;
+  color: var(--fm-text-secondary);
+}
+
+.fm-popup__status {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.fm-popup__status > div {
+  border: 1px solid var(--fm-border-secondary);
+  border-radius: 10px;
+  background: var(--fm-bg-secondary);
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.fm-popup__stat-value {
+  font-family: var(--fm-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--fm-text-primary);
+}
+
+.fm-popup__stat-label {
+  margin-top: 3px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--fm-text-muted);
+}
+
+.fm-popup__window {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  color: var(--fm-warning);
+  background: color-mix(in srgb, var(--fm-warning) 10%, transparent);
+}
+
+.fm-popup__window[data-active="true"] {
+  color: var(--fm-success);
+  background: color-mix(in srgb, var(--fm-success) 10%, transparent);
 }

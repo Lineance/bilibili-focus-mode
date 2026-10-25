@@ -8,7 +8,7 @@ export class HomepageCSSGenerator {
       rules.push(`
         .recommended-container, .feed-card, .bili-feed4,
         .rcmd-box, .video-card-reco,
-        [class*="recommend"], [class*="rcmd"] {
+        .recommend-list, .bili-feed4 .recommend-list {
           display: none !important;
         }
       `);
@@ -17,8 +17,8 @@ export class HomepageCSSGenerator {
     if (options.hideTrending) {
       rules.push(`
         .rank-list, .trending-box, .popular-videos,
-        .rank-container, .hot-list,
-        [class*="trending"], [class*="popular"], [class*="hot"] {
+        .rank-container, .hot-list, .trending,
+        .bili-header__banner .trending {
           display: none !important;
         }
       `);
@@ -28,9 +28,7 @@ export class HomepageCSSGenerator {
       rules.push(`
         .ad-report, .ad-floor, .banner-ad,
         .strip-ad, .strip-ad-inner, .left-banner,
-        [class*="ad-"], [class*="advertisement"],
-        [class*="strip-ad"], [id*="ad"],
-        .activity-ad, .game-ad {
+        .activity-ad, .game-ad, .ad-feedback-entry {
           display: none !important;
         }
       `);
@@ -39,7 +37,7 @@ export class HomepageCSSGenerator {
     if (options.hideLiveStreams) {
       rules.push(`
         .live-card, .live-box, .living-box,
-        [class*="live-"], [class*="living"] {
+        .bili-live-card, .live-up-list {
           display: none !important;
         }
       `);

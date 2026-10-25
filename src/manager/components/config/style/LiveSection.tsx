@@ -7,7 +7,7 @@ interface LiveSectionProps {
 
 export function LiveSection({ config, onUpdate }: LiveSectionProps): React.JSX.Element {
   return (
-    <div className="border-t border-gray-700 pt-3 mt-3">
+    <div className="border-t border-secondary pt-3 mt-3">
       <label className="flex items-center gap-2">
         <input
           type="checkbox"

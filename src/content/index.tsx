@@ -44,7 +44,7 @@ if (typeof chrome === 'undefined' || !chrome.runtime?.id) {
   const styleService = new StyleSimplificationService();
   const styleInjector = new StyleInjector();
   const permissionChecker = new PermissionChecker(safeSendMessage);
-  const videoTracker = new VideoTracker(safeSendMessage, () => permissionChecker.getCurrentBvid());
+  const videoTracker = new VideoTracker(safeSendMessage);
 
   const permissionOrchestrator = new PermissionOrchestrator(
     metadataExtractor, blockOverlayManager, permissionChecker, videoTracker, safeSendMessage
@@ -82,6 +82,9 @@ if (typeof chrome === 'undefined' || !chrome.runtime?.id) {
   });
 
   chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.config) {
+      permissionChecker.invalidateConfig();
+    }
     if (area === 'local' && (changes.config || changes.permanentGroups || changes.instantList || changes.limboList || changes.allowedUploaders)) {
       if (permissionChecker.getCurrentBvid()) {
         permissionOrchestrator.checkPermission();

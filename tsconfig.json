@@ -22,7 +22,9 @@
       "@content/*": ["src/content/*"],
       "@background/*": ["src/background/*"],
       "@manager/*": ["src/manager/*"],
-      "@popup/*": ["src/popup/*"]
+      "@popup/*": ["src/popup/*"],
+      "@ui": ["src/ui/index.ts"],
+      "@ui/*": ["src/ui/*"]
     },
     "types": ["chrome", "vitest/globals"]
   },

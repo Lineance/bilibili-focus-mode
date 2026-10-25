@@ -209,6 +209,14 @@ function calculateFuseLength(recentApps: number): number {
 - `tailwindcss`: Styling
 - `date-fns`: Date utilities
 
+## Frontend Architecture (2026 refactor)
+
+- **Design tokens**: `src/styles/tokens.css` — static palettes keyed by `html[data-fm-scheme][data-fm-mode]`, bridged into Tailwind via `@theme`. Never hardcode hex colors or raw Tailwind color scales (`bg-gray-800`, `text-blue-400`).
+- **Base + primitives**: `src/styles/base.css` — reset, typography, form controls, semantic surface classes, and `fm-*` component classes.
+- **Shared UI**: `src/ui` (alias `@ui`) — `Button`, `Card`, `SectionHeader`, `TagChip`, `Toggle`, `Field`, `Dialog`, `Progress`, `EmptyState`, `Toast`, `Confirm`, `Icon`. Prefer these over ad-hoc utility strings.
+- **Theme**: `ThemeService` is a singleton that only flips `data-fm-mode` / `data-fm-scheme`. It must never inject CSS.
+- **Content-script styles**: stay namespaced (`bfm-*` / `bilibili-focus-mode-*`), avoid broad `[class*="..."]` selectors, and every hide/pause must be reversible when the block screen is dismissed.
+
 ## Notes for AI Agents
 
 - This is a personal productivity tool - prioritize user experience over strict security
