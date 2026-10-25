@@ -205,7 +205,7 @@ pub fn install(directory: &Path, mut target: Target, login_start: bool) -> io::R
         )));
     }
     Ok(
-        json!({"installed":true,"enabled":false,"dataDir":directory,"autostart":login_start,"next":"start watchdog, enable extension communication, run doctor, then enable protection"}),
+        json!({"installed":true,"enabled":false,"dataDir":directory,"autostart":registry::read(RUN_KEY,&startup_name(directory),VIEW64)?.as_deref()==Some(&startup_command(directory)),"next":"start watchdog, enable extension communication, run doctor, then enable protection"}),
     )
 }
 
@@ -346,7 +346,7 @@ pub fn doctor(directory: &Path) -> Value {
         checks.push(json!({"name":if view==VIEW32{"registry32"}else{"registry64"},"ok":ok,"detail":format!("{value:?}")}));
     }
     let current = status(directory);
-    checks.push(json!({"name":"watchdog","ok":current["watchdogRunning"]==true,"status":current}));
+    checks.push(json!({"name":"watchdog","ok":current["watchdogRunning"]==true && current["state"]!="faulted","status":current}));
     checks.push(json!({"name":"nativeHandshake","ok":current["extensionConnected"]==true && current["verified"]==true,"detail":"keep the registered browser and extension communication running"}));
     checks.push(json!({"name":"browserPaths","ok":config.target.browser_path.is_file() && config.target.user_data_dir.is_dir()}));
     let ok = checks.iter().all(|check| check["ok"] == true);

@@ -73,6 +73,11 @@ impl Config {
         if !matches!(self.target.registry_browser.as_str(), "chrome" | "chromium") {
             return Err(invalid("registryBrowser must be chrome or chromium"));
         }
+        if self.timing.heartbeat_timeout_ms < 30_000 {
+            return Err(invalid(
+                "heartbeatTimeoutMs must be at least 30000 for the extension's 15-second heartbeat",
+            ));
+        }
         for value in [
             self.timing.startup_ms,
             self.timing.heartbeat_timeout_ms,
@@ -104,6 +109,25 @@ mod tests {
         ] {
             assert!(!valid_extension_id(id));
         }
+    }
+    #[test]
+    fn rejects_timeouts_shorter_than_a_healthy_extension_can_satisfy() {
+        let mut config = Config {
+            version: 1,
+            enabled: false,
+            target: Target {
+                browser_path: std::env::current_exe().unwrap(),
+                user_data_dir: std::env::temp_dir(),
+                extension_id: "abcdefghijklmnopabcdefghijklmnop".into(),
+                allow_default_profile: false,
+                registry_browser: "chrome".into(),
+            },
+            timing: Timing::default(),
+        };
+        config.timing.heartbeat_timeout_ms = 1000;
+        assert!(config.validate().is_err());
+        config.timing.heartbeat_timeout_ms = 30000;
+        assert!(config.validate().is_ok());
     }
     #[test]
     fn rejects_unknown_or_unimplemented_configuration_fields() {

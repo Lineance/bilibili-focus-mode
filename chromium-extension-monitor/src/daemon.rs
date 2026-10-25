@@ -1,6 +1,6 @@
 use crate::{
     config::{Config, Target, PROTOCOL_VERSION},
-    engine::{Action, Engine, InstanceId},
+    engine::{Action, Engine, InstanceId, State},
     platform,
     protocol::{read_frame, write_frame, Message},
     storage::{self, EventLog},
@@ -262,7 +262,15 @@ pub fn run(directory: &Path, dry_run: bool, notify: bool) -> io::Result<()> {
             last_scan = now;
             match storage::read_config(directory) {
                 Ok(next) => {
-                    if next.target != config.target || next.timing != config.timing {
+                    let configuration_recovered = engine.state == State::Faulted
+                        && engine
+                            .reason
+                            .as_deref()
+                            .is_some_and(|reason| reason.starts_with("configuration error:"));
+                    if configuration_recovered
+                        || next.target != config.target
+                        || next.timing != config.timing
+                    {
                         engine = Engine::new(next.timing.clone(), next.enabled, dry_run);
                     } else {
                         engine.set_enabled(next.enabled, now);

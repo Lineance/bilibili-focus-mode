@@ -154,7 +154,10 @@ impl Engine {
     /// Resume opens one bounded recovery window. Existing live sessions can
     /// recover it with a fresh heartbeat; stale disconnects never extend it.
     pub fn resumed(&mut self, now: u64) {
-        if !self.enabled || self.instance.is_none() || self.state == State::Terminating {
+        if !self.enabled
+            || self.instance.is_none()
+            || matches!(self.state, State::Terminating | State::Faulted)
+        {
             return;
         }
         self.state = State::AwaitingExtension;
@@ -309,6 +312,14 @@ mod tests {
         e.resumed(50000);
         assert!(e.tick(50000).is_empty());
         assert!(matches!(e.tick(50900)[0], Action::Warning { .. }));
+    }
+    #[test]
+    fn system_resume_does_not_rearm_a_faulted_identity() {
+        let mut e = engine(false);
+        e.fault("ambiguous target".into());
+        e.resumed(50000);
+        assert_eq!(e.state, State::Faulted);
+        assert!(e.tick(100000).is_empty());
     }
     #[test]
     fn dry_run_and_faults_never_invoke_real_close() {
