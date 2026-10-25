@@ -1,111 +1,113 @@
 # Bilibili Focus Mode
 
-基于白名单（Block-All-Except）的深度时间管理 Chrome 扩展，采用三态许可系统（Limbo → Instant → Permanent）结合债务机制，实现"意图性娱乐"（Intentioned Entertainment）。
+Bilibili Focus Mode 是一个基于白名单（Block-All-Except）的 Chrome 扩展，用于减少冲动观看，让每次访问都需要明确意图。
 
-## ✨ 功能特性
+当前版本将权限流程收敛为两类：**永久放行规则**和**每日全量放行**。不再使用待审池、即时许可、熔断码或审批时间窗口。
 
-- **三态许可系统**: Limbo(待审池) → Instant(即时许可) → Permanent(永久分组)
-- **债务机制**: 观看娱乐视频产生债务，学习视频偿还债务
-- **熔断码系统**: 动态长度熔断码防止疲劳绕过
-- **破产惩罚**: 债务过高触发24小时锁定
-- **关键词自动放行**: 基于标题关键词自动识别学习视频并放行
-- **数据备份**: 支持导出/导入所有数据，包括关键词规则
+## 功能特性
 
-## 🚀 快速开始
+- **默认阻断**：未命中放行规则的视频会被阻断。
+- **直接永久放行**：在阻断页选择 Tag 后，视频立即加入永久分组。
+- **关键词自动放行**：标题命中关键词后自动放行，并按 Tag 参与债务计算。
+- **UP 主白名单**：可信 UP 主的视频自动放行，并保留对应 Tag。
+- **每日全量放行**：默认每天 3 次，每次 30 分钟，临时放行所有普通视频。
+- **Tag 分类**：支持学习、娱乐、音乐三类 Tag。
+- **债务与统计**：娱乐视频产生债务，学习视频偿还债务；统计面板保留今日、本周、本月观看数据。
+- **页面专注功能**：保留首页、搜索、动态、直播和播放器的页面简化，以及外观、直播和播放器增强。
+- **数据备份**：支持导出和导入关键词、UP 主、永久分组、债务和观看记录。
+- **固定界面样式**：移除主题切换和主题管理，使用单一固定配色。
+
+## 快速开始
 
 ```bash
-# 安装依赖
 npm install
-
-# 开发模式（支持 HMR）
 npm run dev
+```
 
-# 构建生产版本
+生产构建：
+
+```bash
 npm run build
 ```
 
-## 📦 加载扩展
+## 加载扩展
 
-1. 运行 `npm run build`
-2. 打开 Chrome `chrome://extensions/`
-3. 开启"开发者模式"
-4. 点击"加载已解压的扩展程序"
-5. 选择 `dist/` 文件夹
+1. 运行 `npm run build`。
+2. 打开 Chrome `chrome://extensions/`。
+3. 开启“开发者模式”。
+4. 点击“加载已解压的扩展程序”。
+5. 选择项目下的 `dist/` 文件夹。
 
-## Windows 外部监控（可选）
-
-独立的 Rust 守护进程可以在专注扩展失去连接后发出 Windows 提醒，并关闭登记的浏览器实例。提供图形配置引导、状态窗口与托盘暂停/恢复。安装默认关闭保护，完成握手和诊断后由用户启用。
-
-构建、安装、暂停、卸载与验收方法见 [监控程序使用说明](./chromium-extension-monitor/README.md)。建议使用独立浏览器数据目录，避免把日常其他 profile 纳入关闭范围。
-
-## 🛠️ 技术栈
-
-- **React + TypeScript** - 前端框架
-- **Vite + @crxjs/vite-plugin** - Chrome 扩展构建工具链
-- **Tailwind CSS** - 样式系统
-- **webext-bridge** - 跨上下文通信
-- **Vitest** - 单元测试
-
-## 📁 项目结构
-
-```
-src/
-├── background/        # Service Worker (MV3)
-├── content/           # Content Scripts (注入B站)
-│   ├── components/    # 拦截层 UI 组件
-│   └── services/      # 页面检测、样式注入、权限检查等
-├── manager/           # 管理页 (Options Page)
-│   └── components/    # 配置、债务、审查等管理组件
-├── popup/             # 弹出窗口
-├── core/              # 纯逻辑层
-│   ├── services/      # 业务逻辑服务
-│   ├── types/         # TypeScript 类型定义
-│   └── constants.ts   # 默认配置
-├── test/              # 单元/集成/E2E 测试
-├── hooks/             # React Hooks
-└── manifest.json      # 扩展配置
-```
-
-## 📚 文档
-
-- [开发文档索引](./docs/README.md) - 文档导航入口
-- [架构文档](./docs/ARCHITECTURE.md) - 当前代码结构与模块职责
-- [设计系统](./docs/DESIGN-SYSTEM.md) - 调色板、排版、组件与内容脚本样式规范
-- [优化评审](./docs/OPTIMIZATION-REVIEW.md) - 显示/实现/性能问题清单与路线图
-- [Windows 桌面体验](./docs/windows-desktop-experience.md) - 通知、托盘、安装修复及验收记录
-- [监控程序使用说明](./chromium-extension-monitor/README.md) - Windows 原生监控安装、诊断与本地控制
-- [原生监控实现与验收](./docs/chromium-extension-monitor-implementation.md) - 功能提交、正式实现与验收结果
-- [原生监控可行性验证](./docs/chromium-extension-monitor-feasibility.md) - P0 实测与架构依据
-- [GitHub Actions 指南](./docs/github-action.md) - CI / Release 使用说明
-- [AI 代理指南](./AGENTS.md) - 开发规范与指南
-
-## 🧪 测试
+## 测试
 
 ```bash
-# 运行所有测试
-npm run test
-
-# 运行单个测试文件
-npm run test -- src/test/unit/core/services/PermissionService.test.ts
-
-# 测试覆盖率
-npm run test:coverage
+npm run typecheck
+npm run lint
+npm run test -- --run
+npm run build
 ```
 
-## 📝 开发规范
+## 发布
 
-- 使用 TypeScript 严格模式
-- 组件使用 PascalCase，hooks 使用 camelCase
-- 所有核心逻辑必须包含单元测试
-- 遵循 AGENTS.md 中的代码规范
+扩展版本由 `package.json`、`package-lock.json` 和 `src/manifest.json` 共同维护，三者必须保持一致。
 
-## 🙏 致谢
+主分支发布扩展时，更新版本后创建并推送对应标签：
 
-本项目的外观增强、直播增强、播放器增强等功能组件迁移自 [Bilibili-Evolved](https://github.com/the1812/Bilibili-Evolved) 项目。感谢 Bilibili-Evolved 团队的优秀工作，该项目为 B 站用户体验优化提供了大量有价值的组件。
+```bash
+git tag v0.0.6
+git push origin main
+git push origin v0.0.6
+```
 
-- **来源项目**: [the1812/Bilibili-Evolved](https://github.com/the1812/Bilibili-Evolved)
-- **迁移的功能**: 细滚动条、隐藏热搜/用户卡片/头像框/视频元素、禁用特殊弹幕、删除广告、直播马赛克/水印/遮罩移除、扩展倍速、记忆倍速、封面替换、夜间模式跟随系统等
+推送 `vX.Y.Z` 标签后，GitHub Actions 会自动执行：
 
-## 📄 许可证
+- GitHub workflow 和打包脚本检查
+- TypeScript 类型检查
+- ESLint
+- Vitest 单元测试
+- Vite 生产构建
+- 扩展 ZIP 打包与版本校验
+- GitHub Release 创建和 SHA-256 校验清单上传
+
+Windows Native Monitor 使用独立的 `monitor-vX.Y.Z` 标签和 Cargo 版本号，不要求与扩展版本相同。完整流程见 [GitHub Actions 指南](./docs/github-action.md)。
+
+## 项目结构
+
+```text
+src/
+├── background/        # MV3 Service Worker、权限处理和 Native Messaging
+├── content/           # Bilibili 内容脚本、阻断层和页面简化
+├── manager/           # 管理页：永久分组、关键词、UP 主、统计和配置
+├── custom-homepage/   # 自定义专注首页
+├── popup/             # 浏览器弹出窗口
+├── core/              # 权限、债务、配置和统计核心逻辑
+├── hooks/             # React Hooks
+└── manifest.json      # Chrome 扩展清单
+```
+
+## 文档
+
+- [开发文档索引](./docs/README.md)
+- [架构文档](./docs/ARCHITECTURE.md)
+- [设计系统](./docs/DESIGN-SYSTEM.md)
+- [优化评审](./docs/OPTIMIZATION-REVIEW.md)
+- [GitHub Actions 指南](./docs/github-action.md)
+- [Windows 桌面体验](./docs/windows-desktop-experience.md)
+- [监控程序使用说明](./chromium-extension-monitor/README.md)
+- [AI 代理指南](./AGENTS.md)
+
+## 技术栈
+
+- React + TypeScript
+- Vite + `@crxjs/vite-plugin`
+- Tailwind CSS
+- `webext-bridge`
+- Vitest
+
+## 致谢
+
+项目中的外观增强、直播增强和播放器增强组件部分迁移自 [Bilibili-Evolved](https://github.com/the1812/Bilibili-Evolved)。
+
+## 许可证
 
 MIT
