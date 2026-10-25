@@ -67,6 +67,10 @@ vi.stubGlobal('chrome', {
         Object.assign(mockStorage, items);
         return Promise.resolve();
       }),
+      remove: vi.fn((keys: string[]) => {
+        for (const key of keys) delete mockStorage[key];
+        return Promise.resolve();
+      }),
     },
     onChanged: {
       addListener: vi.fn(),
@@ -154,6 +158,42 @@ describe('Background Script', () => {
     });
   });
 
+
+  describe('Storage Migration', () => {
+    it('should preserve supported data and remove legacy approval state', async () => {
+      const { migrateStorage } = await import('@background/index');
+      const legacyStorage = {
+        ...DEFAULT_STORAGE,
+        version: 3,
+        config: {
+          ...DEFAULT_STORAGE.config,
+          timeWindowEnabled: true,
+          themeEnhancement: { darkModeFollowSystem: true, replaceCover: true },
+        },
+        limboList: [{ bvid: 'BVpending' }],
+        instantList: [{ bvid: 'BVinstant' }],
+        permanentGroups: [{ id: 'learning', name: '学习', debtPriority: 1, items: [] }],
+      };
+
+      await migrateStorage(legacyStorage);
+
+      expect(chrome.storage.local.set).toHaveBeenCalledWith(expect.objectContaining({
+        version: 4,
+        permanentGroups: legacyStorage.permanentGroups,
+        config: expect.not.objectContaining({
+          timeWindowEnabled: expect.anything(),
+          themeEnhancement: expect.anything(),
+        }),
+      }));
+      expect(chrome.storage.local.remove).toHaveBeenCalledWith([
+        'limboList',
+        'instantList',
+        'timeWindowBreakUntil',
+        'timeWindowFuse',
+        'timeWindowFuseExpiresAt',
+      ]);
+    });
+  });
 
   describe('Open Options Page', () => {
     it('should register open-options-page handler via webext-bridge', async () => {
