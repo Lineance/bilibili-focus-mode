@@ -1,3 +1,4 @@
+pub mod setup;
 use crate::{
     daemon, install,
     notices::{friendly_error, NoticeKind, NoticePolicy},
@@ -25,6 +26,8 @@ use windows_sys::Win32::{
     UI::WindowsAndMessaging::*,
 };
 
+pub(crate) const CONFIG: u16 = 109;
+const LOGIN: u16 = 110;
 const PAUSE: u16 = 101;
 const RESUME: u16 = 102;
 const DIAGNOSE: u16 = 103;
@@ -32,6 +35,7 @@ const LOGS: u16 = 104;
 const TEST: u16 = 105;
 const BROWSER: u16 = 106;
 const EXIT: u16 = 107;
+#[derive(Debug)]
 enum Command {
     Menu,
     RestoreTray,
@@ -310,7 +314,7 @@ fn run(directory: &Path, status: Arc<Mutex<Value>>, show: Arc<AtomicBool>) -> io
     let _font = FontGuard::new();
     let _apartment = notifications::Apartment::new()?;
     let (sender, commands) = mpsc::channel();
-    let main = window("Bilibili 专注守护", 640, 380, &sender, false)?;
+    let main = window("Bilibili 专注守护", 640, 460, &sender, false)?;
     let taskbar = wide("TaskbarCreated");
     TASKBAR_MESSAGE.store(
         unsafe { RegisterWindowMessageW(taskbar.as_ptr()) },
@@ -387,16 +391,38 @@ fn run(directory: &Path, status: Arc<Mutex<Value>>, show: Arc<AtomicBool>) -> io
         34,
         WS_TABSTOP,
     );
+    control(
+        main,
+        "BUTTON",
+        "重新配置",
+        CONFIG,
+        300,
+        244,
+        130,
+        34,
+        WS_TABSTOP,
+    );
+    control(
+        main,
+        "BUTTON",
+        "登录启动开关",
+        LOGIN,
+        440,
+        244,
+        130,
+        34,
+        WS_TABSTOP,
+    );
     let feedback = control(
         main,
-        "STATIC",
+        "EDIT",
         "关闭此窗口不会暂停保护。",
-        0,
+        150,
         20,
         290,
         590,
-        40,
-        0,
+        100,
+        WS_BORDER | WS_VSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32 | WS_TABSTOP,
     );
     let countdown = window("专注扩展已失联", 530, 220, &sender, true)?;
     let countdown_text = control(countdown, "STATIC", "", 0, 18, 18, 480, 90, 0);
@@ -546,6 +572,20 @@ fn run(directory: &Path, status: Arc<Mutex<Value>>, show: Arc<AtomicBool>) -> io
                     thread::spawn(move || {
                         let outcome = (|| -> io::Result<String> {
                             match id {
+                                CONFIG => {
+                                    setup::launch(&directory)?;
+                                    Ok("已打开配置窗口；保存时才会暂停当前保护。".into())
+                                }
+                                LOGIN => {
+                                    let enabled = !install::autostart_enabled(&directory)?;
+                                    install::autostart(&directory, enabled)?;
+                                    Ok(if enabled {
+                                        "已开启登录启动。"
+                                    } else {
+                                        "已关闭登录启动。"
+                                    }
+                                    .into())
+                                }
                                 PAUSE => {
                                     install::set_enabled(&directory, false)?;
                                     Ok("保护已暂停。".into())
@@ -571,12 +611,8 @@ fn run(directory: &Path, status: Arc<Mutex<Value>>, show: Arc<AtomicBool>) -> io
                                     let path = directory.join("diagnostics.json");
                                     storage::write_json(&path, &doctor)?;
                                     Ok(format!(
-                                        "{} 诊断已保存到 {}",
-                                        if doctor["ok"] == true {
-                                            "检查通过。"
-                                        } else {
-                                            "检查未通过，请查看日志目录中的 diagnostics.json。"
-                                        },
+                                        "{}\n详细记录：{}",
+                                        install::diagnostic_summary(&doctor),
                                         path.display()
                                     ))
                                 }
@@ -595,6 +631,7 @@ fn run(directory: &Path, status: Arc<Mutex<Value>>, show: Arc<AtomicBool>) -> io
         }
         for outcome in result.try_iter() {
             busy = false;
+            last_view.clear();
             text(
                 feedback,
                 &match outcome {
@@ -635,6 +672,9 @@ fn run(directory: &Path, status: Arc<Mutex<Value>>, show: Arc<AtomicBool>) -> io
 }
 
 pub fn open(directory: &Path) -> io::Result<Value> {
+    if storage::read_config(directory).is_err() {
+        return setup::launch(directory);
+    }
     install::start(directory, false, true)?;
     daemon::request(directory, "show")
 }

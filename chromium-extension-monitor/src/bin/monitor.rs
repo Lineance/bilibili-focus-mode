@@ -28,6 +28,7 @@ enum Command {
         #[arg(long)]
         autostart: bool,
     },
+    Setup,
     Ui,
     NotifyTest,
     NotifyStatus,
@@ -93,6 +94,7 @@ fn main() {
                 },
                 autostart,
             )?,
+            Command::Setup => chromium_extension_monitor::desktop::setup::launch(&directory)?,
             Command::Ui => chromium_extension_monitor::desktop::open(&directory)?,
             Command::NotifyStatus => {
                 chromium_extension_monitor::notifications::diagnostics(&directory)

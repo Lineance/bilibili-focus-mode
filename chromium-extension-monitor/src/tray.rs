@@ -107,6 +107,7 @@ impl Tray {
             (DIAGNOSE, "运行诊断", true),
             (TEST, "测试系统通知", true),
             (LOGS, "打开日志目录", true),
+            (crate::desktop::CONFIG, "重新配置", true),
             (EXIT, "停止保护并退出", true),
         ] {
             let label = wide(label);

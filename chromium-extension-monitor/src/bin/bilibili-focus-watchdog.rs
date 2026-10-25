@@ -14,6 +14,8 @@ struct Args {
     #[arg(long)]
     settings: bool,
     #[arg(long)]
+    setup: bool,
+    #[arg(long)]
     activate: Option<String>,
 }
 fn main() {
@@ -26,6 +28,11 @@ fn main() {
         }
     };
     let result = (|| -> std::io::Result<()> {
+        if args.setup
+            || (!args.background && !args.no_notify && storage::read_config(&directory).is_err())
+        {
+            return desktop::setup::run(&directory);
+        }
         let action = args
             .activate
             .as_deref()
@@ -46,7 +53,12 @@ fn main() {
         let show = args.settings || !args.background || action.is_some();
         if daemon::request(&directory, "status").is_ok() {
             if show {
-                daemon::request(&directory, "show")?;
+                let reply = daemon::request(&directory, "show")?;
+                if reply["shown"] != true {
+                    return Err(std::io::Error::other(
+                        "后台以无界面模式运行，请先停止后重新启动桌面模式。",
+                    ));
+                }
             }
             return Ok(());
         }

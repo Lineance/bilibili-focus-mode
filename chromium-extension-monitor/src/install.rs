@@ -1,5 +1,5 @@
 use crate::{
-    config::{Config, Target, Timing, HOST_NAME},
+    config::{Config, Target, HOST_NAME},
     daemon, platform,
     registry::{self, VIEW32, VIEW64},
     storage,
@@ -41,6 +41,18 @@ fn startup_command(directory: &Path) -> String {
     )
 }
 
+fn owned_startup(directory: &Path, value: &str) -> bool {
+    value == startup_command(directory)
+        || value
+            == format!(
+                "\"{}\"",
+                directory.join("bin/bilibili-focus-watchdog.exe").display()
+            )
+}
+pub fn autostart_enabled(directory: &Path) -> io::Result<bool> {
+    Ok(registry::read(RUN_KEY, &startup_name(directory), VIEW64)?
+        .is_some_and(|value| owned_startup(directory, &value)))
+}
 pub fn autostart(directory: &Path, enabled: bool) -> io::Result<()> {
     if enabled {
         let executable = directory.join("bin/bilibili-focus-watchdog.exe");
@@ -51,7 +63,7 @@ pub fn autostart(directory: &Path, enabled: bool) -> io::Result<()> {
         }
         let expected = startup_command(directory);
         if registry::read(RUN_KEY, &startup_name(directory), VIEW64)?
-            .is_some_and(|value| value != expected)
+            .is_some_and(|value| !owned_startup(directory, &value))
         {
             return Err(io::Error::other(
                 "startup entry belongs to another installation",
@@ -62,9 +74,7 @@ pub fn autostart(directory: &Path, enabled: bool) -> io::Result<()> {
         {
             return Err(io::Error::other("startup registration readback failed"));
         }
-    } else if registry::read(RUN_KEY, &startup_name(directory), VIEW64)?.as_deref()
-        == Some(&startup_command(directory))
-    {
+    } else if autostart_enabled(directory)? {
         registry::delete_value(RUN_KEY, &startup_name(directory), VIEW64)?;
     }
     Ok(())
@@ -84,20 +94,36 @@ pub fn install(directory: &Path, mut target: Target, login_start: bool) -> io::R
     }
     fs::create_dir_all(&target.user_data_dir)?;
     target.user_data_dir = platform::plain_path(&fs::canonicalize(&target.user_data_dir)?);
+    let existing = if directory.join("config.json").exists() {
+        Some(storage::read_config(directory)?)
+    } else {
+        None
+    };
     let config = Config {
         version: 1,
         target,
         enabled: false,
-        timing: Timing::default(),
+        timing: existing
+            .as_ref()
+            .map(|config| config.timing.clone())
+            .unwrap_or_default(),
     };
     config.validate()?;
-    if directory.join("config.json").exists()
-        && storage::read_config(directory)?.target.registry_browser
-            != config.target.registry_browser
+    if let Some(previous) = existing
+        .as_ref()
+        .filter(|old| old.target.registry_browser != config.target.registry_browser)
     {
-        return Err(io::Error::other(
-            "uninstall the previous browser registration before changing registryBrowser",
-        ));
+        let oldkey = registry_key(&previous.target);
+        let owned = directory.join(format!("{HOST_NAME}.json"));
+        for view in [VIEW32, VIEW64] {
+            if registry::read(&oldkey, "", view)?.is_some_and(|path| {
+                platform::normalized(&path) == platform::normalized(&owned.to_string_lossy())
+            }) {
+                return Err(io::Error::other(
+                    "uninstall the previous browser registration before changing registryBrowser",
+                ));
+            }
+        }
     }
     if daemon::request(directory, "status").is_ok() {
         return Err(io::Error::other(
@@ -117,6 +143,9 @@ pub fn install(directory: &Path, mut target: Target, login_start: bool) -> io::R
     let previous_registration = registry::read(&key, "", VIEW64)?;
     let previous_identity = crate::notifications::identity_ready(directory);
     let previous_startup = registry::read(RUN_KEY, &startup_name(directory), VIEW64)?;
+    let keep_startup = previous_startup
+        .as_deref()
+        .is_some_and(|value| owned_startup(directory, value));
     let source = std::env::current_exe()?
         .parent()
         .ok_or_else(|| io::Error::other("cannot find distribution directory"))?
@@ -164,7 +193,7 @@ pub fn install(directory: &Path, mut target: Target, login_start: bool) -> io::R
             return Err(io::Error::other("host registration readback failed"));
         }
         crate::notifications::install_identity(directory)?;
-        if login_start {
+        if login_start || keep_startup {
             autostart(directory, true)?;
         }
         Ok(())
@@ -176,7 +205,7 @@ pub fn install(directory: &Path, mut target: Target, login_start: bool) -> io::R
                 rollback_errors.push(error.to_string());
             }
         }
-        if login_start {
+        if login_start || keep_startup {
             let restored = if let Some(value) = previous_startup {
                 registry::write(RUN_KEY, &startup_name(directory), &value, VIEW64)
             } else {
@@ -277,23 +306,57 @@ pub fn set_enabled(directory: &Path, enabled: bool) -> io::Result<Value> {
 }
 
 pub fn stop(directory: &Path) -> io::Result<Value> {
-    if directory.join("config.json").exists() {
-        set_enabled(directory, false)?;
-    }
+    let disabled = if directory.join("config.json").exists() {
+        match storage::read_config(directory) {
+            Ok(_) => {
+                set_enabled(directory, false)?;
+                true
+            }
+            Err(error) => {
+                eprintln!("[Monitor] Cannot read configuration while stopping: {error}");
+                false
+            }
+        }
+    } else {
+        false
+    };
+    let watcher = daemon::request(directory, "status")
+        .ok()
+        .and_then(|value| value["watchdogPid"].as_u64());
+    let process = watcher.and_then(|pid| {
+        let handle = unsafe {
+            windows_sys::Win32::System::Threading::OpenProcess(0x00100000, 0, pid as u32)
+        };
+        if handle.is_null() {
+            None
+        } else {
+            Some(platform::Handle(handle))
+        }
+    });
+    let finished = || -> io::Result<Value> {
+        if let Some(handle) = process.as_ref() {
+            if unsafe { windows_sys::Win32::System::Threading::WaitForSingleObject(handle.0, 5000) }
+                != 0
+            {
+                return Err(io::Error::other(
+                    "watchdog has not finished exiting; files may still be in use",
+                ));
+            }
+        }
+        Ok(json!({"stopped":true,"enabled":if disabled{Some(false)}else{None}}))
+    };
     match daemon::request(directory, "stop") {
         Ok(_) => {
             let deadline = Instant::now() + Duration::from_secs(5);
             while Instant::now() < deadline {
                 if daemon::request(directory, "status").is_err() {
-                    return Ok(json!({"stopped":true,"enabled":false}));
+                    return finished();
                 }
                 thread::sleep(Duration::from_millis(100));
             }
             Err(io::Error::other("watchdog did not stop"))
         }
-        Err(error) if error.raw_os_error() == Some(2) => {
-            Ok(json!({"stopped":true,"enabled":false}))
-        }
+        Err(error) if error.raw_os_error() == Some(2) => finished(),
         Err(error) => Err(error),
     }
 }
@@ -322,6 +385,33 @@ pub fn uninstall(directory: &Path) -> io::Result<Value> {
 
 pub fn status(directory: &Path) -> Value {
     daemon::request(directory,"status").unwrap_or_else(|error|json!({"watchdogRunning":false,"reason":error.to_string(),"lastKnown":storage::read_json::<Value>(&directory.join("status.json")).ok()}))
+}
+
+pub fn diagnostic_summary(report: &Value) -> String {
+    if report["ok"] == true {
+        return "连接、登记与路径检查通过。可以在状态窗口启用保护。".into();
+    }
+    let mut messages = vec![];
+    if let Some(checks) = report["checks"].as_array() {
+        for check in checks.iter().filter(|c| c["ok"] != true) {
+            let message = match check["name"].as_str().unwrap_or("") {
+                "configuration" => "配置无法读取，请打开重新配置；原文件会保留备份。",
+                "hostManifest" => "浏览器主机路径或扩展 ID 不匹配，请重新配置。",
+                "registry32" | "registry64" => "浏览器登记存在冲突，请检查是否还有其他安装。",
+                "watchdog" => "后台未运行或遇到故障，请重启监控并查看具体原因。",
+                "nativeHandshake" => {
+                    "扩展尚未连接：请确认已加载正确 ID 的扩展，并打开通信开关、保存配置。"
+                }
+                "browserPaths" => "浏览器或数据目录路径失效，请重新选择。",
+                "notifications" => "系统通知身份缺失，请重新配置以修复。",
+                _ => "检查未通过，请查看详细诊断。",
+            };
+            if !messages.contains(&message) {
+                messages.push(message);
+            }
+        }
+    }
+    messages.join("\n")
 }
 
 pub fn doctor(directory: &Path) -> Value {
