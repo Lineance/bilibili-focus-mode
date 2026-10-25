@@ -35,10 +35,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: extension-dist
+          overwrite: true
           path: dist/
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: extension-package
+          overwrite: true
           path: .cache/release/extension/
           if-no-files-found: error

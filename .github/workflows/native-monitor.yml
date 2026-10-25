@@ -67,6 +67,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: native-package
+          overwrite: true
           path: .cache/release/native/
           if-no-files-found: error
       - name: Retain bounded test results
@@ -74,6 +75,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-monitor-test-results
+          overwrite: true
           if-no-files-found: ignore
           path: |
             chromium-extension-monitor/artifacts/**/results.json
