@@ -15,7 +15,6 @@ import { NativeMessagingSettings } from './config/NativeMessagingSettings';
 import { AppearanceEnhancementSettings } from './config/AppearanceEnhancementSettings';
 import { LiveEnhancementSettings } from './config/LiveEnhancementSettings';
 import { VideoPlayerEnhancementSettings } from './config/VideoPlayerEnhancementSettings';
-import { ThemeEnhancementSettings } from './config/ThemeEnhancementSettings';
 
 export function ConfigPanel(): React.JSX.Element {
   const [config, setConfig] = useState<ExtensionConfig>(DEFAULT_CONFIG);
@@ -95,7 +94,6 @@ export function ConfigPanel(): React.JSX.Element {
         <AppearanceEnhancementSettings config={config} updateConfig={updateConfig} />
         <LiveEnhancementSettings config={config} updateConfig={updateConfig} />
         <VideoPlayerEnhancementSettings config={config} updateConfig={updateConfig} />
-        <ThemeEnhancementSettings config={config} updateConfig={updateConfig} />
       </div>
     </div>
   );

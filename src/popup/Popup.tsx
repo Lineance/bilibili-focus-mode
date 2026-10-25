@@ -1,11 +1,7 @@
-import { ThemeService } from '@core/services';
 import { getTodayKey } from '@core/utils/dateUtils';
 import { useStorage } from '@hooks/useStorage';
-import { useEffect, useState } from 'react';
-import { Icon, IconButton } from '@ui';
+import { Icon } from '@ui';
 import './index.css';
-
-const themeService = ThemeService.getInstance();
 
 export function Popup(): React.JSX.Element {
   const storage = useStorage();
@@ -17,9 +13,6 @@ export function Popup(): React.JSX.Element {
     ? behaviorLog.dailyBypassesUsedToday
     : 0;
   const remainingBypasses = Math.max(0, (config?.dailyBypassQuota ?? 3) - usedToday);
-  const [mode, setMode] = useState(themeService.getThemeConfig().mode);
-
-  useEffect(() => themeService.subscribe((next) => setMode(next.mode)), []);
 
   return (
     <div className="fm-popup">
@@ -31,11 +24,6 @@ export function Popup(): React.JSX.Element {
           <h1 className="fm-popup__title">Focus Mode</h1>
           <p className="fm-popup__sub">Intentional Entertainment</p>
         </div>
-        <IconButton
-          icon={mode === 'dark' ? 'sun' : 'moon'}
-          label={mode === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-          onClick={() => themeService.toggleMode()}
-        />
       </div>
 
       <div className="fm-popup__status">

@@ -2,12 +2,9 @@ import type {
   AppearanceEnhancementConfig,
   LiveEnhancementConfig,
   VideoPlayerEnhancementConfig,
-  ThemeEnhancementConfig,
 } from '@core/types';
 import { StyleInjector } from './services/StyleInjector';
 import { SpeedController } from './services/SpeedController';
-import { CoverReplacementService } from '@core/services/CoverReplacementService';
-import { ThemeSyncService } from '@core/services/ThemeSyncService';
 import { AppearanceCSSGenerator } from '@core/services/css/migrated/AppearanceCSSGenerator';
 import { logger } from '@core/utils/logger';
 import {
@@ -19,8 +16,6 @@ export class MigratedComponentOrchestrator {
   private appearanceGenerator = new AppearanceCSSGenerator();
   private maskPanelObserver: MutationObserver | null = null;
   private speedController = new SpeedController();
-  private coverReplacement = new CoverReplacementService();
-  private themeSync = new ThemeSyncService();
 
   constructor(private styleInjector: StyleInjector) {}
 
@@ -80,22 +75,6 @@ export class MigratedComponentOrchestrator {
     logger.debug('MigratedOrchestrator', 'Video player enhancement applied:', config);
   }
 
-  applyThemeEnhancement(config: ThemeEnhancementConfig): void {
-    if (config.darkModeFollowSystem) {
-      this.themeSync.start();
-    } else {
-      this.themeSync.stop();
-    }
-
-    if (config.replaceCover) {
-      this.coverReplacement.start();
-    } else {
-      this.coverReplacement.stop();
-    }
-
-    logger.debug('MigratedOrchestrator', 'Theme enhancement applied:', config);
-  }
-
   private startMaskPanelRemoval(): void {
     if (this.maskPanelObserver) return;
 
@@ -133,7 +112,5 @@ export class MigratedComponentOrchestrator {
     this.styleInjector.removeNamed('live-enhancement');
     this.stopMaskPanelRemoval();
     this.speedController.disable();
-    this.coverReplacement.stop();
-    this.themeSync.stop();
   }
 }

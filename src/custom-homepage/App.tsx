@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DEFAULT_CONFIG } from '@core/constants';
 import type { ExtensionStorage } from '@core/types';
 import { StorageRepository } from '@core/storage/StorageRepository';
-import { ThemeService } from '@core/services';
-import { Icon, IconButton } from '@ui';
+import { Icon } from '@ui';
 import { DebtStatus } from './components/DebtStatus';
 import { BypassStatus } from './components/BypassStatus';
 import { PermanentSection } from './components/PermanentSection';
@@ -11,13 +10,8 @@ import { UploaderSection } from './components/UploaderSection';
 import { KeywordSection } from './components/KeywordSection';
 import { QuickActions } from './components/QuickActions';
 
-const themeService = ThemeService.getInstance();
-
 export function App(): React.JSX.Element {
   const [storage, setStorage] = useState<ExtensionStorage | null>(null);
-  const [mode, setMode] = useState(themeService.getThemeConfig().mode);
-
-  useEffect(() => themeService.subscribe((config) => setMode(config.mode)), []);
 
   useEffect(() => {
     const loadStorage = async () => {
@@ -59,11 +53,6 @@ export function App(): React.JSX.Element {
         </div>
 
         <div className="fm-actions">
-          <IconButton
-            icon={mode === 'dark' ? 'sun' : 'moon'}
-            label={mode === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-            onClick={() => themeService.toggleMode()}
-          />
           <button
             type="button"
             onClick={() => window.open('https://search.bilibili.com/', '_blank')}

@@ -208,8 +208,6 @@ export interface ExtensionConfig {
   liveEnhancement: LiveEnhancementConfig;
   // Video Player Enhancement
   videoPlayerEnhancement: VideoPlayerEnhancementConfig;
-  // Theme Enhancement
-  themeEnhancement: ThemeEnhancementConfig;
 }
 
 export interface ExtensionStorage {
@@ -271,14 +269,5 @@ export interface VideoPlayerEnhancementConfig {
   rememberSpeed: boolean;
 }
 
-/** 主题增强配置 */
-export interface ThemeEnhancementConfig {
-  darkModeFollowSystem: boolean;
-  replaceCover: boolean;
-}
-
 // Export result types
 export * from './result';
-
-// Export theme types
-export * from './theme';

@@ -2,7 +2,6 @@ import { DEFAULT_CONFIG } from '@core/constants';
 import { logger } from '@core/utils/logger';
 import { useStorage } from '@hooks/useStorage';
 import { StorageRepository } from '@core/storage/StorageRepository';
-import { ThemeService } from '@core/services';
 import React, { useEffect, useMemo, useState } from 'react';
 import { sendMessage } from 'webext-bridge/options';
 
@@ -11,13 +10,12 @@ import {
   StatsDashboard,
   KeywordRulesPanel,
   PermanentGroups,
-  ThemePanel,
   UploaderAllowlist,
 } from './components';
-import { Button, ConfirmHost, Icon, IconButton, ToastHost, toast } from '@ui';
+import { Button, ConfirmHost, Icon, ToastHost, toast } from '@ui';
 import type { IconName } from '@ui';
 
-type ActiveTab = 'permanent' | 'stats' | 'uploaders' | 'keywords' | 'config' | 'theme';
+type ActiveTab = 'permanent' | 'stats' | 'uploaders' | 'keywords' | 'config';
 
 const TABS: Array<{ id: ActiveTab; label: string; icon: IconName; countKey?: 'permanent' | 'uploaders' | 'keywords' }> = [
   { id: 'permanent', label: '永久分组', icon: 'folder', countKey: 'permanent' },
@@ -25,17 +23,11 @@ const TABS: Array<{ id: ActiveTab; label: string; icon: IconName; countKey?: 'pe
   { id: 'uploaders', label: 'UP 主白名单', icon: 'user', countKey: 'uploaders' },
   { id: 'keywords', label: '关键词规则', icon: 'tag', countKey: 'keywords' },
   { id: 'config', label: '配置', icon: 'sliders' },
-  { id: 'theme', label: '主题', icon: 'palette' },
 ];
-
-const themeService = ThemeService.getInstance();
 
 export function App(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<ActiveTab>('permanent');
-  const [mode, setMode] = useState(themeService.getThemeConfig().mode);
   const storage = useStorage();
-
-  useEffect(() => themeService.subscribe((config) => setMode(config.mode)), []);
 
   useEffect(() => {
     sendMessage('sync-debt', {}, 'background').catch((err) => {
@@ -130,11 +122,6 @@ export function App(): React.JSX.Element {
         </div>
 
         <div className="fm-actions">
-          <IconButton
-            icon={mode === 'dark' ? 'sun' : 'moon'}
-            label={mode === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-            onClick={() => themeService.toggleMode()}
-          />
           <Button variant="ghost" icon="download" onClick={handleExport}>
             导出备份
           </Button>
@@ -173,7 +160,6 @@ export function App(): React.JSX.Element {
         {activeTab === 'uploaders' && <UploaderAllowlist uploaders={storage.allowedUploaders || []} />}
         {activeTab === 'keywords' && <KeywordRulesPanel config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'config' && <ConfigPanel />}
-        {activeTab === 'theme' && <ThemePanel />}
       </main>
 
       <ToastHost />
