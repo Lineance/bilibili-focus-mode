@@ -357,6 +357,39 @@ pub fn show_countdown(shared: std::sync::Arc<std::sync::Mutex<Value>>) {
     });
 }
 
+pub fn spawn_detached(command: &mut std::process::Command) -> io::Result<std::process::Child> {
+    use windows_sys::Win32::{
+        Foundation::{GetHandleInformation, SetHandleInformation, HANDLE_FLAG_INHERIT},
+        System::Console::{GetStdHandle, STD_ERROR_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE},
+    };
+    struct Restore(Vec<(windows_sys::Win32::Foundation::HANDLE, u32)>);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            for (handle, flags) in &self.0 {
+                unsafe {
+                    SetHandleInformation(
+                        *handle,
+                        HANDLE_FLAG_INHERIT,
+                        *flags & HANDLE_FLAG_INHERIT,
+                    );
+                }
+            }
+        }
+    }
+    let mut restore = Restore(vec![]);
+    for kind in [STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE] {
+        let handle = unsafe { GetStdHandle(kind) };
+        let mut flags = 0;
+        if unsafe { GetHandleInformation(handle, &mut flags) } != 0 {
+            if unsafe { SetHandleInformation(handle, HANDLE_FLAG_INHERIT, 0) } == 0 {
+                return Err(io::Error::last_os_error());
+            }
+            restore.0.push((handle, flags));
+        }
+    }
+    command.spawn()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

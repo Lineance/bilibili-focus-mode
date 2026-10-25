@@ -160,6 +160,7 @@ fn serve(
 fn snapshot(engine: &Engine, config: &Config, dry_run: bool, now: u64, verified: bool) -> Value {
     json!({"protocolVersion":PROTOCOL_VERSION,"watchdogRunning":true,"watchdogPid":std::process::id(),
         "state":engine.state,"enabled":config.enabled,"dryRun":dry_run,"targetPid":engine.instance.as_ref().map(|id|id.pid),
+        "extensionConnected":engine.session.is_some() && engine.heartbeat_age(now)<config.timing.heartbeat_timeout_ms,
         "extensionId":config.target.extension_id,"remainingMs":engine.deadline.map(|end|end.saturating_sub(now)),
         "reason":engine.reason,"verified":verified,"updatedAt":storage::timestamp()})
 }

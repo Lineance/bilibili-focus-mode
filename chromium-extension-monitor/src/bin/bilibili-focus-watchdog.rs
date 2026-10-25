@@ -11,16 +11,15 @@ struct Args {
     no_notify: bool,
 }
 fn main() {
-    let result = (|| -> std::io::Result<()> {
-        let args = Args::parse();
-        let directory = chromium_extension_monitor::storage::data_dir(args.data_dir)?;
+    let args = Args::parse();
+    let directory = match chromium_extension_monitor::storage::data_dir(args.data_dir) {
+        Ok(directory) => directory,
+        Err(_) => std::process::exit(1),
+    };
+    if let Err(error) =
         chromium_extension_monitor::daemon::run(&directory, args.dry_run, !args.no_notify)
-    })();
-    if let Err(error) = result {
-        // A login-started GUI binary has no terminal. Persist startup failures so
-        // doctor can explain them without stealing focus with a modal dialog.
-        if let Ok(directory) = chromium_extension_monitor::storage::data_dir(None) {
-            let _ = std::fs::create_dir_all(&directory);
+    {
+        if std::fs::create_dir_all(&directory).is_ok() {
             let _ = std::fs::write(directory.join("startup-error.txt"), error.to_string());
         }
         std::process::exit(1);

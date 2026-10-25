@@ -202,8 +202,19 @@ pub fn identity(pid: u32) -> io::Result<Value> {
     )
 }
 
+pub fn plain_path(path: &std::path::Path) -> std::path::PathBuf {
+    let text = path.to_string_lossy();
+    if let Some(rest) = text.strip_prefix(r"\\?\UNC\") {
+        std::path::PathBuf::from(format!(r"\\{rest}"))
+    } else if let Some(rest) = text.strip_prefix(r"\\?\") {
+        std::path::PathBuf::from(rest)
+    } else {
+        path.to_owned()
+    }
+}
+
 pub fn normalized(path: &str) -> String {
-    let canonical = std::fs::canonicalize(path).ok();
+    let canonical = std::fs::canonicalize(path).ok().map(|p| plain_path(&p));
     let path = canonical
         .as_ref()
         .map(|p| p.to_string_lossy())

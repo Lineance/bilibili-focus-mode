@@ -5,8 +5,12 @@ pub mod engine;
 #[cfg(windows)]
 pub mod host;
 #[cfg(windows)]
+pub mod install;
+#[cfg(windows)]
 pub mod platform;
 pub mod protocol;
+#[cfg(windows)]
+pub mod registry;
 #[cfg(windows)]
 pub mod storage;
 #[cfg(windows)]

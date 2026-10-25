@@ -161,6 +161,9 @@ impl Engine {
         self.deadline = Some(now + self.timing.resume_ms);
         self.reason = Some("systemResumed".into());
     }
+    pub fn heartbeat_age(&self, now: u64) -> u64 {
+        now.saturating_sub(self.last_heartbeat)
+    }
     pub fn fault(&mut self, reason: String) {
         self.state = State::Faulted;
         self.reason = Some(reason);

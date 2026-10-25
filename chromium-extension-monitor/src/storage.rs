@@ -55,6 +55,10 @@ pub fn read_config(directory: &Path) -> io::Result<Config> {
 /// Replace a complete file atomically, including on Windows where rename does
 /// not replace an existing destination. No half-written config can arm a timer.
 pub fn write_json(path: &Path, value: &impl Serialize) -> io::Result<()> {
+    write_bytes(path, &serde_json::to_vec_pretty(value)?)
+}
+
+pub fn write_bytes(path: &Path, bytes: &[u8]) -> io::Result<()> {
     let parent = path
         .parent()
         .ok_or_else(|| io::Error::other("missing parent directory"))?;
@@ -69,7 +73,7 @@ pub fn write_json(path: &Path, value: &impl Serialize) -> io::Result<()> {
         .create_new(true)
         .write(true)
         .open(&temp)?;
-    file.write_all(&serde_json::to_vec_pretty(value)?)?;
+    file.write_all(bytes)?;
     file.sync_all()?;
     drop(file);
     let result = crate::windows_runtime::replace_file(&temp, path);
