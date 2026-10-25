@@ -22,11 +22,11 @@ jobs:
       FOCUS_ACCEPTANCE_IDLE_SECONDS: ${{ inputs.long_run && '310' || '65' }}
       CFT_VERSION: '156.0.8078.4'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - uses: dtolnay/rust-toolchain@stable
@@ -39,7 +39,7 @@ jobs:
       - run: cargo clippy --locked --manifest-path chromium-extension-monitor/Cargo.toml --all-targets -- -D warnings
       - run: cargo test --locked --manifest-path chromium-extension-monitor/Cargo.toml
       - run: cargo build --locked --release --jobs 1 --manifest-path chromium-extension-monitor/Cargo.toml
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: extension-dist
           path: dist
@@ -64,7 +64,7 @@ jobs:
           PACKAGE_TAG: ${{ inputs.package_tag }}
         shell: pwsh
         run: python .github/scripts/package_release.py build --component native --tag "$env:PACKAGE_TAG" --out .cache/release/native
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: native-package
           overwrite: true
@@ -72,7 +72,7 @@ jobs:
           if-no-files-found: error
       - name: Retain bounded test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-monitor-test-results
           overwrite: true
