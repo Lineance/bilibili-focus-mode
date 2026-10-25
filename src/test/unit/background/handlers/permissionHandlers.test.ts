@@ -34,14 +34,11 @@ describe('handleCheckPermission daily full bypass', () => {
       ...DEFAULT_STORAGE,
       config: {
         ...DEFAULT_STORAGE.config,
-        timeWindowEnabled: false,
         dailyBypassEnabled: true,
         dailyBypassQuota: 3,
         dailyBypassDurationMinutes: 30,
       },
       permanentGroups: [],
-      instantList: [],
-      limboList: [],
       allowedUploaders: [],
       debtAccount: {
         ...DEFAULT_STORAGE.debtAccount,

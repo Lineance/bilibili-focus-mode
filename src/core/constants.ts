@@ -13,26 +13,13 @@ export const MS_PER_HOUR = 60 * 60 * 1000;
 export const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 // Business logic constants
-export const MIN_FUSE_LENGTH = 8;
 export const MAX_LOG_ENTRIES = 1000;
 export const MAX_WATCH_HISTORY = 200;
 export const MIN_REPENTANCE_LENGTH = 20;
 export const TITLE_MAX_LENGTH = 50;
 export const PERMISSION_CHECK_INTERVAL_MS = 60000;
-export const FUSE_VALIDITY_MS = 5 * MS_PER_MINUTE;
-export const TIME_WINDOW_BREAK_MS = MS_PER_HOUR;
 
 export const DEFAULT_CONFIG: ExtensionConfig = {
-  timeWindowEnabled: true,
-  windowStart: '20:00',
-  windowEnd: '21:00',
-  limboCapacity: 5,
-  limboReviewTime: '19:30',
-  limboAutoPurgeHours: 24,
-  instantDurationHours: 6,
-  instantBreakFuse: true,
-  baseFuseLength: 8,
-  maxFuseLength: 64,
   maxGroups: 4,
   maxItemsPerGroup: 10,
   totalPermanentLimit: 20,
@@ -41,10 +28,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   learningRepayRatio: -1.0,
   maxDebtMinutes: 60,
   bankruptcyLockHours: 24,
-  bankruptcyOverrideMaxFuse: 128,
-  dynamicFuseEnabled: true,
   postWatchCooldownMinutes: 5,
-  dailyInstantQuota: 0,
   collectionDetectionEnabled: true,
   // Video player style simplification
   videoPlayerSimplification: {
@@ -182,9 +166,7 @@ export const MANAGER_PAGE_PATH = 'src/manager/index.html';
 export const ICON_PATH = 'icon128.png';
 
 export const DEFAULT_STORAGE: ExtensionStorage = {
-  version: 3,
-  limboList: [],
-  instantList: [],
+  version: 4,
   permanentGroups: [],
   behaviorLog: DEFAULT_BEHAVIOR_LOG,
   globalStats: DEFAULT_GLOBAL_STATS,

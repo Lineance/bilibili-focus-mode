@@ -1,81 +1,41 @@
 import { DEFAULT_STORAGE } from '@core/constants';
-import type { ExtensionConfig } from '@core/types';
 import { logger } from '@core/utils/logger';
-import { AlarmHandler } from './AlarmHandler';
 import { registerMessageHandlers } from './MessageHandlers';
 import { NativeMessagingService } from './NativeMessagingService';
 
 logger.debug('Background', 'Service worker started');
 
-const alarmHandler = new AlarmHandler();
 const nativeService = new NativeMessagingService();
 
-function getConfigFromStorage(storage: Record<string, unknown>): ExtensionConfig {
-  return (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
-}
-
-function getNewConfigValue(newValue: unknown): typeof DEFAULT_STORAGE.config {
-  return newValue as typeof DEFAULT_STORAGE.config;
-}
-
-// Initialize storage on install or migrate on update (Issue #3)
 chrome.runtime.onInstalled.addListener(async (details) => {
   logger.debug('Background', 'Extension installed:', details.reason);
 
   if (details.reason === 'install') {
     await chrome.storage.local.set(DEFAULT_STORAGE);
     logger.debug('Background', 'Default storage initialized');
-    alarmHandler.scheduleLimboReviewReminder(DEFAULT_STORAGE.config.limboReviewTime);
-    alarmHandler.scheduleLimboAutoPurge(DEFAULT_STORAGE.config.limboAutoPurgeHours);
-  } else if (details.reason === 'update') {
+    return;
+  }
+
+  if (details.reason === 'update') {
     const storage = await chrome.storage.local.get();
     const currentVersion = (storage as Record<string, unknown>).version as number || 0;
 
-    if (currentVersion < 3) {
+    if (currentVersion < 4) {
       await chrome.storage.local.set({
         ...DEFAULT_STORAGE,
         ...storage,
-        version: 3,
+        version: 4,
       });
     }
 
     logger.debug('Background', `Migrated from version ${currentVersion} to current`);
-    alarmHandler.scheduleLimboReviewReminder(
-      ((storage as Record<string, unknown>).config as Record<string, unknown>)?.limboReviewTime as string || DEFAULT_STORAGE.config.limboReviewTime
-    );
-    alarmHandler.scheduleLimboAutoPurge(
-      ((storage as Record<string, unknown>).config as Record<string, unknown>)?.limboAutoPurgeHours as number ?? DEFAULT_STORAGE.config.limboAutoPurgeHours
-    );
   }
 });
 
-// Set up alarm event listener
-alarmHandler.listen();
-
-// Register webext-bridge message handlers
 registerMessageHandlers();
-
-// Restore Native Messaging on cold worker starts, browser startup and config changes.
 nativeService.start();
 
-// Schedule initial alarms from stored config
-chrome.storage.local.get('config').then((storage) => {
-  const config = getConfigFromStorage(storage);
-  const limboReviewTime = config.limboReviewTime || DEFAULT_STORAGE.config.limboReviewTime;
-  const limboAutoPurgeHours = config.limboAutoPurgeHours ?? DEFAULT_STORAGE.config.limboAutoPurgeHours;
-  alarmHandler.scheduleLimboReviewReminder(limboReviewTime);
-  alarmHandler.scheduleLimboAutoPurge(limboAutoPurgeHours);
-});
-
-// Re-schedule alarms when config changes
-chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName !== 'local' || !changes.config?.newValue) return;
-  const newConfig = getNewConfigValue(changes.config.newValue);
-  alarmHandler.scheduleLimboReviewReminder(newConfig.limboReviewTime);
-  alarmHandler.scheduleLimboAutoPurge(newConfig.limboAutoPurgeHours);
-});
-
-// External message handler for extension detection
+// External message handler for extension detection.
 chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
   logger.debug('Background', 'External message received:', request, 'from:', sender.id);
 

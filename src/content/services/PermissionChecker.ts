@@ -11,8 +11,6 @@ interface PermissionCheckResult {
   config: ProtocolMap['check-permission']['res']['config'];
   videoTag: ProtocolMap['check-permission']['res']['videoTag'];
   uploaderAllowed: boolean;
-  inReviewWindow: boolean;
-  timeUntilWindow: number;
 }
 
 export class PermissionChecker {
@@ -87,8 +85,6 @@ export class PermissionChecker {
         config: this.latestConfig,
         videoTag: this.latestVideoTag,
         uploaderAllowed: result.uploaderAllowed || false,
-        inReviewWindow: result.inReviewWindow || false,
-        timeUntilWindow: result.timeUntilWindow || 0,
       };
     } catch (error) {
       console.error('[Content] Failed to check permission:', error);

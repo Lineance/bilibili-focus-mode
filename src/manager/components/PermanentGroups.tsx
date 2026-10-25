@@ -36,7 +36,7 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
   const handleDeleteItem = async (bvid: string) => {
     const ok = await confirmAction({
       title: '删除永久许可',
-      description: '该视频会重新进入未审批状态。',
+      description: '该视频会恢复拦截.',
       confirmLabel: '删除',
       danger: true,
     });
@@ -56,7 +56,7 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
     if (selected.size === 0) return;
     const ok = await confirmAction({
       title: `删除 ${selected.size} 个永久许可`,
-      description: '这些视频会重新进入未审批状态。',
+      description: '这些视频会恢复拦截.',
       confirmLabel: '批量删除',
       danger: true,
     });
@@ -99,7 +99,7 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
         title="永久分组"
         icon="folder"
         count={totalItems}
-        description="长期免审的收藏级视频。分组按标签归档，删除后需要重新审批。"
+        description="长期放行的视频。分组按标签归档，删除后会恢复拦截。"
         actions={
           totalItems > 0 ? (
             <Button variant="danger" size="sm" icon="trash" onClick={handleClearAll}>
@@ -113,7 +113,7 @@ export function PermanentGroups({ groups }: { groups: readonly PermanentGroup[] 
         <EmptyState
           icon="folder"
           title="没有永久分组"
-          description="在待审池审批视频时选择「永久」，即可长期放行。"
+          description="在阻断页选择 Tag 后即可加入永久放行。"
         />
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">

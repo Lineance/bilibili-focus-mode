@@ -49,7 +49,7 @@ export function PermanentSection({ groups }: PermanentSectionProps): React.JSX.E
       />
 
       {total === 0 ? (
-        <EmptyState icon="folder" title="暂无永久分组" description="在待审池中选择「永久」即可长期放行。" />
+        <EmptyState icon="folder" title="暂无永久分组" description="在阻断页选择 Tag 后即可加入永久放行。" />
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {groups.map((group) => (

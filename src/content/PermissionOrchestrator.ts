@@ -16,7 +16,6 @@ const DEFAULT_CONTENT_CONFIG: NonNullable<ProtocolMap['check-permission']['res']
   maxDebtMinutes: 60,
   bankruptcyLockHours: 24,
   postWatchCooldownMinutes: 5,
-  instantBreakFuse: true,
   collectionDetectionEnabled: true,
 };
 
@@ -95,8 +94,6 @@ export class PermissionOrchestrator {
 
     if (!result.allowed) {
       logger.debug('Content', 'Permission denied, showing block overlay');
-      const allowFuseOutsideWindow = Boolean(result.config?.instantBreakFuse);
-      const inReviewWindow = result.inReviewWindow;
       const isBankruptcy = result.reason === 'BANKRUPTCY';
 
       const { behaviorLog, config } = await StorageRepository.getKeys('behaviorLog', 'config');
@@ -131,14 +128,6 @@ export class PermissionOrchestrator {
       this.blockOverlayManager.show(
         metadata,
         result.reason,
-        {
-          inReviewWindow,
-          timeUntilWindow: result.timeUntilWindow || 0,
-        },
-        {
-          allowFuse: inReviewWindow || allowFuseOutsideWindow,
-          isBankruptcy,
-        },
         bypassInfo,
         (m: VideoMetadata) => this.addToPermanent(m),
         () => this.blockOverlayManager.openManagerPage(),

@@ -85,7 +85,7 @@ if (typeof chrome === 'undefined' || !chrome.runtime?.id) {
     if (area === 'local' && changes.config) {
       permissionChecker.invalidateConfig();
     }
-    if (area === 'local' && (changes.config || changes.permanentGroups || changes.instantList || changes.limboList || changes.allowedUploaders)) {
+    if (area === 'local' && (changes.config || changes.permanentGroups || changes.allowedUploaders)) {
       if (permissionChecker.getCurrentBvid()) {
         permissionOrchestrator.checkPermission();
       }

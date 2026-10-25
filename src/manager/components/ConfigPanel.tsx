@@ -5,13 +5,8 @@ import { ConfigService } from '@core/services';
 import type { ExtensionConfig } from '@core/types';
 import { Button, PageIntro, toast } from '@ui';
 
-import { TimeWindowSettings } from './config/TimeWindowSettings';
-import { LimboSettings } from './config/LimboSettings';
-import { InstantSettings } from './config/InstantSettings';
-import { FuseSettings } from './config/FuseSettings';
 import { PermanentGroupSettings } from './config/PermanentGroupSettings';
 import { DebtSettings } from './config/DebtSettings';
-import { QuotaSettings } from './config/QuotaSettings';
 import { DetectionSettings } from './config/DetectionSettings';
 import { StyleSimplificationSettings } from './config/StyleSimplificationSettings';
 import { SearchSimplificationSettings } from './config/SearchSimplificationSettings';
@@ -90,13 +85,8 @@ export function ConfigPanel(): React.JSX.Element {
       </div>
 
       <div className="fm-config">
-        <TimeWindowSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
-        <LimboSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
-        <InstantSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
-        <FuseSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <PermanentGroupSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <DebtSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
-        <QuotaSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <DetectionSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <DailyBypassSettings config={config} updateConfig={updateConfig} descriptions={descriptions} />
         <NativeMessagingSettings config={config} updateConfig={updateConfig} />

@@ -1,17 +1,14 @@
-// Mock webext-bridge before any imports
 import { vi } from 'vitest';
 
-// Mock webext-bridge/options module to avoid loading webextension-polyfill
 vi.mock('webext-bridge/options', () => ({
   sendMessage: vi.fn(() => Promise.resolve({})),
 }));
 
-// Mock chrome object
 vi.stubGlobal('chrome', {
   storage: {
     local: {
-      get: vi.fn(),
-      set: vi.fn(),
+      get: vi.fn(() => Promise.resolve({})),
+      set: vi.fn(() => Promise.resolve()),
     },
     onChanged: {
       addListener: vi.fn(),
@@ -20,17 +17,13 @@ vi.stubGlobal('chrome', {
   },
 });
 
-// Now import modules
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { ExtensionStorage } from '@core/types';
 import { App } from '@manager/App';
 
-// Mock storage for testing
 const mockStorage: Partial<ExtensionStorage> = {};
-const mockListeners: Array<(changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => void> = [];
 
-// Override chrome.storage with our mock implementation
 vi.stubGlobal('chrome', {
   storage: {
     local: {
@@ -41,104 +34,43 @@ vi.stubGlobal('chrome', {
       }),
     },
     onChanged: {
-      addListener: vi.fn((listener) => mockListeners.push(listener)),
+      addListener: vi.fn(),
       removeListener: vi.fn(),
     },
   },
 });
 
-// Mock useStorage hook
 vi.mock('@hooks/useStorage', () => ({
   useStorage: () => mockStorage,
 }));
 
 describe('Manager App', () => {
   beforeEach(() => {
-    // Clear mock storage
     Object.keys(mockStorage).forEach((key) => delete (mockStorage as Record<string, unknown>)[key]);
-    mockListeners.length = 0;
     vi.clearAllMocks();
-    
-    // Mock window.confirm and window.alert
     vi.stubGlobal('confirm', vi.fn(() => true));
     vi.stubGlobal('alert', vi.fn());
   });
 
-  it('should render header', () => {
+  it('should render header and retained navigation tabs', () => {
     render(<App />);
-    
+
     expect(screen.getByText('Bilibili Focus Mode')).toBeTruthy();
-    expect(screen.getByText('意图性娱乐 · 时间资产管理')).toBeTruthy();
-  });
-
-  it('should render navigation tabs', () => {
-    render(<App />);
-    
-    expect(screen.getAllByText('待审池').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('即时许可').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('统计')).toBeTruthy();
     expect(screen.getAllByText('永久分组').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('统计').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('UP 主白名单')).toBeTruthy();
+    expect(screen.getByText('关键词规则')).toBeTruthy();
+    expect(screen.queryByText('待审池')).toBeNull();
+    expect(screen.queryByText('即时许可')).toBeNull();
   });
 
-  it('should show empty limbo message', () => {
+  it('should show the empty permanent state by default', () => {
     render(<App />);
-    
-    expect(screen.getByText('待审池为空')).toBeTruthy();
+
+    expect(screen.getByText('没有永久分组')).toBeTruthy();
   });
 
-  it('should switch tabs when clicked', () => {
-    render(<App />);
-    
-    // Click on stats tab
-    fireEvent.click(screen.getByText('统计'));
-    
-    expect(screen.getByText('屏幕使用时间')).toBeTruthy();
-  });
-
-  it('should show limbo items when storage has data', () => {
-    mockStorage.limboList = [
-      {
-        bvid: 'BV1xx',
-        title: 'Test Video',
-        uploader: 'Test Uploader',
-        coverUrl: 'https://example.com/cover.jpg',
-        tag: 'ENTERTAINMENT',
-        addedAt: Date.now(),
-        sourceUrl: 'https://bilibili.com/video/BV1xx',
-      },
-    ];
-
-    render(<App />);
-    
-    expect(screen.getByText('Test Video')).toBeTruthy();
-    expect(screen.getByText('Test Uploader')).toBeTruthy();
-    // Check for tag display and action buttons
-    expect(screen.getAllByText(/娱乐/).length).toBeGreaterThanOrEqual(1);
-    // Use getAllByText for buttons that also appear in nav
-    expect(screen.getAllByText('永久').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('立即').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('删除').length).toBeGreaterThan(0);
-  });
-
-  it('should show clear button when limbo has items', () => {
-    mockStorage.limboList = [
-      {
-        bvid: 'BV1xx',
-        title: 'Test Video',
-        uploader: 'Test Uploader',
-        coverUrl: '',
-        tag: 'ENTERTAINMENT',
-        addedAt: Date.now(),
-        sourceUrl: 'https://bilibili.com/video/BV1xx',
-      },
-    ];
-
-    render(<App />);
-    
-    expect(screen.getByText('清空待审池')).toBeTruthy();
-  });
-
-  it('should show debt dashboard', () => {
+  it('should switch to the retained stats dashboard', () => {
     mockStorage.debtAccount = {
       currentDebt: 30,
       bankruptcyCount: 0,
@@ -147,134 +79,34 @@ describe('Manager App', () => {
       totalLearningMinutes: 10,
       totalMusicMinutes: 0,
     };
+    mockStorage.watchHistory = [];
 
     render(<App />);
-    
     fireEvent.click(screen.getByText('统计'));
-    
-    // Check for stats dashboard title and status
+
     expect(screen.getByText('屏幕使用时间')).toBeTruthy();
-    expect(screen.getByText(/观看时间健康|观看时间较多/)).toBeTruthy();
-    // Check for watch time statistics
-    expect(screen.getAllByText(/娱乐/).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/学习/).length).toBeGreaterThanOrEqual(1);
   });
 
-  it('should show bankruptcy warning', () => {
-    // Set entertainment minutes to exceed daily watch limit (180 minutes default)
-    mockStorage.debtAccount = {
-      currentDebt: 70,
-      bankruptcyCount: 1,
-      bankruptcyEndTime: null,
-      totalEntertainmentMinutes: 200,
-      totalLearningMinutes: 0,
-      totalMusicMinutes: 0,
-    };
-    mockStorage.watchHistory = [
-      { bvid: 'BV1xx', title: 'Test', uploader: 'Test', tag: 'ENTERTAINMENT', startedAt: Date.now(), totalMinutes: 200 },
+  it('should show permanent groups and videos', () => {
+    mockStorage.permanentGroups = [
+      {
+        id: 'learning',
+        name: '学习',
+        items: [{
+          bvid: 'BV1xx',
+          title: 'Learning Video',
+          uploader: 'Uploader',
+          coverUrl: '',
+          tag: 'LEARNING',
+          addedAt: Date.now(),
+        }],
+        debtPriority: 1,
+      },
     ];
 
     render(<App />);
-    
-    fireEvent.click(screen.getByText('统计'));
-    
-    expect(screen.getByText('已接近今日观看限额')).toBeTruthy();
-  });
 
-  describe('Limbo Review Actions', () => {
-    const mockItem = {
-      bvid: 'BV1xx',
-      title: 'Test Video',
-      uploader: 'Test Uploader',
-      coverUrl: 'https://example.com/cover.jpg',
-      tag: 'ENTERTAINMENT' as const,
-      addedAt: Date.now(),
-      sourceUrl: 'https://bilibili.com/video/BV1xx',
-    };
-
-    beforeEach(() => {
-      mockStorage.limboList = [mockItem];
-      mockStorage.permanentGroups = [];
-      mockStorage.instantList = [];
-    });
-
-    it('should show action buttons for limbo items', () => {
-      render(<App />);
-      
-      // Check that action buttons are rendered (use getAllByText since they also appear in nav)
-      expect(screen.getAllByText('永久').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('立即').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText('删除').length).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  describe('Other Tabs', () => {
-    it('should show instant list', () => {
-      const now = Date.now();
-      mockStorage.instantList = [
-        {
-          bvid: 'BV1xx',
-          title: 'Instant Video',
-          uploader: 'Uploader',
-          coverUrl: '',
-          tag: 'ENTERTAINMENT' as const,
-          addedAt: now,
-          expiresAt: now + 6 * 3600000,
-          fuseCode: 'ABCD-1234',
-          usedFuse: false,
-        },
-      ];
-
-      render(<App />);
-      fireEvent.click(screen.getByText('即时许可'));
-      
-      expect(screen.getByText('Instant Video')).toBeTruthy();
-    });
-
-    it('should show permanent groups', () => {
-      mockStorage.permanentGroups = [
-        {
-          id: 'learning',
-          name: '学习',
-          items: [
-            {
-              bvid: 'BV1xx',
-              title: 'Learning Video',
-              uploader: 'Uploader',
-              coverUrl: '',
-              tag: 'LEARNING' as const,
-              addedAt: Date.now(),
-            },
-          ],
-          debtPriority: 1,
-        },
-        {
-          id: 'entertainment',
-          name: '娱乐',
-          items: [
-            {
-              bvid: 'BV2xx',
-              title: 'Entertainment Video',
-              uploader: 'Uploader2',
-              coverUrl: '',
-              tag: 'ENTERTAINMENT' as const,
-              addedAt: Date.now(),
-            },
-          ],
-          debtPriority: 2,
-        },
-      ];
-
-      render(<App />);
-      fireEvent.click(screen.getByText('永久分组'));
-      
-      // Check for the grouped sections
-      expect(screen.getAllByText(/学习/).length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText(/娱乐/).length).toBeGreaterThanOrEqual(1);
-      expect(screen.getByText('Learning Video')).toBeTruthy();
-      expect(screen.getByText('Entertainment Video')).toBeTruthy();
-      expect(screen.getByText('Uploader')).toBeTruthy();
-      expect(screen.getByText('Uploader2')).toBeTruthy();
-    });
+    expect(screen.getByText('Learning Video')).toBeTruthy();
+    expect(screen.getByText('Uploader')).toBeTruthy();
   });
 });

@@ -179,7 +179,7 @@ export function StatsDashboard({
         </div>
 
         {recentRecords.length === 0 ? (
-          <EmptyState icon="history" title="暂无观看记录" description="开始观看并通过审批后，这里会出现记录。" />
+          <EmptyState icon="history" title="暂无观看记录" description="开始观看后，这里会出现记录。" />
         ) : (
           <div className="grid gap-2">
             {recentRecords.map((record) => (

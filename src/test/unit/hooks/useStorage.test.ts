@@ -1,10 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useStorage } from '@hooks/useStorage';
 import type { ExtensionStorage } from '@core/types';
 import { DEFAULT_STORAGE } from '@core/constants';
 
-// Mock chrome.storage
 const mockStorage: Partial<ExtensionStorage> = {};
 const mockListeners: Array<(changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => void> = [];
 
@@ -29,94 +28,70 @@ vi.stubGlobal('chrome', {
 
 describe('useStorage', () => {
   beforeEach(() => {
-    // Clear mock storage
     Object.keys(mockStorage).forEach((key) => delete (mockStorage as Record<string, unknown>)[key]);
     mockListeners.length = 0;
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
+  afterEach(() => vi.clearAllMocks());
 
   it('should return default storage initially', () => {
     const { result } = renderHook(() => useStorage());
-    
+
     expect(result.current).toEqual(DEFAULT_STORAGE);
   });
 
-  it('should load storage from chrome.storage.local', async () => {
+  it('should load permanent groups from chrome.storage.local', async () => {
     const customStorage: Partial<ExtensionStorage> = {
-      limboList: [
-        {
+      permanentGroups: [{
+        id: 'learning',
+        name: '学习',
+        debtPriority: 1,
+        items: [{
           bvid: 'BV1xx',
           title: 'Test Video',
           uploader: 'Test',
           coverUrl: '',
-          tag: 'ENTERTAINMENT',
+          tag: 'LEARNING',
           addedAt: Date.now(),
-          sourceUrl: 'https://bilibili.com',
-        },
-      ],
+        }],
+      }],
     };
-    
+
     (chrome.storage.local.get as ReturnType<typeof vi.fn>).mockResolvedValueOnce(customStorage);
-    
+
     const { result } = renderHook(() => useStorage());
-    
-    await waitFor(() => {
-      expect(result.current.limboList).toHaveLength(1);
-    });
-    
-    expect(result.current.limboList[0].bvid).toBe('BV1xx');
+
+    await waitFor(() => expect(result.current.permanentGroups).toHaveLength(1));
+    expect(result.current.permanentGroups[0].items[0].bvid).toBe('BV1xx');
   });
 
-  it('should update when storage changes', async () => {
+  it('should update when local permanent groups change', async () => {
     const { result } = renderHook(() => useStorage());
-    
-    // Simulate storage change
     const changeEvent = {
-      limboList: {
+      permanentGroups: {
         oldValue: [],
-        newValue: [
-          {
-            bvid: 'BV2xx',
-            title: 'New Video',
-            uploader: 'Test',
-            coverUrl: '',
-            tag: 'LEARNING',
-            addedAt: Date.now(),
-            sourceUrl: 'https://bilibili.com',
-          },
-        ],
+        newValue: [{
+          id: 'music',
+          name: '音乐',
+          debtPriority: 3,
+          items: [],
+        }],
       },
     };
-    
-    // Trigger the listener
+
     mockListeners.forEach((listener) => listener(changeEvent, 'local'));
-    
-    await waitFor(() => {
-      expect(result.current.limboList).toHaveLength(1);
-    });
-    
-    expect(result.current.limboList[0].tag).toBe('LEARNING');
+
+    await waitFor(() => expect(result.current.permanentGroups[0].id).toBe('music'));
   });
 
-  it('should not update for non-local storage changes', async () => {
+  it('should ignore non-local storage changes', () => {
     const { result } = renderHook(() => useStorage());
-    
-    const initialLimboList = result.current.limboList;
-    
-    // Simulate sync storage change (should be ignored)
-    const changeEvent = {
-      limboList: {
-        oldValue: [],
-        newValue: [{ bvid: 'BV3xx' }],
-      },
-    };
-    
-    mockListeners.forEach((listener) => listener(changeEvent, 'sync'));
-    
-    // Should not update
-    expect(result.current.limboList).toEqual(initialLimboList);
+    const initialGroups = result.current.permanentGroups;
+
+    mockListeners.forEach((listener) => listener({
+      permanentGroups: { oldValue: [], newValue: [] },
+    }, 'sync'));
+
+    expect(result.current.permanentGroups).toEqual(initialGroups);
   });
 });

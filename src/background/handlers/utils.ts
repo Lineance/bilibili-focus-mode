@@ -63,7 +63,6 @@ export function pickConfigSnapshot(config: ExtensionConfig) {
     maxDebtMinutes: config.maxDebtMinutes,
     bankruptcyLockHours: config.bankruptcyLockHours,
     postWatchCooldownMinutes: config.postWatchCooldownMinutes,
-    instantBreakFuse: config.instantBreakFuse,
     collectionDetectionEnabled: config.collectionDetectionEnabled,
   };
 }

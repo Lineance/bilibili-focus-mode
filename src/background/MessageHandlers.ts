@@ -2,14 +2,9 @@ import { onMessage } from 'webext-bridge/background';
 import { logger } from '@core/utils/logger';
 import {
   handleCheckPermission,
-  handleAddToLimbo,
   handleAddToPermanent,
   handleUpdateDebt,
   handleSyncDebt,
-  handleVerifyFuse,
-  handleApplyFuse,
-  handleApplyTimeWindowFuse,
-  handleVerifyTimeWindowFuse,
   handleWatchEnded,
   handleGetFullConfig,
   handleDailyBypass,
@@ -17,14 +12,9 @@ import {
 
 export function registerMessageHandlers(): void {
   onMessage('check-permission', async (message) => handleCheckPermission(message.data));
-  onMessage('add-to-limbo', async (message) => handleAddToLimbo(message.data));
   onMessage('add-to-permanent', async (message) => handleAddToPermanent(message.data));
   onMessage('update-debt', async (message) => handleUpdateDebt(message.data));
   onMessage('sync-debt', async () => handleSyncDebt());
-  onMessage('verify-fuse', async (message) => handleVerifyFuse(message.data));
-  onMessage('apply-fuse', async (message) => handleApplyFuse(message.data));
-  onMessage('apply-time-window-fuse', async () => handleApplyTimeWindowFuse());
-  onMessage('verify-time-window-fuse', async (message) => handleVerifyTimeWindowFuse(message.data));
   onMessage('watch-ended', async (message) => handleWatchEnded(message.data));
   onMessage('get-full-config', async () => handleGetFullConfig());
   onMessage('daily-bypass', async () => handleDailyBypass());

@@ -154,36 +154,6 @@ describe('Background Script', () => {
     });
   });
 
-  describe('Alarm Handling', () => {
-    it('should create daily reminder alarm', async () => {
-      await import('@background/index');
-
-      expect(chrome.alarms.create).toHaveBeenCalledWith(
-        'limbo-review-reminder',
-        expect.objectContaining({
-          periodInMinutes: 24 * 60,
-        })
-      );
-    });
-
-    it('should show notification on alarm', async () => {
-      await import('@background/index');
-
-      const onAlarmListener = vi.mocked(chrome.alarms.onAlarm.addListener).mock.calls[0]?.[0];
-      expect(onAlarmListener).toBeDefined();
-
-      // Simulate alarm
-      onAlarmListener?.({ name: 'limbo-review-reminder' } as chrome.alarms.Alarm);
-
-      expect(chrome.notifications.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'basic',
-          title: 'Bilibili Focus Mode',
-          message: 'Time to review your Limbo list!',
-        })
-      );
-    });
-  });
 
   describe('Open Options Page', () => {
     it('should register open-options-page handler via webext-bridge', async () => {

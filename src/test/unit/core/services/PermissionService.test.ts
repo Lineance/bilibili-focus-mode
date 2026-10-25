@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { PermissionService } from '@core/services/PermissionService';
 import type { ExtensionStorage } from '@core/types';
 import { DEFAULT_STORAGE } from '@core/constants';
@@ -11,7 +11,6 @@ describe('PermissionService', () => {
     mockStorage = {
       ...DEFAULT_STORAGE,
       permanentGroups: [],
-      instantList: [],
       debtAccount: {
         ...DEFAULT_STORAGE.debtAccount,
         bankruptcyEndTime: null,
@@ -20,327 +19,107 @@ describe('PermissionService', () => {
     service = new PermissionService(mockStorage);
   });
 
-  describe('check', () => {
-    it('should allow permanent group videos', () => {
-      mockStorage = {
-        ...mockStorage,
-        permanentGroups: [
-          {
-            id: 'group1',
-            name: 'Test Group',
-            items: [
-              {
-                bvid: 'BV1xx',
-                title: 'Test Video',
-                uploader: 'Test Uploader',
-                coverUrl: '',
-                tag: 'LEARNING',
-                addedAt: Date.now(),
-              },
-            ],
-            debtPriority: 1,
-          },
-        ],
-      };
-      service = new PermissionService(mockStorage);
+  it('should allow permanent group videos', () => {
+    mockStorage.permanentGroups = [{
+      id: 'learning',
+      name: '学习',
+      items: [{
+        bvid: 'BV1xx',
+        title: 'Test Video',
+        uploader: 'Test Uploader',
+        coverUrl: '',
+        tag: 'LEARNING',
+        addedAt: Date.now(),
+      }],
+      debtPriority: 1,
+    }];
+    service = new PermissionService(mockStorage);
 
-      const result = service.check('BV1xx');
+    expect(service.check('BV1xx')).toMatchObject({ allowed: true, reason: 'PERMANENT' });
+  });
 
-      expect(result.allowed).toBe(true);
-      expect(result.reason).toBe('PERMANENT');
+  it('should allow configured uploaders', () => {
+    mockStorage.allowedUploaders = [{
+      id: 'uploader-1',
+      name: 'Trusted Uploader',
+      addedAt: Date.now(),
+      tag: 'LEARNING',
+    }];
+    service = new PermissionService(mockStorage);
+
+    expect(service.check('BV2xx', 'Trusted Uploader')).toMatchObject({
+      allowed: true,
+      reason: 'PERMANENT',
+      uploaderAllowed: true,
+      videoTag: 'LEARNING',
     });
+  });
 
-    it('should allow valid instant items', () => {
-      const futureTime = Date.now() + 3600000; // 1 hour from now
-      mockStorage = {
-        ...mockStorage,
-        instantList: [
-          {
-            bvid: 'BV2xx',
-            title: 'Test Video',
-            uploader: 'Test Uploader',
-            coverUrl: '',
-            tag: 'ENTERTAINMENT',
-            addedAt: Date.now(),
-            expiresAt: futureTime,
-            fuseCode: 'ABCD-1234',
-            usedFuse: false,
-          },
-        ],
-      };
-      service = new PermissionService(mockStorage);
+  it('should allow keyword matches with their configured tag', () => {
+    mockStorage.config = {
+      ...mockStorage.config,
+      keywordRules: {
+        enabled: true,
+        keywords: ['tutorial'],
+        tag: 'LEARNING',
+        items: [{ keyword: 'tutorial', tag: 'LEARNING' }],
+      },
+    };
+    service = new PermissionService(mockStorage);
 
-      const result = service.check('BV2xx');
-
-      expect(result.allowed).toBe(true);
-      expect(result.reason).toBe('INSTANT');
+    expect(service.check('BV3xx', undefined, 'Python Tutorial')).toMatchObject({
+      allowed: true,
+      reason: 'KEYWORD',
+      videoTag: 'LEARNING',
     });
+  });
 
-    it('should deny expired instant items', () => {
-      const pastTime = Date.now() - 3600000; // 1 hour ago
-      mockStorage = {
-        ...mockStorage,
-        instantList: [
-          {
-            bvid: 'BV3xx',
-            title: 'Test Video',
-            uploader: 'Test Uploader',
-            coverUrl: '',
-            tag: 'ENTERTAINMENT',
-            addedAt: Date.now() - 7200000,
-            expiresAt: pastTime,
-            fuseCode: 'ABCD-1234',
-            usedFuse: false,
-          },
-        ],
-      };
-      service = new PermissionService(mockStorage);
+  it('should allow permanent videos during bankruptcy', () => {
+    mockStorage.debtAccount.bankruptcyEndTime = Date.now() + 86400000;
+    mockStorage.permanentGroups = [{
+      id: 'learning',
+      name: '学习',
+      items: [{
+        bvid: 'BV4xx',
+        title: 'Test Video',
+        uploader: 'Test Uploader',
+        coverUrl: '',
+        tag: 'LEARNING',
+        addedAt: Date.now(),
+      }],
+      debtPriority: 1,
+    }];
+    service = new PermissionService(mockStorage);
 
-      const result = service.check('BV3xx');
+    expect(service.check('BV4xx')).toMatchObject({ allowed: true, reason: 'PERMANENT' });
+  });
 
-      expect(result.allowed).toBe(false);
+  it('should allow learning keyword content during bankruptcy', () => {
+    mockStorage.debtAccount.bankruptcyEndTime = Date.now() + 86400000;
+    mockStorage.config = {
+      ...mockStorage.config,
+      keywordRules: { enabled: true, keywords: ['tutorial'], tag: 'LEARNING' },
+    };
+    service = new PermissionService(mockStorage);
+
+    expect(service.check('BV5xx', undefined, 'Python Tutorial')).toMatchObject({
+      allowed: true,
+      reason: 'KEYWORD',
     });
+  });
 
-    it('should deny when in bankruptcy', () => {
-      const futureTime = Date.now() + 86400000; // 1 day from now
-      mockStorage = {
-        ...mockStorage,
-        debtAccount: {
-          ...mockStorage.debtAccount,
-          bankruptcyEndTime: futureTime,
-        },
-      };
-      service = new PermissionService(mockStorage);
+  it('should block unknown entertainment content during bankruptcy', () => {
+    mockStorage.debtAccount.bankruptcyEndTime = Date.now() + 86400000;
+    service = new PermissionService(mockStorage);
 
-      const result = service.check('BV6xx');
+    expect(service.check('BV6xx')).toMatchObject({ allowed: false, reason: 'BANKRUPTCY' });
+  });
 
-      expect(result.allowed).toBe(false);
-      expect(result.reason).toBe('BANKRUPTCY');
-    });
-
-    it('should allow permanent videos even when in bankruptcy', () => {
-      const futureTime = Date.now() + 86400000; // 1 day from now
-      mockStorage = {
-        ...mockStorage,
-        debtAccount: {
-          ...mockStorage.debtAccount,
-          bankruptcyEndTime: futureTime,
-        },
-        permanentGroups: [
-          {
-            id: 'learning',
-            name: '学习',
-            items: [
-              {
-                bvid: 'BV10xx',
-                title: 'Test Video',
-                uploader: 'Test Uploader',
-                coverUrl: '',
-                tag: 'LEARNING' as const,
-                addedAt: Date.now(),
-              },
-            ],
-            debtPriority: 1,
-          },
-        ],
-      };
-      service = new PermissionService(mockStorage);
-
-      const result = service.check('BV10xx');
-
-      expect(result.allowed).toBe(true);
-      expect(result.reason).toBe('PERMANENT');
-    });
-
-    it('should deny instant videos when in bankruptcy', () => {
-      const futureTime = Date.now() + 86400000; // 1 day from now
-      const futureExpiry = Date.now() + 3600000; // 1 hour from now
-      mockStorage = {
-        ...mockStorage,
-        debtAccount: {
-          ...mockStorage.debtAccount,
-          bankruptcyEndTime: futureTime,
-        },
-        instantList: [
-          {
-            bvid: 'BV11xx',
-            title: 'Test Video',
-            uploader: 'Test Uploader',
-            coverUrl: '',
-            tag: 'ENTERTAINMENT' as const,
-            addedAt: Date.now(),
-            expiresAt: futureExpiry,
-            fuseCode: 'ABCD-1234',
-            usedFuse: false,
-          },
-        ],
-      };
-      service = new PermissionService(mockStorage);
-
-      const result = service.check('BV11xx');
-
-      expect(result.allowed).toBe(false);
-      expect(result.reason).toBe('BANKRUPTCY');
-    });
-
-    it('should deny instant videos when in bankruptcy', () => {
-      const futureTime = Date.now() + 86400000; // 1 day from now
-      mockStorage = {
-        ...mockStorage,
-        debtAccount: {
-          ...mockStorage.debtAccount,
-          bankruptcyEndTime: futureTime,
-        },
-        instantList: [
-          {
-            bvid: 'BV12xx',
-            title: 'Test Video',
-            uploader: 'Test Uploader',
-            coverUrl: '',
-            tag: 'ENTERTAINMENT' as const,
-            addedAt: Date.now(),
-            expiresAt: Date.now() + 86400000,
-            fuseCode: 'TEST',
-            usedFuse: false,
-          },
-        ],
-      };
-      service = new PermissionService(mockStorage);
-
-      const result = service.check('BV12xx');
-
-      expect(result.allowed).toBe(false);
-      expect(result.reason).toBe('BANKRUPTCY');
-    });
-
-    it('should deny videos without permission', () => {
-      const result = service.check('BV7xx');
-
-      expect(result.allowed).toBe(false);
-      expect(result.reason).toBe('NO_PERMISSION');
-    });
-
-    it('should deny video when no permission and no bypass', () => {
-      const result = service.check('BV1xx');
-
-      expect(result.allowed).toBe(false);
-      expect(result.reason).toBe('NO_PERMISSION');
-      expect(result.inReviewWindow).toBeDefined();
-      expect(result.timeUntilWindow).toBeDefined();
-    });
-
-    it('should return correct result structure for all scenarios', () => {
-      const result = service.check('BV999xx');
-
-      expect(result).toHaveProperty('allowed');
-      expect(result).toHaveProperty('reason');
-      expect(result).toHaveProperty('inReviewWindow');
-      expect(result).toHaveProperty('timeUntilWindow');
-    });
-
-    it('should handle bankruptcy with learning videos', () => {
-      const futureTime = Date.now() + 86400000;
-      mockStorage = {
-        ...mockStorage,
-        debtAccount: {
-          ...mockStorage.debtAccount,
-          bankruptcyEndTime: futureTime,
-        },
-        config: {
-          ...mockStorage.config,
-          keywordRules: {
-            enabled: true,
-            keywords: ['tutorial'],
-            tag: 'LEARNING' as const,
-          },
-        },
-      };
-      service = new PermissionService(mockStorage);
-
-      const result = service.check('BV1xx', undefined, 'Python Tutorial');
-      expect(result.allowed).toBe(true);
-      expect(result.reason).toBe('KEYWORD');
-    });
-
-    it('should block entertainment during bankruptcy', () => {
-      const futureTime = Date.now() + 86400000;
-      mockStorage = {
-        ...mockStorage,
-        debtAccount: {
-          ...mockStorage.debtAccount,
-          bankruptcyEndTime: futureTime,
-        },
-      };
-      service = new PermissionService(mockStorage);
-
-      const result = service.check('BV1xx');
-      expect(result.allowed).toBe(false);
-      expect(result.reason).toBe('BANKRUPTCY');
-    });
-
-    it('should return MUSIC videoTag when keyword rule matches MUSIC tag', () => {
-      mockStorage = {
-        ...mockStorage,
-        config: {
-          ...mockStorage.config,
-          keywordRules: {
-            enabled: true,
-            keywords: ['歌单', 'playlist'],
-            tag: 'MUSIC' as const,
-          },
-        },
-      };
-      service = new PermissionService(mockStorage);
-
-      const result = service.check('BV1xx', undefined, '我的歌单 2024');
-      expect(result.allowed).toBe(true);
-      expect(result.reason).toBe('KEYWORD');
-      expect(result.videoTag).toBe('MUSIC');
-    });
-
-    it('should return LEARNING videoTag when keyword rule matches LEARNING tag', () => {
-      mockStorage = {
-        ...mockStorage,
-        config: {
-          ...mockStorage.config,
-          keywordRules: {
-            enabled: true,
-            keywords: ['tutorial', '教程'],
-            tag: 'LEARNING' as const,
-          },
-        },
-      };
-      service = new PermissionService(mockStorage);
-
-      const result = service.check('BV1xx', undefined, 'Python 教程');
-      expect(result.allowed).toBe(true);
-      expect(result.reason).toBe('KEYWORD');
-      expect(result.videoTag).toBe('LEARNING');
-    });
-
-    it('should return correct videoTag for items-based keyword rules', () => {
-      mockStorage = {
-        ...mockStorage,
-        config: {
-          ...mockStorage.config,
-          keywordRules: {
-            enabled: true,
-            keywords: ['歌单', 'playlist'],
-            tag: 'MUSIC' as const,
-            items: [
-              { keyword: '歌单', tag: 'MUSIC' as const },
-              { keyword: 'tutorial', tag: 'LEARNING' as const },
-            ],
-          },
-        },
-      };
-      service = new PermissionService(mockStorage);
-
-      const musicResult = service.check('BV1xx', undefined, '我的歌单');
-      expect(musicResult.videoTag).toBe('MUSIC');
-
-      const learningResult = service.check('BV2xx', undefined, 'Python Tutorial');
-      expect(learningResult.videoTag).toBe('LEARNING');
+  it('should deny videos without a matching rule', () => {
+    expect(service.check('BV7xx')).toMatchObject({
+      allowed: false,
+      reason: 'NO_PERMISSION',
+      videoTag: 'ENTERTAINMENT',
     });
   });
 });

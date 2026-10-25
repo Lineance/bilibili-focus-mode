@@ -150,7 +150,7 @@ describe('Content Script', () => {
       // Check overlay was created
       const overlay = document.querySelector('.bilibili-focus-mode-block-overlay');
       expect(overlay).toBeTruthy();
-      expect(overlay?.textContent).toContain('视频未审批');
+      expect(overlay?.textContent).toContain('视频已阻断');
       expect(overlay?.textContent).toContain('永久放行');
     });
 

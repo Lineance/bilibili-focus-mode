@@ -41,8 +41,6 @@ export class BlockOverlayManager {
   show(
     metadata: VideoMetadata,
     reason: string,
-    windowInfo: BlockOverlayProps['windowInfo'],
-    fuseInfo: BlockOverlayProps['fuseInfo'],
     bypassInfo: BlockOverlayProps['bypassInfo'],
     onAddToPermanent: (metadata: VideoMetadata) => Promise<void>,
     onOpenManager: () => void,
@@ -63,8 +61,6 @@ export class BlockOverlayManager {
       <OverlayShell
         metadata={metadata}
         reason={reason}
-        windowInfo={windowInfo}
-        fuseInfo={fuseInfo}
         bypassInfo={bypassInfo}
         onAddToPermanent={onAddToPermanent}
         onOpenManager={onOpenManager}

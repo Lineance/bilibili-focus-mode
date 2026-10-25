@@ -18,17 +18,6 @@ export interface VideoMetadata {
   addedAt: number;
 }
 
-export interface LimboItem extends VideoMetadata {
-  sourceUrl: string;
-}
-
-export interface InstantItem extends VideoMetadata {
-  expiresAt: number;
-  fuseCode: string;
-  usedFuse: boolean;
-  bankruptcyOverride?: boolean;
-}
-
 export interface PermanentGroup {
   id: string;
   name: string;
@@ -138,16 +127,6 @@ export interface GlobalStats {
 }
 
 export interface ExtensionConfig {
-  timeWindowEnabled: boolean;
-  windowStart: string;
-  windowEnd: string;
-  limboCapacity: number;
-  limboReviewTime: string;
-  limboAutoPurgeHours: number;
-  instantDurationHours: number;
-  instantBreakFuse: boolean;
-  baseFuseLength: number;
-  maxFuseLength: number;
   maxGroups: number;
   maxItemsPerGroup: number;
   totalPermanentLimit: number;
@@ -156,10 +135,7 @@ export interface ExtensionConfig {
   learningRepayRatio: number;
   maxDebtMinutes: number;
   bankruptcyLockHours: number;
-  bankruptcyOverrideMaxFuse: number;
-  dynamicFuseEnabled: boolean;
   postWatchCooldownMinutes: number;
-  dailyInstantQuota: number;
   collectionDetectionEnabled: boolean;
   // Video player style simplification
   videoPlayerSimplification: {
@@ -237,9 +213,7 @@ export interface ExtensionConfig {
 }
 
 export interface ExtensionStorage {
-  version: 3;
-  limboList: LimboItem[];
-  instantList: InstantItem[];
+  version: number;
   permanentGroups: PermanentGroup[];
   behaviorLog: BehaviorLogState;
   globalStats: GlobalStats;
@@ -250,8 +224,8 @@ export interface ExtensionStorage {
 }
 
 export type PermissionResult =
-  | { allowed: true; reason: 'PERMANENT' | 'INSTANT' | 'COOLING_AVAILABLE' | 'KEYWORD' | 'DAILY_BYPASS' }
-  | { allowed: false; reason: 'NO_PERMISSION' | 'COOLING_WAITING' | 'EXPIRED' | 'BANKRUPTCY' };
+  | { allowed: true; reason: 'PERMANENT' | 'KEYWORD' | 'DAILY_BYPASS' }
+  | { allowed: false; reason: 'NO_PERMISSION' | 'BANKRUPTCY' };
 
 export type DecayLevel = 'FRESH' | 'SLIGHT' | 'MODERATE' | 'SEVERE' | 'CRITICAL';
 

@@ -6,7 +6,6 @@ import { ThemeService } from '@core/services';
 import { Icon, IconButton } from '@ui';
 import { DebtStatus } from './components/DebtStatus';
 import { BypassStatus } from './components/BypassStatus';
-import { InstantSection } from './components/InstantSection';
 import { PermanentSection } from './components/PermanentSection';
 import { UploaderSection } from './components/UploaderSection';
 import { KeywordSection } from './components/KeywordSection';
@@ -91,12 +90,8 @@ export function App(): React.JSX.Element {
 
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
           <BypassStatus config={config} behaviorLog={storage.behaviorLog} />
-          <QuickActions config={config} />
+          <QuickActions />
         </div>
-
-        <section className="mb-8">
-          <InstantSection items={storage.instantList || []} />
-        </section>
 
         <section className="mb-8">
           <PermanentSection groups={storage.permanentGroups || []} />

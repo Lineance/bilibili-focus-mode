@@ -8,8 +8,7 @@ export async function handleCheckPermission(request: unknown): Promise<unknown> 
   logger.debug('Background', 'Checking permission for:', data.bvid, 'uploader:', data.uploaderName);
 
   const allData = await chrome.storage.local.get([
-    'config', 'permanentGroups', 'instantList', 'limboList',
-    'allowedUploaders', 'debtAccount', 'timeWindowBreakUntil', 'dailyBypassUntil'
+    'config', 'permanentGroups', 'allowedUploaders', 'debtAccount', 'dailyBypassUntil'
   ]);
 
   const storage = ensureStorageDefaults(allData);
@@ -18,16 +17,13 @@ export async function handleCheckPermission(request: unknown): Promise<unknown> 
   const config = storage.config;
 
   const now = Date.now();
-  const breakUntil = getStorageNumber(allData.timeWindowBreakUntil, 0);
   const bypassUntil = getStorageNumber(allData.dailyBypassUntil, 0);
   const isBypassActive = now < bypassUntil;
-  const isVirtuallyInWindow = now < breakUntil || isBypassActive;
 
   if (isBypassActive && !result.allowed && result.reason !== 'BANKRUPTCY') {
     return {
       allowed: true,
       reason: 'DAILY_BYPASS',
-      inReviewWindow: result.inReviewWindow || isVirtuallyInWindow,
       videoTag: result.videoTag,
       config: pickConfigSnapshot(config),
     };
@@ -35,7 +31,6 @@ export async function handleCheckPermission(request: unknown): Promise<unknown> 
 
   return {
     ...result,
-    inReviewWindow: result.inReviewWindow || isVirtuallyInWindow,
     config: pickConfigSnapshot(config),
   };
 }

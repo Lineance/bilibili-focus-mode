@@ -9,9 +9,7 @@ import { sendMessage } from 'webext-bridge/options';
 import {
   ConfigPanel,
   StatsDashboard,
-  InstantList,
   KeywordRulesPanel,
-  LimboReview,
   PermanentGroups,
   ThemePanel,
   UploaderAllowlist,
@@ -19,19 +17,9 @@ import {
 import { Button, ConfirmHost, Icon, IconButton, ToastHost, toast } from '@ui';
 import type { IconName } from '@ui';
 
-type ActiveTab =
-  | 'limbo'
-  | 'instant'
-  | 'permanent'
-  | 'stats'
-  | 'uploaders'
-  | 'keywords'
-  | 'config'
-  | 'theme';
+type ActiveTab = 'permanent' | 'stats' | 'uploaders' | 'keywords' | 'config' | 'theme';
 
-const TABS: Array<{ id: ActiveTab; label: string; icon: IconName; countKey?: 'limbo' | 'instant' | 'permanent' | 'uploaders' | 'keywords' }> = [
-  { id: 'limbo', label: '待审池', icon: 'list', countKey: 'limbo' },
-  { id: 'instant', label: '即时许可', icon: 'bolt', countKey: 'instant' },
+const TABS: Array<{ id: ActiveTab; label: string; icon: IconName; countKey?: 'permanent' | 'uploaders' | 'keywords' }> = [
   { id: 'permanent', label: '永久分组', icon: 'folder', countKey: 'permanent' },
   { id: 'stats', label: '统计', icon: 'chart' },
   { id: 'uploaders', label: 'UP 主白名单', icon: 'user', countKey: 'uploaders' },
@@ -43,7 +31,7 @@ const TABS: Array<{ id: ActiveTab; label: string; icon: IconName; countKey?: 'li
 const themeService = ThemeService.getInstance();
 
 export function App(): React.JSX.Element {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('limbo');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('permanent');
   const [mode, setMode] = useState(themeService.getThemeConfig().mode);
   const storage = useStorage();
 
@@ -56,37 +44,34 @@ export function App(): React.JSX.Element {
   }, []);
 
   const tabCounts = useMemo(() => ({
-    limbo: storage.limboList?.length || 0,
-    instant: storage.instantList?.length || 0,
-    permanent: storage.permanentGroups?.reduce((sum, g) => sum + g.items.length, 0) || 0,
+    permanent: storage.permanentGroups?.reduce((sum, group) => sum + group.items.length, 0) || 0,
     uploaders: storage.allowedUploaders?.length || 0,
     keywords: storage.config?.keywordRules?.keywords?.length || 0,
-  }), [storage.limboList, storage.instantList, storage.permanentGroups, storage.allowedUploaders, storage.config?.keywordRules?.keywords]);
+  }), [storage.permanentGroups, storage.allowedUploaders, storage.config?.keywordRules?.keywords]);
 
   const handleExport = async () => {
     try {
       const data = await StorageRepository.get();
       const exportData = {
-        version: 3,
+        version: 4,
         exportDate: new Date().toISOString(),
         config: data.config,
-        limboList: data.limboList,
-        instantList: data.instantList,
         permanentGroups: data.permanentGroups,
         allowedUploaders: data.allowedUploaders,
         debtAccount: data.debtAccount,
         globalStats: data.globalStats,
         behaviorLog: data.behaviorLog,
+        watchHistory: data.watchHistory,
       };
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `bilibili-focus-mode-backup-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `bilibili-focus-mode-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
       toast.success('备份已导出');
     } catch (error) {
@@ -101,26 +86,24 @@ export function App(): React.JSX.Element {
 
     try {
       const text = await file.text();
-      const data = JSON.parse(text);
+      const data = JSON.parse(text) as Record<string, unknown>;
+      const version = data.version;
 
-      if (data.version !== 3) {
+      if (version !== 3 && version !== 4) {
         toast.error('不支持的备份文件版本');
         return;
       }
 
-      if (!confirm('导入将覆盖现有数据，确定要继续吗？')) {
-        return;
-      }
+      if (!confirm('导入将覆盖现有数据，确定要继续吗？')) return;
 
       await StorageRepository.set({
-        config: data.config,
-        limboList: data.limboList || [],
-        instantList: data.instantList || [],
-        permanentGroups: data.permanentGroups || [],
-        allowedUploaders: data.allowedUploaders || [],
-        debtAccount: data.debtAccount,
-        globalStats: data.globalStats,
-        behaviorLog: data.behaviorLog,
+        config: data.config as typeof DEFAULT_CONFIG,
+        permanentGroups: Array.isArray(data.permanentGroups) ? data.permanentGroups : [],
+        allowedUploaders: Array.isArray(data.allowedUploaders) ? data.allowedUploaders : [],
+        debtAccount: data.debtAccount as typeof storage.debtAccount,
+        globalStats: data.globalStats as typeof storage.globalStats,
+        behaviorLog: data.behaviorLog as typeof storage.behaviorLog,
+        watchHistory: Array.isArray(data.watchHistory) ? data.watchHistory : [],
       });
 
       logger.info('Manager', '导入成功！');
@@ -185,8 +168,6 @@ export function App(): React.JSX.Element {
       </nav>
 
       <main className="fm-main">
-        {activeTab === 'limbo' && <LimboReview items={storage.limboList || []} config={storage.config || DEFAULT_CONFIG} />}
-        {activeTab === 'instant' && <InstantList items={storage.instantList || []} config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'permanent' && <PermanentGroups groups={storage.permanentGroups || []} />}
         {activeTab === 'stats' && <StatsDashboard watchHistory={storage.watchHistory || []} account={storage.debtAccount} config={storage.config || DEFAULT_CONFIG} />}
         {activeTab === 'uploaders' && <UploaderAllowlist uploaders={storage.allowedUploaders || []} />}

@@ -54,7 +54,7 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
   const handleDelete = async (uploader: AllowedUploader) => {
     const ok = await confirmAction({
       title: '移除 UP 主',
-      description: `确定要将「${uploader.name}」移出白名单吗？其视频将重新需要审批。`,
+      description: `确定要将「${uploader.name}」移出白名单吗？其视频将恢复拦截。`,
       confirmLabel: '移除',
       danger: true,
     });
@@ -140,7 +140,7 @@ export function UploaderAllowlist({ uploaders }: { uploaders: AllowedUploader[] 
       </Card>
 
       {uploaders.length === 0 ? (
-        <EmptyState icon="user" title="暂无 UP 主白名单" description="把长期信任的 UP 主加入白名单，减少反复审批。" />
+        <EmptyState icon="user" title="暂无 UP 主白名单" description="把长期信任的 UP 主加入白名单，减少重复操作。" />
       ) : (
         <div className="grid gap-2.5">
           {uploaders.map((uploader) => (

@@ -1,9 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ConfigService } from '@core/services/';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ConfigService } from '@core/services';
 import type { ExtensionConfig } from '@core/types';
 import { DEFAULT_CONFIG } from '@core/constants';
 
-// Mock chrome.storage
 const mockStorage: Record<string, unknown> = {};
 
 vi.stubGlobal('chrome', {
@@ -22,168 +21,77 @@ describe('ConfigService', () => {
   let service: ConfigService;
 
   beforeEach(() => {
-    Object.keys(mockStorage).forEach((key) => delete (mockStorage as Record<string, unknown>)[key]);
+    Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
     vi.clearAllMocks();
     service = new ConfigService();
   });
 
-  describe('loadConfig', () => {
-    it('should return default config when no config saved', async () => {
-      const config = await service.loadConfig();
-
-      expect(config).toEqual(DEFAULT_CONFIG);
-    });
-
-    it('should merge saved config with defaults', async () => {
-      mockStorage.config = {
-        limboCapacity: 10,
-        maxDebtMinutes: 100,
-      };
-
-      const config = await service.loadConfig();
-
-      expect(config.limboCapacity).toBe(10);
-      expect(config.maxDebtMinutes).toBe(100);
-    });
+  it('should return default config when no config is saved', async () => {
+    expect(await service.loadConfig()).toEqual(DEFAULT_CONFIG);
   });
 
-  describe('saveConfig', () => {
-    it('should save valid config', async () => {
-      const config: ExtensionConfig = { ...DEFAULT_CONFIG, limboCapacity: 8 };
+  it('should merge saved config with defaults', async () => {
+    mockStorage.config = { maxDebtMinutes: 100 };
 
-      const result = await service.saveConfig(config);
+    const config = await service.loadConfig();
 
-      expect(result.ok).toBe(true);
-      expect(chrome.storage.local.set).toHaveBeenCalledWith({ config });
-    });
-
-    it('should reject invalid config', async () => {
-      const config: ExtensionConfig = { ...DEFAULT_CONFIG, limboCapacity: 100 }; // Invalid
-
-      const result = await service.saveConfig(config);
-
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.error.details).toBeDefined();
-        expect((result.error.details as unknown[]).length).toBeGreaterThan(0);
-      }
-    });
+    expect(config.maxDebtMinutes).toBe(100);
+    expect(config.dailyBypassQuota).toBe(DEFAULT_CONFIG.dailyBypassQuota);
   });
 
-  describe('updateConfig', () => {
-    it('should update specific fields', async () => {
-      mockStorage.config = { ...DEFAULT_CONFIG };
+  it('should save valid config', async () => {
+    const config: ExtensionConfig = { ...DEFAULT_CONFIG, totalPermanentLimit: 30 };
 
-      const result = await service.updateConfig({ limboCapacity: 7 });
+    const result = await service.saveConfig(config);
 
-      expect(result.ok).toBe(true);
-      expect(chrome.storage.local.set).toHaveBeenCalledWith(
-        expect.objectContaining({
-          config: expect.objectContaining({
-            limboCapacity: 7,
-          }),
-        })
-      );
-    });
+    expect(result.ok).toBe(true);
+    expect(chrome.storage.local.set).toHaveBeenCalledWith({ config });
   });
 
-  describe('resetToDefaults', () => {
-    it('should reset to default config', async () => {
-      mockStorage.config = { ...DEFAULT_CONFIG, limboCapacity: 15 };
+  it('should reject invalid permanent limits', async () => {
+    const config: ExtensionConfig = { ...DEFAULT_CONFIG, totalPermanentLimit: 0 };
 
-      await service.resetToDefaults();
+    const result = await service.saveConfig(config);
 
-      expect(chrome.storage.local.set).toHaveBeenCalledWith({
-        config: DEFAULT_CONFIG,
-      });
-    });
+    expect(result.ok).toBe(false);
   });
 
-  describe('validateConfig', () => {
-    it('should return no errors for valid config', () => {
-      const errors = service.validateConfig(DEFAULT_CONFIG);
+  it('should update specific fields', async () => {
+    mockStorage.config = { ...DEFAULT_CONFIG };
 
-      expect(errors).toHaveLength(0);
-    });
+    const result = await service.updateConfig({ maxDebtMinutes: 100 });
 
-    it('should detect invalid time format', () => {
-      const config = { ...DEFAULT_CONFIG, windowStart: '25:00' };
-
-      const errors = service.validateConfig(config);
-
-      expect(errors).toContainEqual({
-        field: 'windowStart',
-        message: '时间格式无效，应为 HH:MM',
-      });
-    });
-
-    it('should detect invalid capacity', () => {
-      const config = { ...DEFAULT_CONFIG, limboCapacity: 0 };
-
-      const errors = service.validateConfig(config);
-
-      expect(errors).toContainEqual({
-        field: 'limboCapacity',
-        message: '待审池容量应在 1-20 之间',
-      });
-    });
-
-    it('should detect invalid fuse length', () => {
-      const config = { ...DEFAULT_CONFIG, baseFuseLength: 2 };
-
-      const errors = service.validateConfig(config);
-
-      expect(errors).toContainEqual({
-        field: 'baseFuseLength',
-        message: '基础熔断码长度应在 8-64 之间',
-      });
-    });
-
-    it('should detect invalid debt ratio', () => {
-      const config = { ...DEFAULT_CONFIG, entertainmentRatio: 10 };
-
-      const errors = service.validateConfig(config);
-
-      expect(errors).toContainEqual({
-        field: 'entertainmentRatio',
-        message: '娱乐债务倍率应在 0.5-5 之间',
-      });
-    });
-
-    it('should detect multiple errors', () => {
-      const config = {
-        ...DEFAULT_CONFIG,
-        limboCapacity: 0,
-        maxGroups: 100,
-        baseFuseLength: 200,
-      };
-
-      const errors = service.validateConfig(config);
-
-      expect(errors.length).toBeGreaterThanOrEqual(3);
-    });
+    expect(result.ok).toBe(true);
+    expect(chrome.storage.local.set).toHaveBeenCalledWith(
+      expect.objectContaining({ config: expect.objectContaining({ maxDebtMinutes: 100 }) })
+    );
   });
 
-  describe('getConfigDescriptions', () => {
-    it('should return descriptions for all config fields', () => {
-      const descriptions = service.getConfigDescriptions();
+  it('should reset to defaults', async () => {
+    await service.resetToDefaults();
 
-      expect(Object.keys(descriptions).length).toBe(Object.keys(DEFAULT_CONFIG).length);
-      expect(descriptions.limboCapacity).toEqual({
-        label: '待审池容量',
-        description: '待审池最多可容纳的视频数量',
-        type: 'number',
-      });
+    expect(chrome.storage.local.set).toHaveBeenCalledWith({ config: DEFAULT_CONFIG });
+  });
+
+  it('should validate debt and bypass settings', () => {
+    const errors = service.validateConfig({
+      ...DEFAULT_CONFIG,
+      entertainmentRatio: 10,
+      dailyBypassQuota: 0,
     });
 
-    it('should include all field types', () => {
-      const descriptions = service.getConfigDescriptions();
+    expect(errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ field: 'entertainmentRatio' }),
+      expect.objectContaining({ field: 'dailyBypassQuota' }),
+    ]));
+  });
 
-      const types = Object.values(descriptions).map((d) => d.type);
-      expect(types).toContain('boolean');
-      expect(types).toContain('number');
-      expect(types).toContain('time');
-      expect(types).not.toContain('string');
-    });
+  it('should expose descriptions for retained settings', () => {
+    const descriptions = service.getConfigDescriptions();
+
+    expect(descriptions.maxDebtMinutes).toBeDefined();
+    expect(descriptions.dailyBypassQuota).toBeDefined();
+    expect(descriptions.videoPlayerSimplification).toBeDefined();
+    expect(descriptions.limboCapacity).toBeUndefined();
   });
 });

@@ -1,56 +1,6 @@
 import type { FieldDescription } from '@core/types';
 
 export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
-  timeWindowEnabled: {
-    label: '启用时间窗口',
-    description: '限制只能在特定时间段观看视频',
-    type: 'boolean',
-  },
-  windowStart: {
-    label: '窗口开始时间',
-    description: '允许观看的开始时间（如 20:00）',
-    type: 'time',
-  },
-  windowEnd: {
-    label: '窗口结束时间',
-    description: '允许观看的结束时间（如 21:00）',
-    type: 'time',
-  },
-  limboCapacity: {
-    label: '待审池容量',
-    description: '待审池最多可容纳的视频数量',
-    type: 'number',
-  },
-  limboReviewTime: {
-    label: '待审提醒时间',
-    description: '每日提醒审查待审池的时间',
-    type: 'time',
-  },
-  limboAutoPurgeHours: {
-    label: '待审自动清理时间',
-    description: '待审池视频自动清理的时间（小时）',
-    type: 'number',
-  },
-  instantDurationHours: {
-    label: '即时许可有效期',
-    description: '即时许可的有效时长（小时）',
-    type: 'number',
-  },
-  instantBreakFuse: {
-    label: '允许熔断码打破时段',
-    description: '是否允许使用熔断码在非窗口时段观看',
-    type: 'boolean',
-  },
-  baseFuseLength: {
-    label: '基础熔断码长度',
-    description: '熔断码的基础字符长度',
-    type: 'number',
-  },
-  maxFuseLength: {
-    label: '最大熔断码长度',
-    description: '熔断码的最大字符长度',
-    type: 'number',
-  },
   maxGroups: {
     label: '最大分组数',
     description: '永久分组的最大数量',
@@ -91,24 +41,9 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
     description: '破产后锁定的时长（小时）',
     type: 'number',
   },
-  bankruptcyOverrideMaxFuse: {
-    label: '破产熔断码最大长度',
-    description: '破产时熔断码的最大长度',
-    type: 'number',
-  },
-  dynamicFuseEnabled: {
-    label: '启用动态熔断码',
-    description: '根据申请频率动态调整熔断码长度',
-    type: 'boolean',
-  },
   postWatchCooldownMinutes: {
     label: '观看后冷静期',
     description: '观看后的冷静期时长（分钟）',
-    type: 'number',
-  },
-  dailyInstantQuota: {
-    label: '每日即时配额',
-    description: '每日可申请即时许可的最大次数（0=无限制）',
     type: 'number',
   },
   collectionDetectionEnabled: {
@@ -148,12 +83,12 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
   },
   dailyBypassEnabled: {
     label: '每日放行',
-    description: '开启后，每天可使用N次放行功能，暂时跳过视频拦截',
+    description: '开启后，每天可使用指定次数的全量放行',
     type: 'toggle',
   },
   dailyBypassQuota: {
     label: '每日放行次数',
-    description: '每天可使用放行功能的次数（1-10）',
+    description: '每天可使用全量放行的次数',
     type: 'number',
     min: 1,
     max: 10,
@@ -161,7 +96,7 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
   },
   dailyBypassDurationMinutes: {
     label: '放行时长（分钟）',
-    description: '每次放行的有效时长（5-120分钟）',
+    description: '每次全量放行的有效时长',
     type: 'number',
     min: 5,
     max: 120,
@@ -169,7 +104,7 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
   },
   dailyWatchLimitMinutes: {
     label: '每日观看限额（分钟）',
-    description: '每日允许观看的总时长上限（30-480分钟）',
+    description: '每日允许观看的总时长上限',
     type: 'number',
     min: 30,
     max: 480,
@@ -177,7 +112,7 @@ export const CONFIG_DESCRIPTIONS: Record<string, FieldDescription> = {
   },
   nativeMessagingEnabled: {
     label: '启用外部监控连接',
-    description: '允许外部监控程序通过 Native Messaging 检测扩展状态',
+    description: '允许外部监控程序检测扩展状态',
     type: 'boolean',
   },
   appearanceEnhancement: {

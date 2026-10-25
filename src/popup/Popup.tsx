@@ -1,5 +1,5 @@
-import { BILIBILI_BASE_URL } from '@core/constants';
 import { ThemeService } from '@core/services';
+import { getTodayKey } from '@core/utils/dateUtils';
 import { useStorage } from '@hooks/useStorage';
 import { useEffect, useState } from 'react';
 import { Icon, IconButton } from '@ui';
@@ -7,24 +7,16 @@ import './index.css';
 
 const themeService = ThemeService.getInstance();
 
-function isInWindow(config: { timeWindowEnabled: boolean; windowStart: string; windowEnd: string }): boolean {
-  if (!config.timeWindowEnabled) return true;
-  const [startHour, startMinute] = config.windowStart.split(':').map(Number);
-  const [endHour, endMinute] = config.windowEnd.split(':').map(Number);
-  const now = new Date();
-  const current = now.getHours() * 60 + now.getMinutes();
-  const start = startHour * 60 + startMinute;
-  const end = endHour * 60 + endMinute;
-  return end >= start ? current >= start && current <= end : current >= start || current <= end;
-}
-
-export function Popup() {
+export function Popup(): React.JSX.Element {
   const storage = useStorage();
   const config = storage.config;
-  const limboCount = storage.limboList?.length ?? 0;
-  const instantCount = storage.instantList?.length ?? 0;
+  const permanentCount = storage.permanentGroups?.reduce((sum, group) => sum + group.items.length, 0) ?? 0;
   const debt = Math.round(storage.debtAccount?.currentDebt ?? 0);
-  const active = config ? isInWindow(config) : true;
+  const behaviorLog = storage.behaviorLog;
+  const usedToday = behaviorLog.lastQuotaResetDate === getTodayKey()
+    ? behaviorLog.dailyBypassesUsedToday
+    : 0;
+  const remainingBypasses = Math.max(0, (config?.dailyBypassQuota ?? 3) - usedToday);
   const [mode, setMode] = useState(themeService.getThemeConfig().mode);
 
   useEffect(() => themeService.subscribe((next) => setMode(next.mode)), []);
@@ -48,12 +40,12 @@ export function Popup() {
 
       <div className="fm-popup__status">
         <div>
-          <p className="fm-popup__stat-value">{limboCount}</p>
-          <p className="fm-popup__stat-label">待审</p>
+          <p className="fm-popup__stat-value">{permanentCount}</p>
+          <p className="fm-popup__stat-label">永久放行</p>
         </div>
         <div>
-          <p className="fm-popup__stat-value">{instantCount}</p>
-          <p className="fm-popup__stat-label">即时</p>
+          <p className="fm-popup__stat-value">{remainingBypasses}</p>
+          <p className="fm-popup__stat-label">今日全量</p>
         </div>
         <div>
           <p className="fm-popup__stat-value" style={{ color: debt > 0 ? 'var(--fm-warning)' : undefined }}>
@@ -63,15 +55,9 @@ export function Popup() {
         </div>
       </div>
 
-      <div className="fm-popup__window" data-active={active}>
-        <Icon name={active ? 'check' : 'clock'} size={14} />
-        <span>
-          {!config?.timeWindowEnabled
-            ? '审批窗口已关闭'
-            : active
-              ? '当前可审批'
-              : `下次审批 ${config?.windowStart ?? ''} 起`}
-        </span>
+      <div className="fm-popup__window" data-active={remainingBypasses > 0}>
+        <Icon name={remainingBypasses > 0 ? 'check' : 'clock'} size={14} />
+        <span>{remainingBypasses > 0 ? `今日还可全量放行 ${remainingBypasses} 次` : '今日全量放行次数已用完'}</span>
       </div>
 
       <div className="fm-popup__actions">
@@ -84,16 +70,12 @@ export function Popup() {
         </button>
         <button
           type="button"
-          onClick={() => chrome.tabs.create({ url: BILIBILI_BASE_URL })}
+          onClick={() => chrome.tabs.create({ url: 'https://www.bilibili.com' })}
           className="fm-btn fm-btn--ghost fm-btn--block"
         >
           前往 B 站
         </button>
       </div>
-
-      <p className="fm-popup__hint">
-        在播放页点击「加入待审池」提交视频，审批窗口内到管理页处理。
-      </p>
     </div>
   );
 }
