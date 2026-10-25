@@ -312,6 +312,7 @@ pub fn run(directory: &Path, dry_run: bool, notify: bool) -> io::Result<()> {
                             }
                             "heartbeat" if engine.session.as_deref() == Some(&request.session) => {
                                 engine.heartbeat(&request.session, now);
+                                log.record(json!({"event":"heartbeat","sessionId":request.session,"sequence":request.message.payload["sequence"]}))?;
                                 let mut payload = request.message.payload;
                                 payload["monitor"] = snapshot(
                                     &engine,

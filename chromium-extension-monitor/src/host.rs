@@ -3,7 +3,7 @@ use crate::{
     storage,
 };
 use serde_json::json;
-use std::{fs::OpenOptions, io, path::Path, sync::mpsc, thread};
+use std::{io, path::Path, sync::mpsc, thread};
 
 enum Input {
     Browser(Option<Message>),
@@ -11,13 +11,15 @@ enum Input {
     Failed(io::Error),
 }
 
-/// Chrome owns this process. Independent stdin and IPC readers allow unsolicited
-/// watchdog replies without blocking on the next message from the extension.
+/// stdin is read independently so EOF ends this host even during a pending IPC
+/// response. One worker owns the synchronous Windows pipe: a cloned handle with
+/// a blocking ReadFile can otherwise prevent the next WriteFile from running.
 pub fn run(directory: &Path, args: &[String]) -> io::Result<()> {
     let config = storage::read_config(directory)?;
     let origin = args
         .first()
-        .ok_or_else(|| io::Error::other("missing caller origin"))?;
+        .ok_or_else(|| io::Error::other("missing caller origin"))?
+        .to_owned();
     if origin.trim_end_matches('/') != format!("chrome-extension://{}", config.target.extension_id)
     {
         return Err(io::Error::other("caller origin is not registered"));
@@ -29,13 +31,13 @@ pub fn run(directory: &Path, args: &[String]) -> io::Result<()> {
     {
         return Err(io::Error::other("unexpected native host argument"));
     }
-    let mut pipe = OpenOptions::new()
+    let mut pipe = std::fs::OpenOptions::new()
         .read(true)
         .write(true)
         .open(storage::pipe_name(directory))?;
-    let mut reader = pipe.try_clone()?;
     let (sender, receiver) = mpsc::sync_channel(16);
     let browser_sender = sender.clone();
+    let (requests, pending) = mpsc::sync_channel::<Message>(16);
     thread::spawn(move || {
         let mut stdin = io::stdin().lock();
         loop {
@@ -50,24 +52,31 @@ pub fn run(directory: &Path, args: &[String]) -> io::Result<()> {
             }
         }
     });
-    thread::spawn(move || loop {
-        let value = read_frame::<Message>(&mut reader);
-        let done = !matches!(&value, Ok(Some(_)));
-        let event = match value {
-            Ok(value) => Input::Watchdog(value),
-            Err(error) => Input::Failed(error),
-        };
-        if sender.send(event).is_err() || done {
-            break;
+    thread::spawn(move || {
+        for message in pending {
+            let response = (|| -> io::Result<Option<Message>> {
+                write_frame(
+                    &mut pipe,
+                    &json!({"operation":"native","origin":origin,"message":message}),
+                )?;
+                read_frame::<Message>(&mut pipe)
+            })();
+            let done = !matches!(&response, Ok(Some(_)));
+            let event = match response {
+                Ok(value) => Input::Watchdog(value),
+                Err(error) => Input::Failed(error),
+            };
+            if sender.send(event).is_err() || done {
+                break;
+            }
         }
     });
     let mut stdout = io::stdout().lock();
     for event in receiver {
         match event {
-            Input::Browser(Some(message)) => write_frame(
-                &mut pipe,
-                &json!({"operation":"native","origin":origin,"message":message}),
-            )?,
+            Input::Browser(Some(message)) => requests
+                .try_send(message)
+                .map_err(|_| io::Error::other("too many pending native messages"))?,
             Input::Watchdog(Some(message)) => write_frame(&mut stdout, &message)?,
             Input::Browser(None) | Input::Watchdog(None) => return Ok(()),
             Input::Failed(error) => return Err(error),
