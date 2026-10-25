@@ -151,7 +151,7 @@ describe('Content Script', () => {
       const overlay = document.querySelector('.bilibili-focus-mode-block-overlay');
       expect(overlay).toBeTruthy();
       expect(overlay?.textContent).toContain('视频未审批');
-      expect(overlay?.textContent).toContain('加入待审池');
+      expect(overlay?.textContent).toContain('永久放行');
     });
 
     it('should not show overlay when permission granted', async () => {
@@ -191,8 +191,8 @@ describe('Content Script', () => {
     });
   });
 
-  describe('Add to Limbo', () => {
-    it('should show add to limbo button in overlay', async () => {
+  describe('Direct permanent access', () => {
+    it('should show direct permanent access button in overlay', async () => {
       document.body.innerHTML = `
         <h1 class="video-title">Test Video</h1>
         <div class="up-name">Uploader</div>
@@ -224,10 +224,10 @@ describe('Content Script', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      // Check that add to limbo button exists
-      const addButton = document.querySelector('#bfm-submit-limbo') as HTMLElement;
+      // Check that direct permanent access button exists
+      const addButton = document.querySelector('#bfm-add-permanent') as HTMLElement;
       expect(addButton).toBeTruthy();
-      expect(addButton?.textContent).toContain('加入待审池');
+      expect(addButton?.textContent).toContain('永久放行');
     });
   });
 

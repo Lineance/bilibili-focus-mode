@@ -140,7 +140,7 @@ export class PermissionOrchestrator {
           isBankruptcy,
         },
         bypassInfo,
-        (m: VideoMetadata) => this.addToLimbo(m),
+        (m: VideoMetadata) => this.addToPermanent(m),
         () => this.blockOverlayManager.openManagerPage(),
         handleDailyBypass
       );
@@ -150,7 +150,7 @@ export class PermissionOrchestrator {
     }
   }
 
-  private async addToLimbo(metadata: VideoMetadata): Promise<void> {
+  private async addToPermanent(metadata: VideoMetadata): Promise<void> {
     if (!chrome.runtime?.id) {
       console.error('[Content] Extension context invalidated');
       alert('扩展已失效，请刷新页面或重新加载扩展');
@@ -170,10 +170,9 @@ export class PermissionOrchestrator {
           tag: tagSelection,
           addedAt: metadata.addedAt,
         },
-        sourceUrl: window.location.href,
-      };
+      } satisfies ProtocolMap['add-to-permanent']['req'];
 
-      const result = await this.safeSendMessage<ProtocolMap['add-to-limbo']['res']>('add-to-limbo', payload as { [key: string]: string | number | boolean | null | { [key: string]: string | number | boolean | null } });
+      const result = await this.safeSendMessage<ProtocolMap['add-to-permanent']['res']>('add-to-permanent', payload);
 
       if (result === null) {
         logger.error('Content', 'Failed to send message: result is null');
@@ -183,14 +182,14 @@ export class PermissionOrchestrator {
 
       if (result.success) {
         const tagText = tagSelection === 'LEARNING' ? '学习' : tagSelection === 'MUSIC' ? '音乐' : '娱乐';
-        alert(`已加入待审池！标签：${tagText}\n请在审批时间前往管理页处理`);
+        alert(`${result.message || '已加入永久放行'}！标签：${tagText}`);
         this.checkPermission();
       } else {
-        alert('添加失败，待审池可能已满，请重试');
+        alert(result.message || '添加永久放行失败，请重试');
       }
     } catch (error) {
-      console.error('[Content] Failed to add to limbo:', error);
-      alert('添加失败，请重试');
+      console.error('[Content] Failed to add permanent video:', error);
+      alert('添加永久放行失败，请重试');
     }
   }
 }

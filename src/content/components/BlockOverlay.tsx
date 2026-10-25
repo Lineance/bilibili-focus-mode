@@ -8,7 +8,7 @@ export interface BlockOverlayProps {
   windowInfo: { inReviewWindow: boolean; timeUntilWindow: number };
   fuseInfo: { allowFuse: boolean; isBankruptcy: boolean };
   bypassInfo: { enabled: boolean; remainingUses: number };
-  onAddToLimbo: (metadata: VideoMetadata) => Promise<void>;
+  onAddToPermanent: (metadata: VideoMetadata) => Promise<void>;
   onOpenManager: () => void;
   onDailyBypass: () => void;
 }
@@ -76,7 +76,7 @@ export function BlockOverlay({
   windowInfo,
   fuseInfo,
   bypassInfo,
-  onAddToLimbo,
+  onAddToPermanent,
   onOpenManager,
   onDailyBypass,
 }: BlockOverlayProps) {
@@ -120,12 +120,12 @@ export function BlockOverlay({
           </button>
           {!isBankruptcy && (
             <button
-              id="bfm-submit-limbo"
+              id="bfm-add-permanent"
               className="bfm-btn bfm-btn--submit"
-              onClick={() => onAddToLimbo(metadata)}
+              onClick={() => onAddToPermanent(metadata)}
             >
               <Icon name="list" size={15} />
-              加入待审池
+              永久放行
             </button>
           )}
           <button

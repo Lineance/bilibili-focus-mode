@@ -26,6 +26,10 @@ export interface ProtocolMap {
       >;
     };
   };
+  'add-to-permanent': {
+    req: { metadata: VideoMetadata };
+    res: { success: boolean; permanentCount: number; message?: string };
+  };
   'add-to-limbo': {
     req: { metadata: VideoMetadata; sourceUrl: string };
     res: { success: boolean; limboCount: number };

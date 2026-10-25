@@ -44,7 +44,7 @@ export class BlockOverlayManager {
     windowInfo: BlockOverlayProps['windowInfo'],
     fuseInfo: BlockOverlayProps['fuseInfo'],
     bypassInfo: BlockOverlayProps['bypassInfo'],
-    onAddToLimbo: (metadata: VideoMetadata) => Promise<void>,
+    onAddToPermanent: (metadata: VideoMetadata) => Promise<void>,
     onOpenManager: () => void,
     onDailyBypass: () => void
   ): void {
@@ -66,7 +66,7 @@ export class BlockOverlayManager {
         windowInfo={windowInfo}
         fuseInfo={fuseInfo}
         bypassInfo={bypassInfo}
-        onAddToLimbo={onAddToLimbo}
+        onAddToPermanent={onAddToPermanent}
         onOpenManager={onOpenManager}
         onDailyBypass={onDailyBypass}
       />

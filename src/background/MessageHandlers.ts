@@ -3,6 +3,7 @@ import { logger } from '@core/utils/logger';
 import {
   handleCheckPermission,
   handleAddToLimbo,
+  handleAddToPermanent,
   handleUpdateDebt,
   handleSyncDebt,
   handleVerifyFuse,
@@ -17,6 +18,7 @@ import {
 export function registerMessageHandlers(): void {
   onMessage('check-permission', async (message) => handleCheckPermission(message.data));
   onMessage('add-to-limbo', async (message) => handleAddToLimbo(message.data));
+  onMessage('add-to-permanent', async (message) => handleAddToPermanent(message.data));
   onMessage('update-debt', async (message) => handleUpdateDebt(message.data));
   onMessage('sync-debt', async () => handleSyncDebt());
   onMessage('verify-fuse', async (message) => handleVerifyFuse(message.data));
