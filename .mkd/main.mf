@@ -1,0 +1,79 @@
+---
+
+# permission_contract
+定义 mini-version 仍然支持的访问规则，以及本次明确不改变的非审批能力。
+- 每日全量放行沿用现有 dailyBypass 机制，默认每天最多 3 次；放行期间不区分视频。
+- 关键词命中时自动允许访问。
+- UP 主命中白名单时自动允许访问。
+- 手动加入永久放行的视频按 LEARNING、ENTERTAINMENT、MUSIC 三类 Tag 保存。
+- 债务计算、破产限制、观看记录、行为日志和统计数据继续工作。
+- 页面简化、外观增强、播放器增强、直播增强、自定义首页和 Native Monitor 不因本次审批改造被删除。
+- 主题切换和主题增强仍按用户既定要求移除。
+
+# direct_permanent_access
+> permission_contract
+把被阻断视频从“提交待审”改为选择 Tag 后直接加入永久放行列表。
+- 内容脚本提供直接永久放行入口，不再要求先加入待审池。
+- Tag 选择结果通过 background 消息写入 permanentGroups。
+- 相同 BV 号重复添加时保持幂等，不产生重复记录。
+- 永久视频按其 Tag 分组，三类 Tag 都能正确保存和展示。
+- 永久放行成功后当前页面立即重新执行权限检查。
+
+# daily_full_bypass
+> permission_contract
+保留每日全量放行能力，只移除它对审批窗口和即时许可的依赖。
+- 每日配额按本地日期正确重置。
+- 已达到当日配额时继续拒绝新的全量放行请求。
+- 全量放行生效期间，普通未永久放行视频可以访问。
+- 现有 bypass 状态、计数和相关前端提示不因审批链删除而失效。
+
+# remove_review_flow
+> direct_permanent_access
+> daily_full_bypass
+删除只服务于“待审池审批”的业务状态、消息和界面。
+- 删除 limboList 的提交、审批、删除、提醒和自动清理流程。
+- 删除 instantList、即时许可、熔断码和审批时间窗口流程。
+- PermissionService 不再依赖待审池或即时许可判断普通访问权限。
+- 管理页不再显示待审池、即时许可、审批窗口和熔断码模块。
+- 不删除债务、观看记录、统计、页面简化和其他非审批功能。
+
+# frontend_preservation
+> permission_contract
+在删除审批 UI 的同时保留项目中与审批无关的前端体验。
+- StatsDashboard 及其统计数据展示继续可用。
+- DebtStatus、债务配置、观看记录和破产相关提示继续可用。
+- StyleSimplificationService、页面简化配置和内容脚本样式注入继续可用。
+- 外观、直播、播放器增强和自定义首页继续可用，并只移除其中与即时许可或待审池直接相关的展示。
+- 主题入口、主题切换和主题增强移除，但不删除通用 UI 组件和固定样式系统。
+- Popup 保留债务和全量放行状态，移除待审/即时许可状态展示。
+
+# storage_migration
+> remove_review_flow
+> frontend_preservation
+升级现有扩展数据，使审批链移除后仍能安全启动并保留有效数据。
+- 保留 permanentGroups、allowedUploaders、keywordRules、debtAccount、watchHistory、behaviorLog 和其他非审批配置。
+- 旧 limboList 和 instantList 不再参与权限判断，也不自动转换为永久放行。
+- 清理或忽略审批窗口、即时许可和熔断相关字段时不得破坏债务和统计字段。
+- 存储版本升级后，旧数据读取不会导致 background 或 content script 崩溃。
+
+# validation
+> storage_migration
+为 mini-version 建立覆盖核心行为和保留能力的验证门槛。
+- typecheck、lint、unit test 和 production build 全部通过。
+- PermissionService 覆盖永久视频、关键词、UP 主、每日全量放行和未命中阻断。
+- 直接永久放行覆盖 Tag 分组、重复添加和 content/background 消息链路。
+- 每日全量放行覆盖三次配额、跨天重置和生效期间访问。
+- 统计、债务、观看记录和页面简化相关现有测试继续通过。
+- 管理页和阻断页测试确认审批入口消失、保留入口仍存在。
+
+# mini_version
+> validation
+完成 mini-version 的审批逻辑精简，同时保持其他已确认需要保留的功能。
+- 实现位于 mini-version 分支。
+- 业务代码只删除或重构审批链，不进行无关的大规模前端删减。
+- 主题功能移除范围与用户既定要求一致。
+- 验收命令为 npm run typecheck、npm run lint、npm run test -- --run 和 npm run build。
+
+---
+
+> mini_version
