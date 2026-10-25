@@ -3,12 +3,12 @@ import type { ExtensionConfig } from '@core/types';
 import { logger } from '@core/utils/logger';
 import { AlarmHandler } from './AlarmHandler';
 import { registerMessageHandlers } from './MessageHandlers';
-import { NativeMessagingClient } from './NativeMessagingClient';
+import { NativeMessagingService } from './NativeMessagingService';
 
 logger.debug('Background', 'Service worker started');
 
 const alarmHandler = new AlarmHandler();
-const nativeClient = new NativeMessagingClient();
+const nativeService = new NativeMessagingService();
 
 function getConfigFromStorage(storage: Record<string, unknown>): ExtensionConfig {
   return (storage.config || DEFAULT_STORAGE.config) as ExtensionConfig;
@@ -55,29 +55,8 @@ alarmHandler.listen();
 // Register webext-bridge message handlers
 registerMessageHandlers();
 
-// Connect to native messaging host if enabled (non-blocking, failure is tolerated)
-chrome.storage.local.get('config').then((storage) => {
-  const config = getConfigFromStorage(storage);
-  if (config.nativeMessagingEnabled) {
-    logger.info('Background', 'Native Messaging enabled, connecting...');
-    nativeClient.connect();
-  } else {
-    logger.debug('Background', 'Native Messaging disabled');
-  }
-});
-
-// Listen for native messaging events
-nativeClient.on('status', (message) => {
-  logger.debug('Background', 'Monitor status:', message.payload);
-});
-
-nativeClient.on('warning', (message) => {
-  logger.warn('Background', 'Monitor warning:', message.payload);
-});
-
-nativeClient.on('disconnected', () => {
-  logger.debug('Background', 'Native messaging disconnected');
-});
+// Restore Native Messaging on cold worker starts, browser startup and config changes.
+nativeService.start();
 
 // Schedule initial alarms from stored config
 chrome.storage.local.get('config').then((storage) => {
@@ -92,11 +71,6 @@ chrome.storage.local.get('config').then((storage) => {
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local' || !changes.config?.newValue) return;
   const newConfig = getNewConfigValue(changes.config.newValue);
-  if (newConfig.nativeMessagingEnabled) {
-    nativeClient.connect();
-  } else {
-    nativeClient.disconnect();
-  }
   alarmHandler.scheduleLimboReviewReminder(newConfig.limboReviewTime);
   alarmHandler.scheduleLimboAutoPurge(newConfig.limboAutoPurgeHours);
 });

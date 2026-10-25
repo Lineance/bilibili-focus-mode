@@ -1,6 +1,11 @@
+import type { NativeConnectionSnapshot } from '@core/nativeMessaging';
 import type { ExtensionConfig, PermissionResult, VideoMetadata, VideoTag } from '@core/types';
 
 export interface ProtocolMap {
+  'native-monitor-status': {
+    req: { refresh?: boolean };
+    res: NativeConnectionSnapshot;
+  };
   'check-permission': {
     req: { bvid: string; uploaderName?: string; title?: string };
     res: PermissionResult & {

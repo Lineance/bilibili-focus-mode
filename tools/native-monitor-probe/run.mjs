@@ -131,7 +131,8 @@ function transpile(source, destination, replacements = []) {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 },
   }).outputText);
 }
-transpile('src/background/NativeMessagingClient.ts', 'NativeMessagingClient.js', [['@core/utils/logger', './logger.js']]);
+transpile('src/background/NativeMessagingClient.ts', 'NativeMessagingClient.js', [['@core/utils/logger', './logger.js'], ['@core/nativeMessaging', './nativeMessaging.js']]);
+transpile('src/core/nativeMessaging.ts', 'nativeMessaging.js');
 transpile('src/core/utils/logger.ts', 'logger.js');
 writeFileSync(join(fixture, 'manifest.json'), JSON.stringify({ manifest_version: 3, name: 'Focus Native Messaging Feasibility Probe',
   version: '0.0.0', key: key.toString('base64'), minimum_chrome_version: '105', permissions: ['nativeMessaging', 'storage'],

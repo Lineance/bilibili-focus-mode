@@ -133,6 +133,26 @@ describe('NativeMessagingClient', () => {
     expect(client.getState()).toBe('disconnected');
   });
 
+  it('should expose verified monitor state and clear it as soon as the Port is lost', () => {
+    client.connect();
+    const monitor = {
+      protocolVersion: 1, watchdogRunning: true, state: 'monitoring', enabled: true,
+      dryRun: false, extensionConnected: true, verified: true, targetPid: 123,
+      remainingMs: null, reason: null, updatedAt: 100,
+    };
+    ports[0].message({ ...ready, payload: { ...ready.payload, monitor } });
+    expect(client.getSnapshot().monitor).toEqual(monitor);
+    ports[0].close();
+    expect(client.getSnapshot()).toMatchObject({ state: 'error', monitor: null });
+  });
+
+  it('should not trust a malformed protection status in an otherwise valid handshake', () => {
+    client.connect();
+    ports[0].message({ ...ready, payload: { ...ready.payload, monitor: { enabled: true, state: 'monitoring' } } });
+    expect(client.isConnected()).toBe(true);
+    expect(client.getSnapshot().monitor).toBeNull();
+  });
+
   it('should reset retry backoff only after a successful ready response', () => {
     client.connect();
     ports[0].close();

@@ -1,19 +1,13 @@
+import { NATIVE_HOST_NAME, NATIVE_PROTOCOL_VERSION, isNativeMonitorStatus, type NativeConnectionState, type NativeConnectionSnapshot, type NativeMonitorStatus, type NativeMessage } from '@core/nativeMessaging';
 import { logger } from '@core/utils/logger';
-
-const HOST_NAME = 'com.bilibili.focus.monitor';
 const HEARTBEAT_INTERVAL_MS = 15000;
 const HANDSHAKE_TIMEOUT_MS = 5000;
 const HEARTBEAT_TIMEOUT_MS = 45000;
 const RECONNECT_BASE_DELAY_MS = 1000;
 const RECONNECT_MAX_DELAY_MS = 60000;
 
-export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
-
-export interface NativeMessage {
-  type: string;
-  payload?: unknown;
-  timestamp?: number;
-}
+export type ConnectionState = NativeConnectionState;
+export type { NativeMessage } from '@core/nativeMessaging';
 
 export interface NativeConnectionOptions {
   hostName?: string;
@@ -38,11 +32,13 @@ export class NativeMessagingClient {
   private acknowledgedSequence = 0;
   private lastPongAt = 0;
   private sessionId: string | null = null;
+  private reason: string | null = null;
+  private monitor: NativeMonitorStatus | null = null;
   private readonly hostName: string;
   private listeners = new Map<string, ((message: NativeMessage) => void)[]>();
 
   constructor(options: NativeConnectionOptions = {}) {
-    this.hostName = options.hostName ?? HOST_NAME;
+    this.hostName = options.hostName ?? NATIVE_HOST_NAME;
   }
 
   /** Start connecting; failed attempts remain recoverable until explicitly stopped. */
@@ -52,6 +48,8 @@ export class NativeMessagingClient {
     this.clearReconnectTimer();
     const generation = ++this.generation;
     this.state = 'connecting';
+    this.reason = null;
+    this.notifyState();
 
     try {
       const port = chrome.runtime.connectNative(this.hostName);
@@ -69,7 +67,7 @@ export class NativeMessagingClient {
       this.handshakeTimer = setTimeout(() => {
         if (generation === this.generation) this.fail('Native handshake timed out');
       }, HANDSHAKE_TIMEOUT_MS);
-      this.post({ type: 'hello', payload: { protocolVersion: 1 } });
+      this.post({ type: 'hello', payload: { protocolVersion: NATIVE_PROTOCOL_VERSION } });
     } catch (error) {
       this.fail(error instanceof Error ? error.message : String(error));
     }
@@ -81,6 +79,8 @@ export class NativeMessagingClient {
     this.clearReconnectTimer();
     this.releasePort();
     this.state = 'disconnected';
+    this.reason = null;
+    this.notifyState();
   }
 
   /** Send an application message after a successful handshake. */
@@ -110,6 +110,15 @@ export class NativeMessagingClient {
     return this.state === 'connected';
   }
 
+  /** Return connection and protection separately; a Port alone proves neither. */
+  getSnapshot(): NativeConnectionSnapshot {
+    return { state: this.state, reason: this.reason, monitor: this.monitor, updatedAt: Date.now() };
+  }
+
+  private notifyState(): void {
+    this.emit({ type: 'connection-state', payload: this.getSnapshot() });
+  }
+
   private post(message: NativeMessage): boolean {
     try {
       if (!this.port) return false;
@@ -125,7 +134,7 @@ export class NativeMessagingClient {
     if (message.type === 'ready' && this.state === 'connecting') {
       const payload = message.payload;
       if (typeof payload !== 'object' || payload === null
-        || !('protocolVersion' in payload) || payload.protocolVersion !== 1
+        || !('protocolVersion' in payload) || payload.protocolVersion !== NATIVE_PROTOCOL_VERSION
         || !('watchdogReady' in payload) || payload.watchdogReady !== true
         || !('sessionId' in payload) || typeof payload.sessionId !== 'string'
         || payload.sessionId.length === 0) {
@@ -140,6 +149,8 @@ export class NativeMessagingClient {
       this.heartbeatSequence = 0;
       this.acknowledgedSequence = 0;
       this.lastPongAt = performance.now();
+      if ('monitor' in payload && isNativeMonitorStatus(payload.monitor)) this.monitor = payload.monitor;
+      this.notifyState();
       this.heartbeatTimer = setInterval(() => {
         if (performance.now() - this.lastPongAt >= HEARTBEAT_TIMEOUT_MS) {
           this.fail('Native heartbeat timed out');
@@ -160,6 +171,11 @@ export class NativeMessagingClient {
         || payload.sequence > this.heartbeatSequence) return;
       this.acknowledgedSequence = payload.sequence;
       this.lastPongAt = performance.now();
+      if ('monitor' in payload && isNativeMonitorStatus(payload.monitor)) this.monitor = payload.monitor;
+      this.notifyState();
+    } else if (message.type === 'status' && this.state === 'connected' && isNativeMonitorStatus(message.payload)) {
+      this.monitor = message.payload;
+      this.notifyState();
     }
     this.emit(message);
   }
@@ -174,6 +190,8 @@ export class NativeMessagingClient {
     logger.warn('NativeMessaging', reason);
     this.releasePort();
     this.state = 'error';
+    this.reason = reason;
+    this.notifyState();
     this.emit({ type: 'disconnected', payload: { reason } });
     if (!this.enabled || this.reconnectTimer) return;
     const delay = Math.min(RECONNECT_BASE_DELAY_MS * 2 ** Math.min(this.reconnectAttempts++, 6), RECONNECT_MAX_DELAY_MS);
@@ -190,6 +208,7 @@ export class NativeMessagingClient {
     this.handshakeTimer = null;
     this.heartbeatTimer = null;
     this.sessionId = null;
+    this.monitor = null;
     const port = this.port;
     this.port = null;
     port?.disconnect();

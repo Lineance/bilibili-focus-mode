@@ -74,6 +74,9 @@ vi.stubGlobal('chrome', {
     },
   },
   runtime: {
+    onStartup: {
+      addListener: vi.fn(),
+    },
     onInstalled: {
       addListener: vi.fn(),
     },
@@ -88,6 +91,7 @@ vi.stubGlobal('chrome', {
   },
   alarms: {
     create: vi.fn(),
+    clear: vi.fn().mockResolvedValue(true),
     onAlarm: {
       addListener: vi.fn(),
     },
