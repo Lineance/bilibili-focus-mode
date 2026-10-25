@@ -174,6 +174,7 @@ fn discover(target: &Target) -> io::Result<Option<InstanceId>> {
         .to_string_lossy()
         .to_lowercase();
     let mut instances = vec![];
+    let mut access_denied = false;
     for (pid, (_, process_name)) in entries {
         if process_name.to_lowercase() != name {
             continue;
@@ -184,12 +185,22 @@ fn discover(target: &Target) -> io::Result<Option<InstanceId>> {
             }
             Ok(_) => {}
             Err(error) if error.raw_os_error() == Some(5) => {
-                return Err(io::Error::other(
-                    "cannot inspect a running browser; check that it is not elevated",
-                ))
+                access_denied = true;
             }
             Err(_) => {} // Processes may exit between the snapshot and OpenProcess.
         }
+    }
+    choose_instance(instances, access_denied)
+}
+
+fn choose_instance(
+    mut instances: Vec<InstanceId>,
+    access_denied: bool,
+) -> io::Result<Option<InstanceId>> {
+    if instances.is_empty() && access_denied {
+        return Err(io::Error::other(
+            "cannot identify the registered browser; check whether it is elevated",
+        ));
     }
     if instances.len() > 1 {
         return Err(io::Error::other(
@@ -283,8 +294,18 @@ pub fn run(directory: &Path, dry_run: bool, notify: bool) -> io::Result<()> {
                 Err(error) => engine.fault(format!("configuration error: {error}")),
             }
             match discover(&config.target) {
-                Ok(instance) => engine.observe(instance, now),
-                Err(error) => engine.fault(error.to_string()),
+                Ok(instance) => {
+                    if engine.state == State::Faulted
+                        && engine
+                            .reason
+                            .as_deref()
+                            .is_some_and(|reason| reason.starts_with("discovery error:"))
+                    {
+                        engine = Engine::new(config.timing.clone(), config.enabled, dry_run);
+                    }
+                    engine.observe(instance, now);
+                }
+                Err(error) => engine.fault(format!("discovery error: {error}")),
             }
         }
         // Events already queued are processed before deadline actions.
@@ -423,4 +444,33 @@ pub fn request(directory: &Path, operation: &str) -> io::Result<Value> {
     receiver
         .recv_timeout(Duration::from_secs(3))
         .map_err(io::Error::other)?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn unrelated_unreadable_children_do_not_fault_an_exact_registered_root() {
+        let root = InstanceId {
+            pid: 123,
+            created: 456,
+        };
+        assert_eq!(
+            choose_instance(vec![root.clone()], true).unwrap(),
+            Some(root)
+        );
+    }
+    #[test]
+    fn inaccessible_or_ambiguous_targets_still_cannot_be_selected() {
+        assert!(choose_instance(vec![], true).is_err());
+        assert!(choose_instance(
+            vec![
+                InstanceId { pid: 1, created: 1 },
+                InstanceId { pid: 2, created: 2 }
+            ],
+            false
+        )
+        .is_err());
+        assert!(choose_instance(vec![], false).unwrap().is_none());
+    }
 }
