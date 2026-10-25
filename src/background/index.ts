@@ -92,6 +92,11 @@ chrome.storage.local.get('config').then((storage) => {
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local' || !changes.config?.newValue) return;
   const newConfig = getNewConfigValue(changes.config.newValue);
+  if (newConfig.nativeMessagingEnabled) {
+    nativeClient.connect();
+  } else {
+    nativeClient.disconnect();
+  }
   alarmHandler.scheduleLimboReviewReminder(newConfig.limboReviewTime);
   alarmHandler.scheduleLimboAutoPurge(newConfig.limboAutoPurgeHours);
 });

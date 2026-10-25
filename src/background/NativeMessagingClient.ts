@@ -2,10 +2,10 @@ import { logger } from '@core/utils/logger';
 
 const HOST_NAME = 'com.bilibili.focus.monitor';
 const HEARTBEAT_INTERVAL_MS = 15000;
+const HANDSHAKE_TIMEOUT_MS = 5000;
+const HEARTBEAT_TIMEOUT_MS = 45000;
 const RECONNECT_BASE_DELAY_MS = 1000;
 const RECONNECT_MAX_DELAY_MS = 60000;
-const MAX_RECONNECT_ATTEMPTS = 10;
-const DEBUG = false; // 生产环境关闭详细日志
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -15,198 +15,188 @@ export interface NativeMessage {
   timestamp?: number;
 }
 
+export interface NativeConnectionOptions {
+  hostName?: string;
+}
+
+function isNativeMessage(value: unknown): value is NativeMessage {
+  return typeof value === 'object' && value !== null
+    && 'type' in value && typeof value.type === 'string';
+}
+
+/** Owns one native Port; a ready response confirms that its watchdog is reachable. */
 export class NativeMessagingClient {
   private port: chrome.runtime.Port | null = null;
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  private handshakeTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private state: ConnectionState = 'disconnected';
   private reconnectAttempts = 0;
-  private listeners: Map<string, ((message: NativeMessage) => void)[]> = new Map();
+  private enabled = false;
+  private generation = 0;
+  private heartbeatSequence = 0;
+  private acknowledgedSequence = 0;
+  private lastPongAt = 0;
+  private sessionId: string | null = null;
+  private readonly hostName: string;
+  private listeners = new Map<string, ((message: NativeMessage) => void)[]>();
 
-  /**
-   * Connect to native messaging host
-   */
+  constructor(options: NativeConnectionOptions = {}) {
+    this.hostName = options.hostName ?? HOST_NAME;
+  }
+
+  /** Start connecting; failed attempts remain recoverable until explicitly stopped. */
   connect(): void {
-    if (this.state === 'connecting' || this.state === 'connected') {
-      if (DEBUG) logger.debug('NativeMessaging', 'Already connected or connecting');
-      return;
-    }
-
-    // 检查最大重连次数
-    if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      logger.warn('NativeMessaging', `Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached, giving up`);
-      this.state = 'error';
-      return;
-    }
-
+    this.enabled = true;
+    if (this.state === 'connecting' || this.state === 'connected') return;
+    this.clearReconnectTimer();
+    const generation = ++this.generation;
     this.state = 'connecting';
-    logger.info('NativeMessaging', 'Connecting to host:', HOST_NAME);
 
     try {
-      this.port = chrome.runtime.connectNative(HOST_NAME);
-
-      this.port.onMessage.addListener((message: unknown) => {
-        if (DEBUG) logger.debug('NativeMessaging', 'Message received:', message);
-        this.handleMessage(message as NativeMessage);
+      const port = chrome.runtime.connectNative(this.hostName);
+      this.port = port;
+      port.onMessage.addListener((message: unknown) => {
+        if (generation !== this.generation || !isNativeMessage(message)) return;
+        this.receive(message);
       });
-
-      this.port.onDisconnect.addListener(() => {
-        const lastError = chrome.runtime.lastError;
-        if (DEBUG) logger.debug('NativeMessaging', 'Port disconnected, error:', lastError);
-        this.handleDisconnect();
+      port.onDisconnect.addListener(() => {
+        // lastError is only available inside the event callback.
+        const error = chrome.runtime.lastError?.message;
+        if (generation !== this.generation) return;
+        this.fail(error ?? 'Native port disconnected');
       });
-
-      // If we get here, connection succeeded
-      this.state = 'connected';
-      this.reconnectAttempts = 0;
-      this.startHeartbeat();
-      logger.info('NativeMessaging', 'Connected to host successfully');
+      this.handshakeTimer = setTimeout(() => {
+        if (generation === this.generation) this.fail('Native handshake timed out');
+      }, HANDSHAKE_TIMEOUT_MS);
+      this.post({ type: 'hello', payload: { protocolVersion: 1 } });
     } catch (error) {
-      this.state = 'error';
-      logger.error('NativeMessaging', 'Failed to connect:', error);
-      this.scheduleReconnect();
+      this.fail(error instanceof Error ? error.message : String(error));
     }
   }
 
-  /**
-   * Disconnect from native messaging host
-   */
+  /** Stop all local connection attempts. This does not disable watchdog protection. */
   disconnect(): void {
-    if (DEBUG) logger.debug('NativeMessaging', 'Disconnecting');
-    this.stopHeartbeat();
+    this.enabled = false;
     this.clearReconnectTimer();
-
-    if (this.port) {
-      this.port.disconnect();
-      this.port = null;
-    }
-
+    this.releasePort();
     this.state = 'disconnected';
   }
 
-  /**
-   * Send message to native host
-   */
+  /** Send an application message after a successful handshake. */
   send(message: NativeMessage): boolean {
-    if (this.state !== 'connected' || !this.port) {
-      if (DEBUG) logger.debug('NativeMessaging', 'Not connected, cannot send');
-      return false;
-    }
-
-    try {
-      this.port.postMessage({
-        ...message,
-        timestamp: Date.now(),
-      });
-      return true;
-    } catch (error) {
-      logger.error('NativeMessaging', 'Failed to send message:', error);
-      return false;
-    }
+    return this.state === 'connected' && this.post(message);
   }
 
-  /**
-   * Add listener for specific message type
-   */
+  /** Subscribe to one message type, or '*' for all messages. */
   on(type: string, callback: (message: NativeMessage) => void): void {
-    if (!this.listeners.has(type)) {
-      this.listeners.set(type, []);
-    }
-    this.listeners.get(type)!.push(callback);
+    const callbacks = this.listeners.get(type) ?? [];
+    callbacks.push(callback);
+    this.listeners.set(type, callbacks);
   }
 
-  /**
-   * Remove listener
-   */
+  /** Remove an existing subscription. */
   off(type: string, callback: (message: NativeMessage) => void): void {
     const callbacks = this.listeners.get(type);
-    if (callbacks) {
-      const index = callbacks.indexOf(callback);
-      if (index > -1) {
-        callbacks.splice(index, 1);
-      }
-    }
+    const index = callbacks?.indexOf(callback) ?? -1;
+    if (index >= 0) callbacks?.splice(index, 1);
   }
 
-  /**
-   * Get current connection state
-   */
   getState(): ConnectionState {
     return this.state;
   }
 
-  /**
-   * Check if connected
-   */
   isConnected(): boolean {
     return this.state === 'connected';
   }
 
-  private handleMessage(message: NativeMessage): void {
-    logger.debug('NativeMessaging', 'Received:', message.type);
-
-    // Notify type-specific listeners
-    const callbacks = this.listeners.get(message.type);
-    if (callbacks) {
-      callbacks.forEach(cb => cb(message));
-    }
-
-    // Notify wildcard listeners
-    const wildcardCallbacks = this.listeners.get('*');
-    if (wildcardCallbacks) {
-      wildcardCallbacks.forEach(cb => cb(message));
+  private post(message: NativeMessage): boolean {
+    try {
+      if (!this.port) return false;
+      this.port.postMessage({ ...message, timestamp: Date.now() });
+      return true;
+    } catch (error) {
+      this.fail(error instanceof Error ? error.message : String(error));
+      return false;
     }
   }
 
-  private handleDisconnect(): void {
-    const lastError = chrome.runtime.lastError;
-    logger.debug('NativeMessaging', 'Disconnected:', lastError?.message || 'unknown reason');
-
-    this.stopHeartbeat();
-    this.port = null;
-    this.state = 'disconnected';
-
-    // Notify disconnect listeners
-    this.handleMessage({ type: 'disconnected' });
-
-    // Schedule reconnect
-    this.scheduleReconnect();
+  private receive(message: NativeMessage): void {
+    if (message.type === 'ready' && this.state === 'connecting') {
+      const payload = message.payload;
+      if (typeof payload !== 'object' || payload === null
+        || !('protocolVersion' in payload) || payload.protocolVersion !== 1
+        || !('watchdogReady' in payload) || payload.watchdogReady !== true
+        || !('sessionId' in payload) || typeof payload.sessionId !== 'string'
+        || payload.sessionId.length === 0) {
+        this.fail('Invalid native ready response');
+        return;
+      }
+      if (this.handshakeTimer) clearTimeout(this.handshakeTimer);
+      this.handshakeTimer = null;
+      this.sessionId = payload.sessionId;
+      this.state = 'connected';
+      this.reconnectAttempts = 0;
+      this.heartbeatSequence = 0;
+      this.acknowledgedSequence = 0;
+      this.lastPongAt = performance.now();
+      this.heartbeatTimer = setInterval(() => {
+        if (performance.now() - this.lastPongAt >= HEARTBEAT_TIMEOUT_MS) {
+          this.fail('Native heartbeat timed out');
+          return;
+        }
+        this.post({ type: 'heartbeat', payload: {
+          sessionId: this.sessionId,
+          sequence: ++this.heartbeatSequence,
+        } });
+      }, HEARTBEAT_INTERVAL_MS);
+    } else if (message.type === 'pong' && this.state === 'connected') {
+      const payload = message.payload;
+      if (typeof payload !== 'object' || payload === null
+        || !('sessionId' in payload) || payload.sessionId !== this.sessionId
+        || !('sequence' in payload) || typeof payload.sequence !== 'number'
+        || !Number.isInteger(payload.sequence)
+        || payload.sequence <= this.acknowledgedSequence
+        || payload.sequence > this.heartbeatSequence) return;
+      this.acknowledgedSequence = payload.sequence;
+      this.lastPongAt = performance.now();
+    }
+    this.emit(message);
   }
 
-  private startHeartbeat(): void {
-    this.stopHeartbeat();
-    this.heartbeatTimer = setInterval(() => {
-      this.send({ type: 'heartbeat' });
-    }, HEARTBEAT_INTERVAL_MS);
-  }
-
-  private stopHeartbeat(): void {
-    if (this.heartbeatTimer) {
-      clearInterval(this.heartbeatTimer);
-      this.heartbeatTimer = null;
+  private emit(message: NativeMessage): void {
+    for (const callback of [...(this.listeners.get(message.type) ?? []), ...(this.listeners.get('*') ?? [])]) {
+      callback(message);
     }
   }
 
-  private scheduleReconnect(): void {
-    this.clearReconnectTimer();
-
-    const delay = Math.min(
-      RECONNECT_BASE_DELAY_MS * Math.pow(2, this.reconnectAttempts),
-      RECONNECT_MAX_DELAY_MS
-    );
-
-    logger.debug('NativeMessaging', `Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1})`);
-
+  private fail(reason: string): void {
+    logger.warn('NativeMessaging', reason);
+    this.releasePort();
+    this.state = 'error';
+    this.emit({ type: 'disconnected', payload: { reason } });
+    if (!this.enabled || this.reconnectTimer) return;
+    const delay = Math.min(RECONNECT_BASE_DELAY_MS * 2 ** Math.min(this.reconnectAttempts++, 6), RECONNECT_MAX_DELAY_MS);
     this.reconnectTimer = setTimeout(() => {
-      this.reconnectAttempts++;
-      this.connect();
+      this.reconnectTimer = null;
+      if (this.enabled) this.connect();
     }, delay);
   }
 
+  private releasePort(): void {
+    ++this.generation;
+    if (this.handshakeTimer) clearTimeout(this.handshakeTimer);
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    this.handshakeTimer = null;
+    this.heartbeatTimer = null;
+    this.sessionId = null;
+    const port = this.port;
+    this.port = null;
+    port?.disconnect();
+  }
+
   private clearReconnectTimer(): void {
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
   }
 }
