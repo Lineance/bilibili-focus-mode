@@ -6,6 +6,7 @@ pub mod engine;
 pub mod host;
 #[cfg(windows)]
 pub mod install;
+pub mod notices;
 #[cfg(windows)]
 pub mod platform;
 pub mod protocol;
