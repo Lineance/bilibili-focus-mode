@@ -1,6 +1,6 @@
 # 下一阶段计划：Windows 体验优先
 
-状态：计划。依据最新优先级，先优化 Windows 日常使用体验，再完成 Cargo 分发；Linux/macOS 降为低优先级、暂不排期。每个可独立验收的功能完成测试后单独 Git commit。
+状态：Windows 通知、倒计时、托盘、配置引导、修复维护与 CI/CD 代码已实现，并完成本地回归；记录见 [Windows 桌面体验实现与验收](./windows-desktop-experience.md)。高 DPI/免打扰等真实视觉场景、物理休眠和重新登录仍需实际环境验收。Cargo 分发保持 P2，Linux/macOS 为 P3 暂不排期。每个功能独立测试并 Git commit。下文保留本阶段设计和验收目标。
 
 ## 1. 优先级与交付目标
 

@@ -34,7 +34,7 @@ npm run build
 
 ## Windows 外部监控（可选）
 
-独立的 Rust 守护进程可以在专注扩展失去连接后关闭登记的浏览器实例。安装默认关闭保护，完成握手和诊断后由用户启用；扩展内可查看连接与保护状态。
+独立的 Rust 守护进程可以在专注扩展失去连接后发出 Windows 提醒，并关闭登记的浏览器实例。提供图形配置引导、状态窗口与托盘暂停/恢复。安装默认关闭保护，完成握手和诊断后由用户启用。
 
 构建、安装、暂停、卸载与验收方法见 [监控程序使用说明](./chromium-extension-monitor/README.md)。建议使用独立浏览器数据目录，避免把日常其他 profile 纳入关闭范围。
 
@@ -72,6 +72,7 @@ src/
 - [架构文档](./docs/ARCHITECTURE.md) - 当前代码结构与模块职责
 - [设计系统](./docs/DESIGN-SYSTEM.md) - 调色板、排版、组件与内容脚本样式规范
 - [优化评审](./docs/OPTIMIZATION-REVIEW.md) - 显示/实现/性能问题清单与路线图
+- [Windows 桌面体验](./docs/windows-desktop-experience.md) - 通知、托盘、安装修复及验收记录
 - [监控程序使用说明](./chromium-extension-monitor/README.md) - Windows 原生监控安装、诊断与本地控制
 - [原生监控实现与验收](./docs/chromium-extension-monitor-implementation.md) - 功能提交、正式实现与验收结果
 - [原生监控可行性验证](./docs/chromium-extension-monitor-feasibility.md) - P0 实测与架构依据

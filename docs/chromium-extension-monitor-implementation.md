@@ -1,6 +1,6 @@
 # Windows 原生监控：实现与验收记录
 
-本版实现 `Windows + Chrome/Chromium + 一个登记的浏览器数据目录` 的完整监控链路。使用说明见 [监控程序 README](../chromium-extension-monitor/README.md)。[P0 报告](./chromium-extension-monitor-feasibility.md)保留原型阶段的证据；本文件记录正式实现。
+本版实现 `Windows + Chrome/Chromium + 一个登记的浏览器数据目录` 的完整监控链路。后续新增的通知、托盘、图形配置与交付改进见 [Windows 桌面体验记录](./windows-desktop-experience.md)。使用说明见 [监控程序 README](../chromium-extension-monitor/README.md)。[P0 报告](./chromium-extension-monitor-feasibility.md)保留原型阶段的证据；本文件记录正式实现。
 
 ## 已交付功能
 

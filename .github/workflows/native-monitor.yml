@@ -38,7 +38,7 @@ jobs:
       - run: cargo fmt --check --manifest-path chromium-extension-monitor/Cargo.toml
       - run: cargo clippy --locked --manifest-path chromium-extension-monitor/Cargo.toml --all-targets -- -D warnings
       - run: cargo test --locked --manifest-path chromium-extension-monitor/Cargo.toml
-      - run: cargo build --locked --release --manifest-path chromium-extension-monitor/Cargo.toml
+      - run: cargo build --locked --release --jobs 1 --manifest-path chromium-extension-monitor/Cargo.toml
       - uses: actions/download-artifact@v4
         with:
           name: extension-dist

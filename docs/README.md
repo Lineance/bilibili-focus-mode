@@ -4,6 +4,7 @@
 
 - [项目架构](./ARCHITECTURE.md) - 项目目录结构、系统架构说明
 - [原生监控使用说明](../chromium-extension-monitor/README.md) - Windows 安装、诊断、暂停与卸载
+- [Windows 桌面体验记录](./windows-desktop-experience.md) - 系统通知、托盘、配置升级与交互验收
 - [原生监控下一阶段计划](./native-monitor-next-steps.md) - Windows 提醒、托盘、安装与交付优先；Cargo 和跨平台后续推进
 - [原生监控实现与验收](./chromium-extension-monitor-implementation.md) - 功能提交、测试证据与支持范围
 - [原生监控 P0 验证](./chromium-extension-monitor-feasibility.md) - 最小原型与架构依据

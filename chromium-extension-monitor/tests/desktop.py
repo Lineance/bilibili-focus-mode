@@ -61,13 +61,19 @@ try:
     wait(lambda:not user.IsWindowVisible(countdown),'countdown closes')
     time.sleep(.6);assert not user.IsWindowVisible(countdown),'dismissed countdown reappeared'
     print('PASS countdown dismissal is stable within one incident',flush=True)
+    shell=ctypes.WinDLL('shell32',use_last_error=True)
+    shell.ShellExecuteW.argtypes=[ctypes.c_void_p,ctypes.c_wchar_p,ctypes.c_wchar_p,ctypes.c_wchar_p,ctypes.c_wchar_p,ctypes.c_int];shell.ShellExecuteW.restype=ctypes.c_void_p
+    uri='bilibili-focus-monitor-'+diagnostics['appId'].split('.')[-1]+'://pause'
+    assert shell.ShellExecuteW(None,'open',uri,None,None,1)>32
+    wait(lambda:command(['status']).get('state')=='paused','notification protocol pause')
+    config['enabled']=True;config_path.write_text(json.dumps(config));wait(lambda:command(['status']).get('enabled') is True,'test reenables dry run')
     user.PostMessageW(main,0x111,101,0)
     wait(lambda:command(['status']).get('state')=='paused','GUI pause reaches watchdog')
     assert child.poll() is None
     command(['stop']);assert json.loads(tray_status.read_text()).get('registered') is False
     command(['uninstall']);installed=False
     assert not command(['notify-status'])['registered']
-    result={'passed':True,'toastApiAccepted':True,'toastHistoryVerified':True,'visibleConfirmed':False,'countdownDismissal':True,'guiPause':True,'trayRegistered':True,'trayReopen':True,'trayCleanup':True,'cleanup':True}
+    result={'passed':True,'toastApiAccepted':True,'toastHistoryVerified':True,'visibleConfirmed':False,'countdownDismissal':True,'guiPause':True,'notificationProtocolPause':True,'trayRegistered':True,'trayReopen':True,'trayCleanup':True,'cleanup':True}
     (root/'result.json').write_text(json.dumps(result));print(json.dumps(result),root,flush=True)
 finally:
     if installed:subprocess.run([str(cli),'--data-dir',str(data),'uninstall'],capture_output=True,timeout=12)
