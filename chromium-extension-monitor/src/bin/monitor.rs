@@ -28,6 +28,10 @@ enum Command {
         #[arg(long)]
         autostart: bool,
     },
+    Ui,
+    NotifyTest,
+    NotifyStatus,
+    NotifySetup,
     Uninstall,
     Run {
         #[arg(long)]
@@ -89,6 +93,15 @@ fn main() {
                 },
                 autostart,
             )?,
+            Command::Ui => chromium_extension_monitor::desktop::open(&directory)?,
+            Command::NotifyStatus => {
+                chromium_extension_monitor::notifications::diagnostics(&directory)
+            }
+            Command::NotifyTest => chromium_extension_monitor::notifications::test(&directory)?,
+            Command::NotifySetup => {
+                chromium_extension_monitor::notifications::install_identity(&directory)?;
+                serde_json::json!({"notificationsRegistered":true})
+            }
             Command::Uninstall => install::uninstall(&directory)?,
             Command::Run { dry_run, no_notify } => {
                 daemon::run(&directory, dry_run, !no_notify)?;

@@ -36,7 +36,7 @@ fn startup_name(directory: &Path) -> String {
 }
 fn startup_command(directory: &Path) -> String {
     format!(
-        "\"{}\"",
+        "\"{}\" --background",
         directory.join("bin/bilibili-focus-watchdog.exe").display()
     )
 }
@@ -115,6 +115,7 @@ pub fn install(directory: &Path, mut target: Target, login_start: bool) -> io::R
         }
     }
     let previous_registration = registry::read(&key, "", VIEW64)?;
+    let previous_identity = crate::notifications::identity_ready(directory);
     let previous_startup = registry::read(RUN_KEY, &startup_name(directory), VIEW64)?;
     let source = std::env::current_exe()?
         .parent()
@@ -162,6 +163,7 @@ pub fn install(directory: &Path, mut target: Target, login_start: bool) -> io::R
         if registry::read(&key, "", VIEW64)?.as_deref() != Some(&expected) {
             return Err(io::Error::other("host registration readback failed"));
         }
+        crate::notifications::install_identity(directory)?;
         if login_start {
             autostart(directory, true)?;
         }
@@ -169,6 +171,11 @@ pub fn install(directory: &Path, mut target: Target, login_start: bool) -> io::R
     })();
     if let Err(error) = result {
         let mut rollback_errors = vec![];
+        if !previous_identity {
+            if let Err(error) = crate::notifications::remove_identity(directory) {
+                rollback_errors.push(error.to_string());
+            }
+        }
         if login_start {
             let restored = if let Some(value) = previous_startup {
                 registry::write(RUN_KEY, &startup_name(directory), &value, VIEW64)
@@ -221,6 +228,7 @@ pub fn start(directory: &Path, dry_run: bool, notify: bool) -> io::Result<Value>
         .open(directory.join("startup.log"))?;
     let mut command = Command::new(binary);
     command
+        .arg("--background")
         .arg("--data-dir")
         .arg(directory)
         .creation_flags(0x08000000)
@@ -294,6 +302,7 @@ pub fn uninstall(directory: &Path) -> io::Result<Value> {
     let config = storage::read_config(directory)?;
     stop(directory)?;
     autostart(directory, false)?;
+    crate::notifications::remove_identity(directory)?;
     let expected = manifest_path(directory).to_string_lossy().into_owned();
     let key = registry_key(&config.target);
     for view in [VIEW32, VIEW64] {
@@ -345,6 +354,7 @@ pub fn doctor(directory: &Path) -> Value {
         };
         checks.push(json!({"name":if view==VIEW32{"registry32"}else{"registry64"},"ok":ok,"detail":format!("{value:?}")}));
     }
+    checks.push(json!({"name":"notifications","ok":crate::notifications::identity_ready(directory),"detail":"Windows notification identity and Start Menu shortcut"}));
     let current = status(directory);
     checks.push(json!({"name":"watchdog","ok":current["watchdogRunning"]==true && current["state"]!="faulted","status":current}));
     checks.push(json!({"name":"nativeHandshake","ok":current["extensionConnected"]==true && current["verified"]==true,"detail":"keep the registered browser and extension communication running"}));

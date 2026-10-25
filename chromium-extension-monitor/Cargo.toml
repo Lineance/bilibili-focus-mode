@@ -10,12 +10,13 @@ serde_json = "1"
 clap = { version = "4.5", features = ["derive"] }
 
 [target.'cfg(windows)'.dependencies]
+windows = { version = "0.62.2", features = ["Data_Xml_Dom", "UI_Notifications", "Win32_Foundation", "Win32_System_Com", "Win32_System_Com_StructuredStorage", "Win32_System_Variant", "Win32_System_WinRT", "Win32_UI_Shell", "Win32_UI_Shell_PropertiesSystem", "Win32_Storage_EnhancedStorage"] }
 windows-sys = { version = "0.61.2", features = [
   "Win32_Foundation", "Win32_Security", "Win32_Security_Authorization",
   "Win32_Storage_FileSystem", "Win32_System_Pipes", "Win32_System_IO",
   "Win32_System_Threading", "Win32_System_Diagnostics_ToolHelp",
   "Win32_System_Registry", "Win32_System_SystemInformation", "Win32_System_WindowsProgramming", "Win32_System_Console",
-  "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging",
+  "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi", "Win32_UI_Controls", "Win32_UI_Controls_Dialogs", "Win32_System_LibraryLoader", "Win32_System_Com",
 ] }
 
 [profile.release]

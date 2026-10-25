@@ -1,5 +1,5 @@
 #![windows_subsystem = "windows"]
-
+use chromium_extension_monitor::{daemon, desktop, install, notifications, storage};
 use clap::Parser;
 #[derive(Parser)]
 struct Args {
@@ -9,18 +9,62 @@ struct Args {
     dry_run: bool,
     #[arg(long)]
     no_notify: bool,
+    #[arg(long)]
+    background: bool,
+    #[arg(long)]
+    settings: bool,
+    #[arg(long)]
+    activate: Option<String>,
 }
 fn main() {
     let args = Args::parse();
-    let directory = match chromium_extension_monitor::storage::data_dir(args.data_dir) {
-        Ok(directory) => directory,
-        Err(_) => std::process::exit(1),
+    let directory = match storage::data_dir(args.data_dir) {
+        Ok(dir) => dir,
+        Err(error) => {
+            desktop::show_error("无法启动专注守护", &error.to_string());
+            return;
+        }
     };
-    if let Err(error) =
-        chromium_extension_monitor::daemon::run(&directory, args.dry_run, !args.no_notify)
-    {
+    let result = (|| -> std::io::Result<()> {
+        let action = args
+            .activate
+            .as_deref()
+            .map(|uri| notifications::action(&directory, uri))
+            .transpose()?;
+        if action.is_some() {
+            install::start(&directory, args.dry_run, true)?;
+        }
+        match action {
+            Some("pause") => {
+                install::set_enabled(&directory, false)?;
+            }
+            Some("resume") => {
+                install::set_enabled(&directory, true)?;
+            }
+            _ => {}
+        }
+        let show = args.settings || !args.background || action.is_some();
+        if daemon::request(&directory, "status").is_ok() {
+            if show {
+                daemon::request(&directory, "show")?;
+            }
+            return Ok(());
+        }
+        daemon::run_options(&directory, args.dry_run, !args.no_notify, show)
+    })();
+    if let Err(error) = result {
         if std::fs::create_dir_all(&directory).is_ok() {
             let _ = std::fs::write(directory.join("startup-error.txt"), error.to_string());
+        }
+        if !args.no_notify {
+            desktop::show_error(
+                "专注守护启动失败",
+                &format!(
+                    "{}\n\n{}\n请查看安装说明或运行 monitor.exe doctor。",
+                    chromium_extension_monitor::notices::friendly_error(&error.to_string()),
+                    error
+                ),
+            );
         }
         std::process::exit(1);
     }

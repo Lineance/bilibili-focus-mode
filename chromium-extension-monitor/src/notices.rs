@@ -26,7 +26,7 @@ impl Notice {
             body: "专注守护可以调用 Windows 通知。请确认通知中心或屏幕上是否显示这条提醒。".into(),
         }
     }
-    fn clear() -> Self {
+    pub fn clear_for_cleanup() -> Self {
         Self {
             kind: NoticeKind::Clear,
             title: String::new(),
@@ -68,7 +68,7 @@ impl NoticePolicy {
             self.identity = identity;
             if self.visible {
                 self.visible = false;
-                return vec![Notice::clear()];
+                return vec![Notice::clear_for_cleanup()];
             }
             return vec![];
         }

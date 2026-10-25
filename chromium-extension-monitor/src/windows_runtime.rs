@@ -3,7 +3,6 @@ use crate::{
     engine::InstanceId,
     platform::{self, wide, Handle},
 };
-use serde_json::Value;
 use std::{
     collections::HashSet,
     ffi::c_void,
@@ -11,8 +10,6 @@ use std::{
     mem::zeroed,
     path::Path,
     ptr::{null, null_mut},
-    thread,
-    time::Duration,
 };
 use windows_sys::Win32::{
     Foundation::{GetLastError, LocalFree, ERROR_ALREADY_EXISTS, FILETIME, HWND, LPARAM},
@@ -287,76 +284,6 @@ pub fn terminate(id: &InstanceId, target: &Target) -> io::Result<Vec<u32>> {
     Ok(terminated)
 }
 
-pub fn show_countdown(shared: std::sync::Arc<std::sync::Mutex<Value>>) {
-    thread::spawn(move || {
-        use windows_sys::Win32::UI::WindowsAndMessaging::*;
-        let class = wide("STATIC");
-        let title = wide("Bilibili 专注保护");
-        let hwnd = unsafe {
-            CreateWindowExW(
-                WS_EX_TOPMOST | WS_EX_TOOLWINDOW,
-                class.as_ptr(),
-                title.as_ptr(),
-                WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
-                100,
-                100,
-                480,
-                150,
-                null_mut(),
-                null_mut(),
-                null_mut(),
-                null(),
-            )
-        };
-        if hwnd.is_null() {
-            eprintln!(
-                "[Monitor] cannot create countdown window: {}",
-                io::Error::last_os_error()
-            );
-            return;
-        }
-        loop {
-            let status = match shared.lock() {
-                Ok(value) => value.clone(),
-                Err(_) => break,
-            };
-            if status["stopped"] == true {
-                break;
-            }
-            let warning = status["state"] == "gracePeriod" || status["state"] == "closing";
-            if warning {
-                let seconds = status["remainingMs"].as_u64().unwrap_or(0).div_ceil(1000);
-                let text = wide(&format!("专注扩展已失去连接。\n请在 {seconds} 秒内恢复扩展，否则将关闭登记的浏览器实例。\n恢复后此提示自动关闭。暂停保护请运行 monitor disable。"));
-                unsafe {
-                    SetWindowTextW(hwnd, text.as_ptr());
-                    ShowWindow(hwnd, SW_SHOWNOACTIVATE);
-                }
-            } else {
-                unsafe {
-                    ShowWindow(hwnd, SW_HIDE);
-                }
-            }
-            let mut message: MSG = unsafe { zeroed() };
-            while unsafe { PeekMessageW(&mut message, null_mut(), 0, 0, PM_REMOVE) } != 0 {
-                if message.message == WM_CLOSE {
-                    unsafe {
-                        ShowWindow(hwnd, SW_HIDE);
-                    }
-                } else {
-                    unsafe {
-                        TranslateMessage(&message);
-                        DispatchMessageW(&message);
-                    }
-                }
-            }
-            thread::sleep(Duration::from_millis(100));
-        }
-        unsafe {
-            DestroyWindow(hwnd);
-        }
-    });
-}
-
 pub fn spawn_detached(command: &mut std::process::Command) -> io::Result<std::process::Child> {
     use windows_sys::Win32::{
         Foundation::{GetHandleInformation, SetHandleInformation, HANDLE_FLAG_INHERIT},
@@ -397,6 +324,7 @@ mod tests {
         os::windows::process::CommandExt,
         process::{Command, Stdio},
     };
+    use std::{thread, time::Duration};
     #[test]
     fn helper_wait() {
         if std::env::var_os("BILIBILI_TEST_CHILD").is_some() {

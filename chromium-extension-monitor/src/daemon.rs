@@ -63,7 +63,9 @@ fn serve(
     status: Arc<Mutex<Value>>,
     stop: Arc<AtomicBool>,
     events: mpsc::Sender<Event>,
+    desktop: (Arc<AtomicBool>, bool),
 ) -> io::Result<()> {
+    let (show, desktop_enabled) = desktop;
     let mut session = None;
     let mut target_at_connect = None;
     let mut associated = None;
@@ -78,6 +80,12 @@ fn serve(
                             .lock()
                             .map_err(|_| io::Error::other("status lock poisoned"))?,
                     )?;
+                }
+                Some("show") => {
+                    if desktop_enabled {
+                        show.store(true, Ordering::SeqCst);
+                    }
+                    write_frame(&mut pipe, &json!({"shown":desktop_enabled}))?;
                 }
                 Some("stop") => {
                     stop.store(true, Ordering::SeqCst);
@@ -211,6 +219,14 @@ fn choose_instance(
 }
 
 pub fn run(directory: &Path, dry_run: bool, notify: bool) -> io::Result<()> {
+    run_options(directory, dry_run, notify, false)
+}
+pub fn run_options(
+    directory: &Path,
+    dry_run: bool,
+    notify: bool,
+    show_window: bool,
+) -> io::Result<()> {
     fs::create_dir_all(directory)?;
     let pipe_name = storage::pipe_name(directory);
     let lock = InstanceLock::acquire(&format!(r"Local\{}", pipe_name.replace('\\', "_")))?;
@@ -220,6 +236,8 @@ pub fn run(directory: &Path, dry_run: bool, notify: bool) -> io::Result<()> {
     let mut engine = Engine::new(config.timing.clone(), config.enabled, dry_run);
     let status = Arc::new(Mutex::new(Value::Null));
     let stop = Arc::new(AtomicBool::new(false));
+    let show = Arc::new(AtomicBool::new(show_window));
+    let server_show = show.clone();
     let (sender, receiver) = mpsc::channel();
     let server_config = config_shared.clone();
     let server_status = status.clone();
@@ -231,8 +249,17 @@ pub fn run(directory: &Path, dry_run: bool, notify: bool) -> io::Result<()> {
                 let status = server_status.clone();
                 let stop = server_stop.clone();
                 let sender = sender.clone();
+                let show = server_show.clone();
                 thread::spawn(move || {
-                    if let Err(error) = serve(pipe, pid, config, status, stop, sender.clone()) {
+                    if let Err(error) = serve(
+                        pipe,
+                        pid,
+                        config,
+                        status,
+                        stop,
+                        sender.clone(),
+                        (show, notify),
+                    ) {
                         let _ = sender.send(Event::Error(error.to_string()));
                     }
                 });
@@ -250,7 +277,7 @@ pub fn run(directory: &Path, dry_run: bool, notify: bool) -> io::Result<()> {
     let mut log = EventLog::new(directory)?;
     log.record(json!({"event":"watchdogStarted","pid":std::process::id(),"dryRun":dry_run}))?;
     if notify {
-        windows_runtime::show_countdown(status.clone());
+        crate::desktop::start(directory.to_owned(), status.clone(), show);
     }
     let mut last_active = windows_runtime::active_time()?;
     let mut last_uptime = windows_runtime::uptime();
