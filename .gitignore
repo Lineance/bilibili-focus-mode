@@ -48,6 +48,8 @@ lerna-debug.log*
 
 # Cache
 .cache/
+__pycache__/
+*.pyc
 .temp/
 *.tsbuildinfo
 

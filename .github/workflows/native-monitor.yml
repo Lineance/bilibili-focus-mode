@@ -1,15 +1,14 @@
-name: Native monitor (Windows)
+name: Windows monitor checks and build
 
 on:
-  push:
-    paths:
-      - 'chromium-extension-monitor/**'
-      - '.github/workflows/native-monitor.yml'
-  pull_request:
-    paths:
-      - 'chromium-extension-monitor/**'
-      - '.github/workflows/native-monitor.yml'
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      package_tag:
+        type: string
+        default: ''
+      long_run:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -17,26 +16,68 @@ permissions:
 jobs:
   native-monitor:
     runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: chromium-extension-monitor
+    timeout-minutes: 30
+    env:
+      FOCUS_BUILD_PROFILE: release
+      FOCUS_ACCEPTANCE_IDLE_SECONDS: ${{ inputs.long_run && '310' || '65' }}
+      CFT_VERSION: '156.0.8078.4'
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: chromium-extension-monitor
-      - run: cargo fmt --check
-      - run: cargo clippy --locked --all-targets -- -D warnings
-      - run: cargo test --locked
-      - run: cargo build --locked --release
+      - run: cargo fmt --check --manifest-path chromium-extension-monitor/Cargo.toml
+      - run: cargo clippy --locked --manifest-path chromium-extension-monitor/Cargo.toml --all-targets -- -D warnings
+      - run: cargo test --locked --manifest-path chromium-extension-monitor/Cargo.toml
+      - run: cargo build --locked --release --manifest-path chromium-extension-monitor/Cargo.toml
+      - uses: actions/download-artifact@v4
+        with:
+          name: extension-dist
+          path: dist
+      - name: Download pinned Chrome for Testing
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'chrome-win64.zip'
+          $directory = Join-Path $env:RUNNER_TEMP 'focus-chrome'
+          Invoke-WebRequest "https://storage.googleapis.com/chrome-for-testing-public/$env:CFT_VERSION/win64/chrome-win64.zip" -OutFile $archive
+          Expand-Archive -Path $archive -DestinationPath $directory
+          $browser = Join-Path $directory 'chrome-win64/chrome.exe'
+          if (-not (Test-Path $browser)) { throw 'Chrome for Testing executable missing' }
+          "FOCUS_TEST_BROWSER=$browser" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Verify install rollback and registry ownership
+        shell: pwsh
+        run: python -u chromium-extension-monitor/tests/install.py "$env:FOCUS_TEST_BROWSER"
+      - name: Verify real browser lifecycle
+        shell: pwsh
+        run: node chromium-extension-monitor/tests/browser.mjs "$env:FOCUS_TEST_BROWSER"
+      - name: Package validated Windows binaries
+        env:
+          PACKAGE_TAG: ${{ inputs.package_tag }}
+        shell: pwsh
+        run: python .github/scripts/package_release.py build --component native --tag "$env:PACKAGE_TAG" --out .cache/release/native
       - uses: actions/upload-artifact@v4
         with:
-          name: bilibili-focus-monitor-windows-x64
+          name: native-package
+          path: .cache/release/native/
+          if-no-files-found: error
+      - name: Retain bounded test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-monitor-test-results
+          if-no-files-found: ignore
           path: |
-            chromium-extension-monitor/target/release/monitor.exe
-            chromium-extension-monitor/target/release/bilibili-focus-host.exe
-            chromium-extension-monitor/target/release/bilibili-focus-watchdog.exe
-            chromium-extension-monitor/README.md
+            chromium-extension-monitor/artifacts/**/results.json
+            chromium-extension-monitor/artifacts/**/result.json
+            chromium-extension-monitor/artifacts/**/events.jsonl
+            chromium-extension-monitor/artifacts/**/desktop-status.json
+            chromium-extension-monitor/artifacts/**/tray-status.json

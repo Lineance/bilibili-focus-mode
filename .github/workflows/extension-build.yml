@@ -1,0 +1,44 @@
+name: Extension checks and build
+
+on:
+  workflow_call:
+    inputs:
+      package_tag:
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  extension:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test -- --run
+      - run: npm run build
+      - name: Validate and package extension
+        env:
+          PACKAGE_TAG: ${{ inputs.package_tag }}
+        run: python .github/scripts/package_release.py build --component extension --tag "$PACKAGE_TAG" --out .cache/release/extension
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension-dist
+          path: dist/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension-package
+          path: .cache/release/extension/
+          if-no-files-found: error

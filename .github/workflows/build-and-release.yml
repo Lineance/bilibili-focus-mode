@@ -4,96 +4,70 @@ on:
   push:
     tags:
       - 'v*'
+      - 'monitor-v*'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build-extension:
+  validate:
     runs-on: ubuntu-latest
-    name: Build Extension
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run tests
-      run: npm test
-      
-    - name: Build extension
-      run: npm run build
-      
-    - name: Zip dist folder
-      run: |
-        cd dist
-        zip -r ../bilibili-focus-mode-${{ github.ref_name }}.zip .
-        cd ..
-      
-    - name: Upload extension artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: extension-zip
-        path: bilibili-focus-mode-*.zip
-
-  build-rust:
-    name: Build Rust Tool
-    runs-on: windows-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Install Rust toolchain
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: x86_64-pc-windows-msvc
-        
-    - name: Build Rust binary (Release)
-      working-directory: chromium-extension-monitor
-      run: cargo build --release --target x86_64-pc-windows-msvc
-      
-    - name: Prepare binary
-      shell: bash
-      run: cp chromium-extension-monitor/target/x86_64-pc-windows-msvc/release/chromium-extension-monitor.exe chromium-extension-monitor-windows.exe
-        
-    - name: Upload Rust artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: chromium-extension-monitor-windows.exe
-        path: chromium-extension-monitor-windows.exe
-
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+      - name: Check GitHub workflow definitions
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck= -pyflakes=
+      - run: python -m unittest discover -s .github/scripts -p 'test_*.py' -v
+      - name: Validate the component version tag
+        if: github.ref_type == 'tag'
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python .github/scripts/package_release.py validate-tag --tag "$RELEASE_TAG"
+  extension:
+    needs: validate
+    uses: ./.github/workflows/extension-build.yml
+    with:
+      package_tag: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+  windows:
+    needs: [validate, extension]
+    uses: ./.github/workflows/native-monitor.yml
+    with:
+      package_tag: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+      long_run: true
   release:
-    name: Create Release
+    name: Publish checked archives
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs: [extension, windows]
     runs-on: ubuntu-latest
-    needs: [build-extension, build-rust]
-    if: startsWith(github.ref, 'refs/tags/')
-    
+    permissions:
+      contents: write
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      
-    - name: List artifacts
-      run: ls -la
-      
-    - name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          extension-zip/*.zip
-          chromium-extension-monitor-windows.exe/chromium-extension-monitor-windows.exe
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-package'
+          merge-multiple: true
+          path: release
+      - name: Generate the final archive checksum manifest
+        run: python .github/scripts/package_release.py checksums --directory release
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.zip
+            release/SHA256SUMS.txt
+          fail_on_unmatched_files: true
+          generate_release_notes: true
