@@ -101,13 +101,14 @@ fn pick(parent: HWND) -> io::Result<Option<PathBuf>> {
 pub fn launch(directory: &Path) -> io::Result<Value> {
     std::fs::create_dir_all(directory)?;
     let installed = directory.join("bin/bilibili-focus-watchdog.exe");
-    let binary = if installed.is_file() {
-        installed
+    let sibling = std::env::current_exe()?
+        .parent()
+        .ok_or_else(|| io::Error::other("missing distribution directory"))?
+        .join("bilibili-focus-watchdog.exe");
+    let binary = if sibling.is_file() {
+        sibling
     } else {
-        std::env::current_exe()?
-            .parent()
-            .ok_or_else(|| io::Error::other("missing distribution directory"))?
-            .join("bilibili-focus-watchdog.exe")
+        installed
     };
     let mut command = std::process::Command::new(binary);
     command.arg("--data-dir").arg(directory).arg("--setup");

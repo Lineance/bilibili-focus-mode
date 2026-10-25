@@ -59,9 +59,12 @@ try:
  user.PostMessageW(main,0x111,103,0);wait(lambda:'扩展尚未连接' in read(user.GetDlgItem(main,150)),'human readable diagnosis')
  print('PASS first-run validation, GUI installation and actionable diagnosis',flush=True)
  command(['timing','--grace-ms','12345']);command(['stop'])
- args=['install','--browser',str(browser),'--user-data-dir',str(profile),'--extension-id','abcdefghijklmnopabcdefghijklmnop']
- command(args);assert json.loads((data/'config.json').read_text())['timing']['graceMs']==12345
- print('PASS upgrade preserves custom timing and stays disabled',flush=True)
+ child=subprocess.Popen([str(gui),'--data-dir',str(data)]);processes.append(child)
+ setup=wait(lambda:window(child.pid,'Bilibili 专注守护 · 配置'),'distribution upgrade opens setup')
+ wait(lambda:user.GetDlgItem(setup,630),'upgrade controls');fill(setup);user.SendMessageW(setup,0x111,620,0)
+ wait(lambda:child.poll() is not None,'upgrade handoff',25);assert child.returncode==0
+ assert json.loads((data/'config.json').read_text())['timing']['graceMs']==12345
+ print('PASS GUI upgrade preserves custom timing and stays disabled',flush=True)
  (data/'config.json').write_text('{invalid configuration')
  child=subprocess.Popen([str(gui),'--data-dir',str(data),'--setup']);processes.append(child)
  setup=wait(lambda:window(child.pid,'Bilibili 专注守护 · 配置'),'repair UI');wait(lambda:user.GetDlgItem(setup,630),'repair controls');fill(setup);user.PostMessageW(setup,0x111,620,0)

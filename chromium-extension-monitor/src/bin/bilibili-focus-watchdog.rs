@@ -28,8 +28,19 @@ fn main() {
         }
     };
     let result = (|| -> std::io::Result<()> {
+        let executable = std::env::current_exe()?;
+        let distribution =
+            chromium_extension_monitor::platform::normalized(&executable.to_string_lossy())
+                != chromium_extension_monitor::platform::normalized(
+                    &directory
+                        .join("bin/bilibili-focus-watchdog.exe")
+                        .to_string_lossy(),
+                );
         if args.setup
-            || (!args.background && !args.no_notify && storage::read_config(&directory).is_err())
+            || (!args.background
+                && !args.no_notify
+                && args.activate.is_none()
+                && (distribution || storage::read_config(&directory).is_err()))
         {
             return desktop::setup::run(&directory);
         }
