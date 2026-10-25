@@ -1,0 +1,42 @@
+name: Native monitor (Windows)
+
+on:
+  push:
+    paths:
+      - 'chromium-extension-monitor/**'
+      - '.github/workflows/native-monitor.yml'
+  pull_request:
+    paths:
+      - 'chromium-extension-monitor/**'
+      - '.github/workflows/native-monitor.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-monitor:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: chromium-extension-monitor
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: chromium-extension-monitor
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
+      - run: cargo build --locked --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bilibili-focus-monitor-windows-x64
+          path: |
+            chromium-extension-monitor/target/release/monitor.exe
+            chromium-extension-monitor/target/release/bilibili-focus-host.exe
+            chromium-extension-monitor/target/release/bilibili-focus-watchdog.exe
+            chromium-extension-monitor/README.md
