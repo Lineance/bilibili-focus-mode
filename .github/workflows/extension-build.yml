@@ -31,7 +31,10 @@ jobs:
       - name: Validate and package extension
         env:
           PACKAGE_TAG: ${{ inputs.package_tag }}
-        run: python .github/scripts/package_release.py build --component extension --tag "$PACKAGE_TAG" --out .cache/release/extension
+        run: |
+          TAG_ARGS=()
+          if [[ "$PACKAGE_TAG" == v* ]]; then TAG_ARGS=(--tag "$PACKAGE_TAG"); fi
+          python .github/scripts/package_release.py build --component extension "${TAG_ARGS[@]}" --out .cache/release/extension
       - uses: actions/upload-artifact@v7
         with:
           name: extension-dist

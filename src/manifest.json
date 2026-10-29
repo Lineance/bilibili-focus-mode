@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "minimum_chrome_version": "105",
   "name": "Bilibili Focus Mode",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Intentional time management extension for Bilibili",
   "permissions": [
     "storage",

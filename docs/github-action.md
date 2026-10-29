@@ -56,8 +56,8 @@ Actions 下载的 artifact 可能在外层再包一层 ZIP，里面是实际发�
 ```bash
 # 先将 package.json、package-lock.json、src/manifest.json 更新为一致版本并提交
 # 以下版本仅为示例，需要与实际元数据一致
- git tag v0.0.6
- git push origin v0.0.6
+ git tag v0.0.7
+ git push origin v0.0.7
 ```
 
 准备原生版本示例：

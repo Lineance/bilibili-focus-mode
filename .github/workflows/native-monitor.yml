@@ -63,7 +63,12 @@ jobs:
         env:
           PACKAGE_TAG: ${{ inputs.package_tag }}
         shell: pwsh
-        run: python .github/scripts/package_release.py build --component native --tag "$env:PACKAGE_TAG" --out .cache/release/native
+        run: |
+          $tagArgs = @()
+          if (-not [string]::IsNullOrEmpty($env:PACKAGE_TAG) -and $env:PACKAGE_TAG.StartsWith('monitor-v')) {
+            $tagArgs = @('--tag', $env:PACKAGE_TAG)
+          }
+          python .github/scripts/package_release.py build --component native @tagArgs --out .cache/release/native
       - uses: actions/upload-artifact@v7
         with:
           name: native-package
