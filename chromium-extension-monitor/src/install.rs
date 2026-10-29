@@ -290,13 +290,20 @@ pub fn start(directory: &Path, dry_run: bool, notify: bool) -> io::Result<Value>
     ))
 }
 
+fn protection_ready(status: &Value) -> bool {
+    status["watchdogRunning"] == true
+        && status["verified"] == true
+        && status["extensionConnected"] == true
+        && status["state"] != "faulted"
+}
+
 pub fn set_enabled(directory: &Path, enabled: bool) -> io::Result<Value> {
     let mut config = storage::read_config(directory)?;
     if enabled {
         let status = daemon::request(directory, "status")?;
-        if status["verified"] != true || status["state"] == "faulted" {
+        if !protection_ready(&status) {
             return Err(io::Error::other(
-                "complete a native handshake and resolve doctor errors before enabling protection",
+                "complete a live native handshake and resolve doctor errors before enabling protection",
             ));
         }
     }
@@ -384,7 +391,15 @@ pub fn uninstall(directory: &Path) -> io::Result<Value> {
 }
 
 pub fn status(directory: &Path) -> Value {
-    daemon::request(directory,"status").unwrap_or_else(|error|json!({"watchdogRunning":false,"reason":error.to_string(),"lastKnown":storage::read_json::<Value>(&directory.join("status.json")).ok()}))
+    daemon::request(directory, "status").unwrap_or_else(|error| {
+        let not_running = error.raw_os_error() == Some(2);
+        json!({
+            "watchdogRunning": false,
+            "reason": if not_running { "watchdogNotRunning" } else { "watchdogQueryFailed" },
+            "detail": error.to_string(),
+            "lastKnown": storage::read_json::<Value>(&directory.join("status.json")).ok()
+        })
+    })
 }
 
 pub fn diagnostic_summary(report: &Value) -> String {
@@ -451,4 +466,25 @@ pub fn doctor(directory: &Path) -> Value {
     checks.push(json!({"name":"browserPaths","ok":config.target.browser_path.is_file() && config.target.user_data_dir.is_dir()}));
     let ok = checks.iter().all(|check| check["ok"] == true);
     json!({"ok":ok,"checks":checks,"autostart":registry::read(RUN_KEY,&startup_name(directory),VIEW64).ok().flatten().as_deref()==Some(&startup_command(directory))})
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn protection_requires_a_live_verified_extension() {
+        let mut status = json!({
+            "watchdogRunning": true,
+            "verified": true,
+            "extensionConnected": false,
+            "state": "paused"
+        });
+        assert!(!protection_ready(&status));
+        status["extensionConnected"] = true.into();
+        assert!(protection_ready(&status));
+        status["state"] = "faulted".into();
+        assert!(!protection_ready(&status));
+    }
 }

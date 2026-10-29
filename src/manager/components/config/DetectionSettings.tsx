@@ -1,3 +1,4 @@
+import { SettingsSection } from '@ui';
 import type { ExtensionConfig, FieldDescription } from '@core/types';
 
 interface DetectionSettingsProps {
@@ -8,8 +9,7 @@ interface DetectionSettingsProps {
 
 export function DetectionSettings({ config, updateConfig, descriptions }: DetectionSettingsProps): React.JSX.Element {
   return (
-    <div className="bg-secondary p-4 rounded-lg">
-      <h3 className="text-lg font-medium mb-3">🔍 识别</h3>
+    <SettingsSection icon="search" title="识别">
       <label className="flex items-center gap-2">
         <input
           type="checkbox"
@@ -19,6 +19,6 @@ export function DetectionSettings({ config, updateConfig, descriptions }: Detect
         />
         <span className="text-sm">{descriptions.collectionDetectionEnabled.label}</span>
       </label>
-    </div>
+    </SettingsSection>
   );
 }

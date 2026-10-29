@@ -1,8 +1,12 @@
 import type { MonitorState, NativeConnectionState } from '@core/nativeMessaging';
+import { Button, Icon, type IconName } from '@ui';
 import { useNativeMonitor } from '@hooks/useNativeMonitor';
 
 const CONNECTION_LABELS: Record<NativeConnectionState, string> = {
   disconnected: '未连接', connecting: '正在连接', connected: '已连接', error: '连接异常',
+};
+const CONNECTION_ICONS: Record<NativeConnectionState, IconName> = {
+  disconnected: 'alert', connecting: 'refresh', connected: 'check', error: 'alert',
 };
 const MONITOR_LABELS: Record<MonitorState, string> = {
   idle: '已启用，等待浏览器', awaitingExtension: '等待扩展恢复', monitoring: '保护运行中',
@@ -20,17 +24,34 @@ export function NativeMonitorStatus(): React.JSX.Element {
     : !monitor.enabled ? '本地保护已暂停'
     : !monitor.verified ? '尚未完成登记验证'
     : MONITOR_LABELS[monitor.state];
+  const statusLabel = CONNECTION_LABELS[status.state];
+
   return (
-    <div className="rounded-lg border border-subtle p-3 text-sm space-y-2" aria-live="polite">
-      <div className="flex items-center justify-between gap-3">
-        <span>外部连接：{CONNECTION_LABELS[status.state]}</span>
-        <button type="button" className="text-accent hover:underline" onClick={() => { void refresh(); }}>刷新状态</button>
+    <div className={`fm-monitor-status fm-monitor-status--${status.state}`} aria-live="polite">
+      <div className="fm-monitor-status__header">
+        <div className="fm-monitor-status__title">
+          <Icon name={CONNECTION_ICONS[status.state]} size={16} />
+          <span>连接状态：{statusLabel}</span>
+        </div>
+        <Button variant="subtle" size="sm" icon="refresh" onClick={() => { void refresh(); }}>
+          刷新
+        </Button>
       </div>
-      <p>保护状态：{protectionLabel}</p>
+      <div className="fm-monitor-status__line">
+        <span className="fm-monitor-status__label">保护状态</span>
+        <span className="fm-monitor-status__value">{protectionLabel}</span>
+      </div>
+      {monitor?.targetPid && (
+        <div className="fm-monitor-status__line">
+          <span className="fm-monitor-status__label">登记进程</span>
+          <span className="fm-monitor-status__value">{monitor.targetPid}</span>
+        </div>
+      )}
       {monitor?.dryRun && <p className="text-warning">当前为模拟模式，不会关闭浏览器。</p>}
       {monitor && !monitor.verified && <p className="text-warning">登记尚未完成握手验证。</p>}
-      {monitor?.targetPid && <p className="text-tertiary">登记的浏览器进程：{monitor.targetPid}</p>}
-      {(status.reason || monitor?.reason) && <p className="break-words text-warning">{status.reason || monitor?.reason}</p>}
+      {(status.reason || monitor?.reason) && (
+        <p className="break-words text-warning">{status.reason || monitor?.reason}</p>
+      )}
     </div>
   );
 }

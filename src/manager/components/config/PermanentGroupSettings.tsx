@@ -1,3 +1,4 @@
+import { SettingsSection } from '@ui';
 import type { ExtensionConfig, FieldDescription } from '@core/types';
 
 interface PermanentGroupSettingsProps {
@@ -8,8 +9,7 @@ interface PermanentGroupSettingsProps {
 
 export function PermanentGroupSettings({ config, updateConfig, descriptions }: PermanentGroupSettingsProps): React.JSX.Element {
   return (
-    <div className="bg-secondary p-4 rounded-lg">
-      <h3 className="text-lg font-medium mb-3">📌 永久分组</h3>
+    <SettingsSection icon="folder" title="永久分组">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm text-tertiary mb-1">
@@ -51,6 +51,6 @@ export function PermanentGroupSettings({ config, updateConfig, descriptions }: P
           />
         </div>
       </div>
-    </div>
+    </SettingsSection>
   );
 }

@@ -28,6 +28,8 @@ export type IconName =
   | 'music'
   | 'gamepad'
   | 'shield'
+  | 'monitor'
+  | 'refresh'
   | 'arrowRight'
   | 'filter'
   | 'key'
@@ -161,6 +163,19 @@ const ICONS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M12 3 5 6v5.5c0 4.2 2.8 7.6 7 9.5 4.2-1.9 7-5.3 7-9.5V6z" />
       <path d="m9 12 2 2 4-4" />
+    </>
+  ),
+  monitor: (
+    <>
+      <rect x="3" y="4" width="18" height="13" rx="2" />
+      <path d="M8 21h8M12 17v4" />
+    </>
+  ),
+  refresh: (
+    <>
+      <path d="M20 11a8 8 0 0 0-14.7-3L3 11" />
+      <path d="M3 5v6h6M4 13a8 8 0 0 0 14.7 3L21 13" />
+      <path d="M21 19v-6h-6" />
     </>
   ),
   arrowRight: <path d="M4 12h15M14 7l5 5-5 5" />,

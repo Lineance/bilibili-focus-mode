@@ -1,3 +1,4 @@
+import { SettingsSection } from '@ui';
 import type { ExtensionConfig, FieldDescription } from '@core/types';
 
 interface DailyBypassSettingsProps {
@@ -8,11 +9,7 @@ interface DailyBypassSettingsProps {
 
 export function DailyBypassSettings({ config, updateConfig, descriptions }: DailyBypassSettingsProps): React.JSX.Element {
   return (
-    <div className="bg-secondary p-4 rounded-lg">
-      <h3 className="text-lg font-medium mb-3">🎫 每日放行</h3>
-      <p className="text-sm text-tertiary mb-3">
-        允许每天使用指定次数的放行功能，暂时跳过视频拦截
-      </p>
+    <SettingsSection icon="bolt" title="每日放行" description="允许每天使用指定次数的放行功能，暂时跳过视频拦截。">
       <div className="space-y-3">
         <label className="flex items-center gap-2">
           <input
@@ -57,6 +54,6 @@ export function DailyBypassSettings({ config, updateConfig, descriptions }: Dail
           </div>
         )}
       </div>
-    </div>
+    </SettingsSection>
   );
 }

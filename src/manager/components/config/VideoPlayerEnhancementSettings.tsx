@@ -1,3 +1,4 @@
+import { SettingsSection } from '@ui';
 import type { ExtensionConfig } from '@core/types';
 
 interface VideoPlayerEnhancementSettingsProps {
@@ -14,11 +15,7 @@ export function VideoPlayerEnhancementSettings({ config, updateConfig }: VideoPl
   };
 
   return (
-    <div className="bg-secondary p-4 rounded-lg">
-      <h3 className="text-lg font-medium mb-3">🎬 播放器增强</h3>
-      <p className="text-sm text-tertiary mb-3">
-        增强视频播放器功能
-      </p>
+    <SettingsSection icon="play" title="播放器增强" description="增强视频播放器功能。">
       
       <div className="space-y-3">
         {/* 总开关 */}
@@ -64,6 +61,6 @@ export function VideoPlayerEnhancementSettings({ config, updateConfig }: VideoPl
           </div>
         )}
       </div>
-    </div>
+    </SettingsSection>
   );
 }

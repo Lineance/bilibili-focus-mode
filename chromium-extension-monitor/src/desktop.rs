@@ -20,8 +20,11 @@ use std::{
     time::Duration,
 };
 use windows_sys::Win32::{
-    Foundation::{HWND, LPARAM, LRESULT, WPARAM},
-    Graphics::Gdi::{GetStockObject, COLOR_WINDOW, DEFAULT_GUI_FONT},
+    Foundation::{COLORREF, HWND, LPARAM, LRESULT, WPARAM},
+    Graphics::Gdi::{
+        CreateBitmap, CreateSolidBrush, DeleteObject, GetStockObject, SetBkColor, SetTextColor,
+        DEFAULT_GUI_FONT, HBITMAP, HBRUSH, HDC,
+    },
     System::LibraryLoader::GetModuleHandleW,
     UI::WindowsAndMessaging::*,
 };
@@ -35,6 +38,92 @@ const LOGS: u16 = 104;
 const TEST: u16 = 105;
 const BROWSER: u16 = 106;
 const EXIT: u16 = 107;
+const BG_COLOR: COLORREF = 0x00130d0a;
+const TEXT_COLOR: COLORREF = 0x00f7ede8;
+const MUTED_COLOR: COLORREF = 0x00c6b2a6;
+
+thread_local! {
+    static WINDOW_BRUSH: std::cell::Cell<HBRUSH> = const { std::cell::Cell::new(std::ptr::null_mut()) };
+    static APP_ICON: std::cell::Cell<HICON> =
+        const { std::cell::Cell::new(std::ptr::null_mut()) };
+}
+
+fn window_brush() -> HBRUSH {
+    WINDOW_BRUSH.with(|slot| {
+        if slot.get().is_null() {
+            let brush = unsafe { CreateSolidBrush(BG_COLOR) };
+            slot.set(brush);
+        }
+        slot.get()
+    })
+}
+
+/// Build the shield/check mark used by the native windows and tray.
+/// Keeping it in code avoids a separate resource DLL and scales cleanly with DPI.
+pub(crate) fn app_icon() -> HICON {
+    APP_ICON.with(|slot| {
+        if !slot.get().is_null() {
+            return slot.get();
+        }
+        let mut color = [0u32; 32 * 32];
+        let mut mask = [0xffu8; 32 * 32 / 8];
+        for y in 3..29 {
+            let half = if y < 10 {
+                4 + (y - 3)
+            } else {
+                11 - ((y - 10) / 5)
+            };
+            let left = 16 - half;
+            let right = 16 + half;
+            for x in left..=right {
+                let index = y * 32 + x;
+                color[index as usize] = 0x00f7a27a;
+                mask[(index as usize) / 8] &= !(0x80 >> (index % 8));
+            }
+        }
+        for (x, y) in [
+            (11, 16),
+            (12, 17),
+            (13, 18),
+            (14, 17),
+            (15, 16),
+            (16, 15),
+            (17, 14),
+            (18, 13),
+            (19, 12),
+            (20, 11),
+        ] {
+            color[(y * 32 + x) as usize] = 0x00f7ede8;
+        }
+        let mask_bitmap: HBITMAP = unsafe { CreateBitmap(32, 32, 1, 1, mask.as_ptr().cast()) };
+        let color_bitmap: HBITMAP = unsafe { CreateBitmap(32, 32, 1, 32, color.as_ptr().cast()) };
+        let icon = if mask_bitmap.is_null() || color_bitmap.is_null() {
+            std::ptr::null_mut()
+        } else {
+            let info = ICONINFO {
+                fIcon: 1,
+                xHotspot: 0,
+                yHotspot: 0,
+                hbmMask: mask_bitmap,
+                hbmColor: color_bitmap,
+            };
+            unsafe { CreateIconIndirect(&info) }
+        };
+        if !mask_bitmap.is_null() {
+            unsafe { DeleteObject(mask_bitmap) };
+        }
+        if !color_bitmap.is_null() {
+            unsafe { DeleteObject(color_bitmap) };
+        }
+        let icon = if icon.is_null() {
+            unsafe { LoadIconW(null_mut(), IDI_SHIELD) }
+        } else {
+            icon
+        };
+        slot.set(icon);
+        icon
+    })
+}
 #[derive(Debug)]
 enum Command {
     Menu,
@@ -50,6 +139,24 @@ unsafe extern "system" fn window_proc(
     lparam: LPARAM,
 ) -> LRESULT {
     let sender = unsafe { GetWindowLongPtrW(hwnd, GWLP_USERDATA) } as *const mpsc::Sender<Command>;
+    if matches!(
+        message,
+        WM_CTLCOLORSTATIC | WM_CTLCOLOREDIT | WM_CTLCOLORBTN
+    ) {
+        let hdc = wparam as HDC;
+        unsafe {
+            SetBkColor(hdc, BG_COLOR);
+            SetTextColor(
+                hdc,
+                if message == WM_CTLCOLOREDIT {
+                    TEXT_COLOR
+                } else {
+                    MUTED_COLOR
+                },
+            );
+        }
+        return window_brush() as LRESULT;
+    }
     if !sender.is_null() {
         let command = match message {
             crate::tray::CALLBACK => match (lparam as u32) & 0xffff {
@@ -131,8 +238,8 @@ fn window(
         lpfnWndProc: Some(window_proc),
         hInstance: module,
         hCursor: unsafe { LoadCursorW(null_mut(), IDC_ARROW) },
-        hIcon: unsafe { LoadIconW(null_mut(), IDI_SHIELD) },
-        hbrBackground: (COLOR_WINDOW + 1) as _,
+        hIcon: app_icon(),
+        hbrBackground: window_brush(),
         lpszClassName: class.as_ptr(),
         ..unsafe { zeroed() }
     };
@@ -182,8 +289,14 @@ fn control(
     h: i32,
     style: u32,
 ) -> HWND {
+    let is_button = class == "BUTTON";
     let class = wide(class);
     let text = wide(text);
+    let style = if is_button {
+        style | BS_FLAT as u32
+    } else {
+        style
+    };
     let hwnd = unsafe {
         CreateWindowExW(
             0,

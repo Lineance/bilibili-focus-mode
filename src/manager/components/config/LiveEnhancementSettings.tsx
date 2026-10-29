@@ -1,3 +1,4 @@
+import { SettingsSection } from '@ui';
 import type { ExtensionConfig } from '@core/types';
 
 interface LiveEnhancementSettingsProps {
@@ -14,11 +15,7 @@ export function LiveEnhancementSettings({ config, updateConfig }: LiveEnhancemen
   };
 
   return (
-    <div className="bg-secondary p-4 rounded-lg">
-      <h3 className="text-lg font-medium mb-3">📺 直播增强</h3>
-      <p className="text-sm text-tertiary mb-3">
-        优化直播页面体验
-      </p>
+    <SettingsSection icon="play" title="直播增强" description="优化直播页面体验。">
       
       <div className="space-y-3">
         {/* 总开关 */}
@@ -69,6 +66,6 @@ export function LiveEnhancementSettings({ config, updateConfig }: LiveEnhancemen
           </div>
         )}
       </div>
-    </div>
+    </SettingsSection>
   );
 }

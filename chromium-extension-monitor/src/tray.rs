@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::{
     io,
     mem::{size_of, zeroed},
-    ptr::{null, null_mut},
+    ptr::null,
 };
 use windows_sys::Win32::{
     Foundation::{HWND, POINT},
@@ -54,14 +54,7 @@ impl Tray {
         if self.added && self.last == label {
             return Ok(true);
         }
-        let icon = if status["state"] == "faulted" || status["state"] == "gracePeriod" {
-            IDI_WARNING
-        } else if status["enabled"] == true {
-            IDI_SHIELD
-        } else {
-            IDI_INFORMATION
-        };
-        self.data.hIcon = unsafe { LoadIconW(null_mut(), icon) };
+        self.data.hIcon = crate::desktop::app_icon();
         self.data.szTip.fill(0);
         for (place, value) in self
             .data

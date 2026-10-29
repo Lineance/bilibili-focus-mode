@@ -7,6 +7,7 @@ const DATA: u16 = 602;
 const ID: u16 = 603;
 const LOGIN: u16 = 604;
 const KIND: u16 = 605;
+const DEFAULT_PROFILE: u16 = 606;
 const SAVE: u16 = 620;
 const PICK: u16 = 621;
 const OPEN: u16 = 622;
@@ -232,6 +233,29 @@ pub fn run(directory: &Path) -> io::Result<()> {
             0,
         );
     }
+    let default_scope = control(
+        main,
+        "BUTTON",
+        "允许监控默认 Chrome 实例",
+        DEFAULT_PROFILE,
+        132,
+        212,
+        300,
+        28,
+        BS_AUTOCHECKBOX as u32 | WS_TABSTOP,
+    );
+    unsafe {
+        SendMessageW(
+            default_scope,
+            BM_SETCHECK,
+            usize::from(preserve_default_profile(
+                existing.as_ref(),
+                &browser,
+                profile,
+            )),
+            0,
+        );
+    }
     let checked = if existing.is_none() {
         true
     } else {
@@ -240,14 +264,14 @@ pub fn run(directory: &Path) -> io::Result<()> {
     unsafe {
         SendMessageW(login, BM_SETCHECK, usize::from(checked), 0);
     }
-    control(main,"STATIC","注意：超时会关闭该数据目录中的整个浏览器实例。推荐使用独立目录。\n打开浏览器扩展页加载插件后，复制 ID 到上方。保护默认关闭，需完成握手后再启用。",0,18,216,710,55,0);
+    control(main,"STATIC","注意：超时会关闭该数据目录中的整个浏览器实例。推荐使用独立目录；只有勾选默认实例时才监控未带 --user-data-dir 的主 Chrome。打开浏览器扩展页加载插件后，复制 ID 到上方。保护默认关闭，需完成握手后再启用。",0,18,242,710,45,0);
     control(
         main,
         "BUTTON",
         "保存并启动",
         SAVE,
         132,
-        286,
+        308,
         150,
         34,
         WS_TABSTOP,
@@ -258,7 +282,7 @@ pub fn run(directory: &Path) -> io::Result<()> {
         "打开浏览器扩展页",
         OPEN,
         300,
-        286,
+        308,
         220,
         34,
         WS_TABSTOP,
@@ -273,7 +297,7 @@ pub fn run(directory: &Path) -> io::Result<()> {
         },
         630,
         18,
-        334,
+        350,
         710,
         100,
         WS_BORDER | WS_VSCROLL | ES_MULTILINE as u32 | ES_READONLY as u32 | WS_TABSTOP,
@@ -331,7 +355,7 @@ pub fn run(directory: &Path) -> io::Result<()> {
                         "chrome".into()
                     };
                     let allow_default_profile =
-                        preserve_default_profile(existing.as_ref(), &path, &profile);
+                        unsafe { SendMessageW(default_scope, BM_GETCHECK, 0, 0) == 1 };
                     let target = crate::config::Target {
                         browser_path: path,
                         user_data_dir: profile,

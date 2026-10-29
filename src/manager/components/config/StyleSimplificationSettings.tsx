@@ -1,3 +1,4 @@
+import { SettingsSection } from '@ui';
 import type { ExtensionConfig } from '@core/types';
 
 import { VideoPlayerSection } from './style/VideoPlayerSection';
@@ -40,8 +41,7 @@ export function StyleSimplificationSettings({ config, updateConfig }: StyleSimpl
   };
 
   return (
-    <div className="bg-secondary p-4 rounded-lg">
-      <h3 className="text-lg font-medium mb-3">🎨 样式简化</h3>
+    <SettingsSection icon="palette" title="样式简化">
       <div className="space-y-3">
         <VideoPlayerSection
           config={config.videoPlayerSimplification}
@@ -60,6 +60,6 @@ export function StyleSimplificationSettings({ config, updateConfig }: StyleSimpl
           onUpdate={updateLiveSimplification}
         />
       </div>
-    </div>
+    </SettingsSection>
   );
 }

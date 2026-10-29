@@ -1,3 +1,4 @@
+import { SettingsSection } from '@ui';
 import type { ExtensionConfig } from '@core/types';
 
 interface AppearanceEnhancementSettingsProps {
@@ -14,11 +15,7 @@ export function AppearanceEnhancementSettings({ config, updateConfig }: Appearan
   };
 
   return (
-    <div className="bg-secondary p-4 rounded-lg">
-      <h3 className="text-lg font-medium mb-3">🎨 外观增强</h3>
-      <p className="text-sm text-tertiary mb-3">
-        自定义页面外观，隐藏不需要的元素
-      </p>
+    <SettingsSection icon="palette" title="外观增强" description="自定义页面外观，隐藏不需要的元素。">
       
       <div className="space-y-3">
         {/* 总开关 */}
@@ -168,6 +165,6 @@ export function AppearanceEnhancementSettings({ config, updateConfig }: Appearan
           </div>
         )}
       </div>
-    </div>
+    </SettingsSection>
   );
 }

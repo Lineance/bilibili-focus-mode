@@ -1,6 +1,7 @@
 export { Icon, type IconName } from './Icon';
 export { Button, IconButton } from './Button';
 export { Card, SectionHeader, PageIntro } from './Card';
+export { SettingsSection } from './SettingsSection';
 export { TagChip, StatusChip } from './Chip';
 export { Toggle } from './Toggle';
 export { Field, FieldGroup } from './Field';

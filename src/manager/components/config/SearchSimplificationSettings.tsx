@@ -1,3 +1,4 @@
+import { SettingsSection } from '@ui';
 import type { ExtensionConfig } from '@core/types';
 
 interface SearchSimplificationSettingsProps {
@@ -14,11 +15,7 @@ export function SearchSimplificationSettings({ config, updateConfig }: SearchSim
   };
 
   return (
-    <div className="bg-secondary p-4 rounded-lg">
-      <h3 className="text-lg font-medium mb-3">🔍 搜索结果简化</h3>
-      <p className="text-sm text-tertiary mb-3">
-        简化搜索结果页面，隐藏广告和推荐内容
-      </p>
+    <SettingsSection icon="search" title="搜索结果简化" description="简化搜索结果页面，隐藏广告和推荐内容。">
       
       <div className="space-y-3">
         {/* 总开关 */}
@@ -83,6 +80,6 @@ export function SearchSimplificationSettings({ config, updateConfig }: SearchSim
           </div>
         )}
       </div>
-    </div>
+    </SettingsSection>
   );
 }

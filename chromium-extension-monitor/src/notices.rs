@@ -136,7 +136,9 @@ impl NoticePolicy {
 }
 
 pub fn friendly_error(reason: &str) -> &str {
-    if reason.contains("origin") || reason.contains("extension ID") {
+    if reason == "watchdogNotRunning" {
+        "本地监控程序未运行，请从托盘或 monitor.exe start 启动。"
+    } else if reason.contains("origin") || reason.contains("extension ID") {
         "扩展 ID 与本地登记不一致。"
     } else if reason.contains("already running") {
         "监控程序已经在运行。"

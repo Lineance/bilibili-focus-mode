@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { DEFAULT_CONFIG } from '@core/constants';
 import { ConfigService } from '@core/services';
 import type { ExtensionConfig } from '@core/types';
-import { Button, PageIntro, toast } from '@ui';
+import { Button, Icon, PageIntro, toast } from '@ui';
 
 import { PermanentGroupSettings } from './config/PermanentGroupSettings';
 import { DebtSettings } from './config/DebtSettings';
@@ -67,11 +67,9 @@ export function ConfigPanel(): React.JSX.Element {
         description="所有规则保存在本地。修改后需要点击「保存配置」才会生效。"
       />
 
-      <div className="sticky top-[73px] z-20 -mx-1 mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-secondary px-4 py-3 backdrop-blur"
-        style={{ background: 'color-mix(in srgb, var(--fm-bg-primary) 88%, transparent)' }}
-      >
+      <div className="fm-savebar sticky top-[73px] z-20 -mx-1 mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-secondary px-4 py-3 backdrop-blur">
         <p className="text-[12px] text-tertiary">
-          {saved ? '✓ 已保存' : '修改后记得保存'}
+          {saved ? <span className="flex items-center gap-1.5"><Icon name="check" size={14} />已保存</span> : '修改后记得保存'}
         </p>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" icon="history" onClick={handleReset}>
